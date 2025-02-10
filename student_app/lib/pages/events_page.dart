@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/firebase_wrapper.dart';
 
 class EventsPage extends StatelessWidget {
   const EventsPage({super.key});
