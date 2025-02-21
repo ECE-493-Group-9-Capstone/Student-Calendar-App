@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
 }
 
 class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({Key? key}) : super(key: key);
+  const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +39,8 @@ class AuthWrapper extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator()); // Loading state
+          return const Center(
+              child: CircularProgressIndicator()); // Loading state
         }
 
         // If user exists but is not in Firebase, log them out
@@ -51,7 +52,8 @@ class AuthWrapper extends StatelessWidget {
             future: _isUserValid(user),
             builder: (context, asyncSnapshot) {
               if (asyncSnapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator()); // Wait for validation
+                return const Center(
+                    child: CircularProgressIndicator()); // Wait for validation
               }
 
               // If the user is valid, show the main page
@@ -76,9 +78,9 @@ class AuthWrapper extends StatelessWidget {
     if (user == null) return false;
     try {
       final idTokenResult = await user.getIdTokenResult(true);
-      return idTokenResult != null; 
+      return idTokenResult != null;
     } catch (e) {
-      return false; 
+      return false;
     }
   }
 }
