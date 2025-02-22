@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:student_app/pages/friends_page.dart';
+import 'package:student_app/user_singleton.dart';
 import '../utils/firebase_wrapper.dart';
+
+AppUser appUser = AppUser();
 
 class UserProfilePopup extends StatelessWidget {
   final String userId;
@@ -29,8 +33,11 @@ class UserProfilePopup extends StatelessWidget {
         Map<String, dynamic> userData = snapshot.data!;
         String name = userData["name"] ?? "Unknown";
         String bio = userData["discipline"] ?? "No bio available";
-        String profilePic = userData["profilePic"] ??
-            "https://via.placeholder.com/150"; // Default profile image
+        String email = userData["email"] ?? "Unknown";
+        String ccid = userId;
+        String profilePic =
+            userData["profilePic"] ?? // Maybe add this later if we have time?
+                "https://via.placeholder.com/150"; // Default profile image
 
         return Container(
           width: 300,
@@ -56,10 +63,24 @@ class UserProfilePopup extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey[700]),
               ),
+              SizedBox(height: 5),
+              Text(
+                email,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[700]),
+              ),
               SizedBox(height: 15),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context), // Close popup
-                child: Text("Close"),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context), // Close popup
+                    child: Text("Close"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => removeFriendFromUsers(ccid, appUser.ccid!), // Close popup
+                    child: Text("Remove Friend"),
+                  ),
+                ],
               ),
             ],
           ),

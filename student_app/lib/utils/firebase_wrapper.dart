@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import './user.dart';
+import 'package:flutter/material.dart';
 
 void readDocument(String id) async {
   try {
@@ -8,12 +10,12 @@ void readDocument(String id) async {
     if (documentSnapshot.exists) {
       Map<String, dynamic>? data =
           documentSnapshot.data() as Map<String, dynamic>?;
-      print("Document Data: $data");
+      debugPrint("Document Data: $data");
     } else {
-      print("Document does not exist");
+      debugPrint("Document does not exist");
     }
   } catch (e) {
-    print("Error reading document: $e");
+    debugPrint("Error reading document: $e");
   }
 }
 
@@ -27,13 +29,13 @@ Future<void> addUser(String name, String ccid, String discipline) async {
       'friends': <String>[], // Ensure it's a List<String>
       'friend_requests': <String>[],
     });
-    print("User added with doc ID: $ccid");
+    debugPrint("User added with doc ID: $ccid");
   } catch (e) {
-    print("Error adding user: $e");
+    debugPrint("Error adding user: $e");
   }
 }
 
-Future<void> addFriend(String userId1, String userId2) async {
+Future<void> acceptFriendRequest(String userId1, String userId2) async {
   try {
     DocumentReference userRef1 =
         FirebaseFirestore.instance.collection('users').doc(userId1);
@@ -43,21 +45,44 @@ Future<void> addFriend(String userId1, String userId2) async {
     // Add each other to their friends lists
     await userRef1.update({
       'friends': FieldValue.arrayUnion(
-          [userId2]) // Add userId2 to userId1's friends list
+          [userId2]), // Add userId2 to userId1's friends list
+      'friend_requests':
+          FieldValue.arrayRemove([userId2]) // Remove from friend_requests
     });
 
     await userRef2.update({
       'friends': FieldValue.arrayUnion(
-          [userId1]) // Add userId1 to userId2's friends list
+          [userId1]), // Add userId1 to userId2's friends list
+      'requested_friends':
+          FieldValue.arrayRemove([userId1]) // Remove from requested_friends
     });
 
-    await userRef1.update(({
-      'friend_requests': FieldValue.arrayRemove([userId2])
-    }));
-
-    print("Users $userId1 and $userId2 are now friends.");
+    debugPrint("Users $userId1 and $userId2 are now friends.");
   } catch (e) {
-    print("Error adding friend: $e");
+    debugPrint("Error accepting friend request: $e");
+  }
+}
+
+Future<void> sendRecieveRequest(String senderId, String receiverId) async {
+  try {
+    DocumentReference senderRef =
+        FirebaseFirestore.instance.collection('users').doc(senderId);
+    DocumentReference receiverRef =
+        FirebaseFirestore.instance.collection('users').doc(receiverId);
+
+    // Add senderId to receiver's friend_requests list
+    await receiverRef.update({
+      'friend_requests': FieldValue.arrayUnion([senderId])
+    });
+
+    // Add receiverId to sender's requested_friends list
+    await senderRef.update({
+      'requested_friends': FieldValue.arrayUnion([receiverId])
+    });
+
+    debugPrint("Friend request sent from $senderId to $receiverId.");
+  } catch (e) {
+    debugPrint("Error sending friend request: $e");
   }
 }
 
@@ -67,28 +92,31 @@ Future<void> deleteUser(String id) async {
         .collection('users') // Specify the collection
         .doc(id) // Specify the document ID
         .delete(); // Delete the document
-    print("User deleted successfully!");
+    debugPrint("User deleted successfully!");
   } catch (e) {
-    print("Error deleting user: $e");
+    debugPrint("Error deleting user: $e");
   }
 }
 
-Future<List<QueryDocumentSnapshot>> getAllUsers() async {
+Future<List<UserModel>> getAllUsers() async {
   try {
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection('users') // Specify the Firestore collection
         .get(); // Fetch all documents in the collection
 
-    List<QueryDocumentSnapshot> allUsers =
-        querySnapshot.docs; // Store the documents
+    List<UserModel> allUsers = [];
+    List<Map<String, dynamic>> users = querySnapshot.docs
+        .map((doc) => {"id": doc.id, ...doc.data() as Map<String, dynamic>})
+        .toList();
 
-    // Debugging: Print user data
-    for (var doc in allUsers) {
-      print("User ID: ${doc.id}, Data: ${doc.data()}");
+    for (int i = 0; i < users.length; i++) {
+      UserModel user = UserModel(users[i]["id"], users[i]["name"],
+          users[i]["email"], users[i]["discipline"]);
+      allUsers.add(user);
     }
     return allUsers;
   } catch (e) {
-    print("Error fetching users: $e");
+    debugPrint("Error fetching users: $e");
     return []; // Return an empty list in case of error
   }
 }
@@ -104,18 +132,18 @@ Future<List<String>> getUserFriends(String userId) async {
 
       if (data != null && data.containsKey('friends')) {
         List<String> friends = List<String>.from(data['friends']);
-        print("User $userId friends: $friends");
+        debugPrint("User $userId friends: $friends");
         return friends;
       } else {
-        print("User $userId has no friends listed.");
+        debugPrint("User $userId has no friends listed.");
         return [];
       }
     } else {
-      print("User does not exist.");
+      debugPrint("User does not exist.");
       return [];
     }
   } catch (e) {
-    print("Error fetching user friends: $e");
+    debugPrint("Error fetching user friends: $e");
     return [];
   }
 }
@@ -131,7 +159,7 @@ Future<Map<String, dynamic>?> fetchUserData(String userId) async {
       return null;
     }
   } catch (e) {
-    print("Error fetching user data: $e");
+    debugPrint("Error fetching user data: $e");
     return null;
   }
 }
@@ -149,7 +177,6 @@ Future<List<Map<String, dynamic>>> getFriendRequests(String userId) async {
             List<String>.from(userData['friend_requests']);
 
         if (friendRequestIds.isEmpty) {
-          print("User $userId has no friend requests.");
           return [];
         }
 
@@ -170,19 +197,44 @@ Future<List<Map<String, dynamic>>> getFriendRequests(String userId) async {
             }
           }
         }
-
-        print("Friend Requests for User $userId: $friendRequestsDetails");
         return friendRequestsDetails;
       } else {
-        print("User $userId has no friend requests field.");
+        debugPrint("User $userId has no friend requests field.");
         return [];
       }
     } else {
-      print("User does not exist.");
+      debugPrint("User does not exist.");
       return [];
     }
   } catch (e) {
-    print("Error fetching friend requests: $e");
+    debugPrint("Error fetching friend requests: $e");
+    return [];
+  }
+}
+
+Future<List<String>> getRequestedFriends(String userId) async {
+  try {
+    DocumentSnapshot userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+    if (userDoc.exists) {
+      Map<String, dynamic>? userData = userDoc.data() as Map<String, dynamic>?;
+
+      if (userData != null && userData.containsKey('requested_friends')) {
+        List<String> requestedFriends =
+            List<String>.from(userData['requested_friends']);
+        debugPrint("User $userId requested friends: $requestedFriends");
+        return requestedFriends;
+      } else {
+        debugPrint("User $userId has no requested friends field.");
+        return [];
+      }
+    } else {
+      debugPrint("User does not exist.");
+      return [];
+    }
+  } catch (e) {
+    debugPrint("Error fetching requested friends: $e");
     return [];
   }
 }
@@ -194,8 +246,30 @@ Future<void> declineFriendRequest(String requesterId, String userId) async {
       'friend_requests': FieldValue.arrayRemove([requesterId]),
     });
 
-    print("Friend request declined from $requesterId");
+    debugPrint("Friend request declined from $requesterId");
   } catch (e) {
-    print("Error declining friend request: $e");
+    debugPrint("Error declining friend request: $e");
+  }
+}
+
+Future<void> removeFriendFromUsers(String userId1, String userId2) async {
+  try {
+    DocumentReference userRef1 =
+        FirebaseFirestore.instance.collection('users').doc(userId1);
+    DocumentReference userRef2 =
+        FirebaseFirestore.instance.collection('users').doc(userId2);
+
+    // Remove each other from their friends lists
+    await userRef1.update({
+      'friends': FieldValue.arrayRemove([userId2]),
+    });
+
+    await userRef2.update({
+      'friends': FieldValue.arrayRemove([userId1]),
+    });
+
+    debugPrint("Users $userId1 and $userId2 are no longer friends.");
+  } catch (e) {
+    debugPrint("Error removing friend: $e");
   }
 }
