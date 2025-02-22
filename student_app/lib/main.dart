@@ -7,13 +7,13 @@ import 'package:student_app/pages/map_page.dart';
 import 'package:student_app/pages/onBoarding.dart';
 import 'package:student_app/pages/home_page.dart';
 import 'firebase_options.dart';
+import 'user_singleton.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
   runApp(const MyApp());
 }
 
@@ -35,6 +35,7 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // return const MainPage();
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
@@ -58,6 +59,7 @@ class AuthWrapper extends StatelessWidget {
 
               // If the user is valid, show the main page
               if (asyncSnapshot.hasData && asyncSnapshot.data == true) {
+                AppUser.instance.initialize(user!);
                 return const MainPage();
               }
 
@@ -78,6 +80,7 @@ class AuthWrapper extends StatelessWidget {
     if (user == null) return false;
     try {
       final idTokenResult = await user.getIdTokenResult(true);
+      // ignore: unnecessary_null_comparison
       return idTokenResult != null;
     } catch (e) {
       return false;
@@ -125,7 +128,7 @@ class MainPageState extends State<MainPage> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
+            icon: Icon(Icons.map),
             label: 'Map',
           ),
           BottomNavigationBarItem(
