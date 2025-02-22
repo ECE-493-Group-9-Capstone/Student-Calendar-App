@@ -1,61 +1,52 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:student_app/pages/friend_request_page.dart';
+import 'package:student_app/utils/user.dart';
 import '../utils/firebase_wrapper.dart';
 import './user_profile_page.dart';
+import '../user_singleton.dart';
+
+AppUser appUser = AppUser();
 
 class FriendsPage extends StatefulWidget {
   const FriendsPage({super.key});
 
   @override
-  _FriendsPageState createState() => _FriendsPageState();
+  FriendsPageState createState() => FriendsPageState();
 }
 
-class _FriendsPageState extends State<FriendsPage> {
+class FriendsPageState extends State<FriendsPage> {
   TextEditingController searchController = TextEditingController();
-  List<String> allUsers = [];
-  List<String> filteredUsers = [];
+  List<UserModel> allUsers = [];
+  List<UserModel> filteredUsers = [];
   List<Map<String, String>> usersFriends = []; // Store friend names + IDs
+  List<UserModel> usersFriends1 = [];
 
   @override
   void initState() {
     super.initState();
     fetchAndProcessUsers();
-    fetchAndProcessFriends("nasreddi");
-  }
-
-  Future<void> fetchAndProcessFriends(String userId) async {
-    List<String> friendNames = await getUserFriends(userId);
-
-    // Fetch user documents to get IDs
-    List<Map<String, String>> friendData = [];
-
-    for (String friendName in friendNames) {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('name', isEqualTo: friendName)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        String friendId =
-            querySnapshot.docs.first.id; // Get first matching document's ID
-        friendData.add({"id": friendId, "name": friendName});
-      }
-    }
-
     setState(() {
-      usersFriends = friendData; // Store as List<Map<String, String>>
+      usersFriends1 = appUser.friends;
     });
   }
 
   Future<void> fetchAndProcessUsers() async {
-    List<QueryDocumentSnapshot> usernames = await getAllUsers();
+    List<UserModel> users = await getAllUsers();
+    List<String> friendsCcidList = [];
 
-    List<String> userNames = usernames
-        .map((user) => (user.data() as Map<String, dynamic>)['name'] as String)
-        .toList();
+    for (int i = 0; i < appUser.friends.length; i++) {
+      friendsCcidList.add(appUser.friends[i].ccid);
+    }
+    users = users
+        .where((user) => user.ccid != appUser.ccid)
+        .toList(); // Filter out self
+    users = users
+        .where((user) => !friendsCcidList.contains(user.ccid))
+        .toList(); // Filter out friend
 
-    allUsers = userNames;
+    setState(() {
+      allUsers = users;
+    });
   }
 
   void updateSearchResults(String query) {
@@ -63,7 +54,9 @@ class _FriendsPageState extends State<FriendsPage> {
       filteredUsers = query.isEmpty
           ? []
           : allUsers
-              .where((user) => user.toLowerCase().contains(query.toLowerCase()))
+              .where((user) =>
+                  user.ccid.toLowerCase().contains(query.toLowerCase()) ||
+                  user.username.toLowerCase().contains(query.toLowerCase()))
               .toList();
     });
   }
@@ -82,7 +75,7 @@ class _FriendsPageState extends State<FriendsPage> {
     );
   }
 
-   void navigateToNotifications(String userId) {
+  void navigateToNotifications(String userId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -90,7 +83,7 @@ class _FriendsPageState extends State<FriendsPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12.0),
           ),
-          child: UserNotificationPopup(userId: userId,),
+          child: UserNotificationPopup(),
         );
       },
     );
@@ -99,7 +92,6 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     bool isSearching = searchController.text.isNotEmpty;
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Friends Page'),
@@ -108,7 +100,6 @@ class _FriendsPageState extends State<FriendsPage> {
             icon: Icon(Icons.notifications), // Add icon or any other icon
             onPressed: () {
               // Action when the button is clicked
-              print("Button clicked!");
               navigateToNotifications("nasreddi");
             },
           ),
@@ -144,16 +135,26 @@ class _FriendsPageState extends State<FriendsPage> {
               child: ListView.builder(
                 itemCount: filteredUsers.length,
                 itemBuilder: (context, index) {
-                  String friendName = filteredUsers[index];
+                  String friendName = filteredUsers[index].username;
+                  String friendCcid = filteredUsers[index].ccid;
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.blueAccent,
-                      child: Text(friendName[0]), // First letter
+                      child: Text(friendName.isNotEmpty
+                          ? friendName[0]
+                          : "?"), // Use "?" as a fallback
                     ),
                     title: Text(friendName),
                     trailing: ElevatedButton(
                       onPressed: () async {
-                        await addFriend("nasreddi", friendName);
+                        await appUser.sendFriendRequest(friendCcid);
+                        // Show a notification when the request is sent
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Friend Request Sent"),
+                            duration: Duration(seconds: 2), // Display time
+                          ),
+                        );
                       },
                       child: Text("Add Friend"),
                     ),
@@ -163,25 +164,25 @@ class _FriendsPageState extends State<FriendsPage> {
             )
           else
             Expanded(
-              child: usersFriends.isEmpty
+              child: (usersFriends1.isEmpty)
                   ? Center(child: Text("No Friends Yet"))
                   : ListView.builder(
-                      itemCount: usersFriends.length,
+                      itemCount: usersFriends1.length,
                       itemBuilder: (context, index) {
-                        Map<String, String> friend = usersFriends[index];
+                        UserModel friend = usersFriends1[index];
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor: Colors.green,
-                            child: Text(friend["name"]![0]),
+                            child: Text(friend.username[0]),
                           ),
-                          title: Text(friend["name"]!),
+                          title: Text(friend.username),
                           subtitle: Text("Tap to view profile"),
                           trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                          onTap: () => navigateToProfile(friend["id"]!),
+                          onTap: () => navigateToProfile(friend.ccid),
                         );
                       },
                     ),
-            ),
+            )
         ],
       ),
     );
