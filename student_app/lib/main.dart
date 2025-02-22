@@ -78,6 +78,7 @@ class AuthWrapper extends StatelessWidget {
     if (user == null) return false;
     try {
       final idTokenResult = await user.getIdTokenResult(true);
+      // ignore: unnecessary_null_comparison
       return idTokenResult != null; 
     } catch (e) {
       return false; 
@@ -125,7 +126,7 @@ class MainPageState extends State<MainPage> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
+            icon: Icon(Icons.map),
             label: 'Map',
           ),
           BottomNavigationBarItem(

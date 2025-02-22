@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:student_app/pages/friend_request_page.dart';
 import 'package:student_app/utils/user.dart';

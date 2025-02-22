@@ -1,7 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
 class UserModel {
-  Map<String, dynamic>? _firebaseUser;
   final String _ccid;
   final String _username;
   final String _email;
