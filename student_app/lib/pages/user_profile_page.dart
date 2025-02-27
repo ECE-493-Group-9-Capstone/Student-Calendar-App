@@ -7,7 +7,7 @@ AppUser appUser = AppUser();
 class UserProfilePopup extends StatelessWidget {
   final String userId;
 
-  const UserProfilePopup({Key? key, required this.userId}) : super(key: key);
+  const UserProfilePopup({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {
