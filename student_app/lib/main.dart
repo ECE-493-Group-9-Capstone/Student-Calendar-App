@@ -8,6 +8,7 @@ import 'package:student_app/pages/onBoarding.dart';
 import 'package:student_app/pages/home_page.dart';
 import 'firebase_options.dart';
 import 'user_singleton.dart';
+import 'utils/firebase_wrapper.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,7 +50,7 @@ class AuthWrapper extends StatelessWidget {
 
           // Check if the user still exists in Firebase
           return FutureBuilder<bool>(
-            future: _isUserValid(user),
+            future: _ensureUserExists(user),
             builder: (context, asyncSnapshot) {
               if (asyncSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator()); // Wait for validation
@@ -72,19 +73,27 @@ class AuthWrapper extends StatelessWidget {
       },
     );
   }
+}
 
   /// Helper function to check if a user exists in Firebase
-  Future<bool> _isUserValid(User? user) async {
-    if (user == null) return false;
-    try {
-      final idTokenResult = await user.getIdTokenResult(true);
-      // ignore: unnecessary_null_comparison
-      return idTokenResult != null; 
-    } catch (e) {
-      return false; 
-    }
+Future<bool> _ensureUserExists(User? user) async {
+  if (user == null) return false;
+  try {
+    final idTokenResult = await user.getIdTokenResult(true);
+    if (idTokenResult == null) return false;
+  } catch (e) {
+    return false;
   }
+  final String ccid = user.email?.split('@')[0] ?? user.uid;
+  final firestoreData = await fetchUserData(ccid);
+  if (firestoreData == null) {
+    await addUser(user.displayName ?? "New User", ccid, "");
+  }
+
+  // Always return true if everything is okay.
+  return true;
 }
+
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -103,6 +112,25 @@ class MainPageState extends State<MainPage> {
     EventsPage(),
     FriendsPage(),
   ];
+
+
+    // This function will show the location tracking dialog on first login.
+  Future<void> _askLocationTrackingPreference() async {
+    final option = await showLocationTrackingDialog(context);
+    if (option != null) {
+      // For demonstration, we just print the selected option.
+      // Here you might want to update the user's document in Firestore with their preference.
+      print("User selected location tracking: $option");
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _askLocationTrackingPreference();
+    });
+  }
 
   void _onTabTapped(int index) {
     setState(() {
@@ -141,4 +169,34 @@ class MainPageState extends State<MainPage> {
       ),
     );
   }
+}
+
+enum LocationTrackingOption {live, onDemand}
+
+//store the users choice of live tracking vs only when active
+Future<LocationTrackingOption?> showLocationTrackingDialog(BuildContext context) {
+  return showDialog<LocationTrackingOption>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text("Location Tracking"),
+        content: const Text(
+            "Do you want your location to be tracked live (continually updated) or only when using the app?"),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(LocationTrackingOption.onDemand);
+            },
+            child: const Text("Only When Using App"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(LocationTrackingOption.live);
+            },
+            child: const Text("Live Tracking"),
+          ),
+        ],
+      );
+    },
+  );
 }
