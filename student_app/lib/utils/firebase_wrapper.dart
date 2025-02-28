@@ -2,10 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import './user.dart';
 import 'package:flutter/material.dart';
 
+final FirebaseFirestore db = FirebaseFirestore.instance;
+
 void readDocument(String id) async {
   try {
     DocumentSnapshot documentSnapshot =
-        await FirebaseFirestore.instance.collection('users').doc(id).get();
+        await db.collection('users').doc(id).get();
 
     if (documentSnapshot.exists) {
       Map<String, dynamic>? data =
@@ -21,8 +23,7 @@ void readDocument(String id) async {
 
 Future<void> addUser(String name, String ccid, String discipline) async {
   try {
-    DocumentReference documentRef =
-        FirebaseFirestore.instance.collection('users').doc(ccid);
+    DocumentReference documentRef = db.collection('users').doc(ccid);
     await documentRef.set({
       'name': name,
       'discipline': discipline,
@@ -37,10 +38,8 @@ Future<void> addUser(String name, String ccid, String discipline) async {
 
 Future<void> acceptFriendRequest(String userId1, String userId2) async {
   try {
-    DocumentReference userRef1 =
-        FirebaseFirestore.instance.collection('users').doc(userId1);
-    DocumentReference userRef2 =
-        FirebaseFirestore.instance.collection('users').doc(userId2);
+    DocumentReference userRef1 = db.collection('users').doc(userId1);
+    DocumentReference userRef2 = db.collection('users').doc(userId2);
 
     // Add each other to their friends lists
     await userRef1.update({
@@ -65,10 +64,8 @@ Future<void> acceptFriendRequest(String userId1, String userId2) async {
 
 Future<void> sendRecieveRequest(String senderId, String receiverId) async {
   try {
-    DocumentReference senderRef =
-        FirebaseFirestore.instance.collection('users').doc(senderId);
-    DocumentReference receiverRef =
-        FirebaseFirestore.instance.collection('users').doc(receiverId);
+    DocumentReference senderRef = db.collection('users').doc(senderId);
+    DocumentReference receiverRef = db.collection('users').doc(receiverId);
 
     // Add senderId to receiver's friend_requests list
     await receiverRef.update({
@@ -88,7 +85,7 @@ Future<void> sendRecieveRequest(String senderId, String receiverId) async {
 
 Future<void> deleteUser(String id) async {
   try {
-    await FirebaseFirestore.instance
+    await db
         .collection('users') // Specify the collection
         .doc(id) // Specify the document ID
         .delete(); // Delete the document
@@ -100,7 +97,7 @@ Future<void> deleteUser(String id) async {
 
 Future<List<UserModel>> getAllUsers() async {
   try {
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+    QuerySnapshot querySnapshot = await db
         .collection('users') // Specify the Firestore collection
         .get(); // Fetch all documents in the collection
 
@@ -124,7 +121,7 @@ Future<List<UserModel>> getAllUsers() async {
 Future<List<String>> getUserFriends(String userId) async {
   try {
     DocumentSnapshot documentSnapshot =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        await db.collection('users').doc(userId).get();
 
     if (documentSnapshot.exists) {
       Map<String, dynamic>? data =
@@ -150,8 +147,7 @@ Future<List<String>> getUserFriends(String userId) async {
 
 Future<Map<String, dynamic>?> fetchUserData(String userId) async {
   try {
-    DocumentSnapshot userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    DocumentSnapshot userDoc = await db.collection('users').doc(userId).get();
 
     if (userDoc.exists) {
       return userDoc.data() as Map<String, dynamic>;
@@ -166,8 +162,7 @@ Future<Map<String, dynamic>?> fetchUserData(String userId) async {
 
 Future<List<Map<String, dynamic>>> getFriendRequests(String userId) async {
   try {
-    DocumentSnapshot userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    DocumentSnapshot userDoc = await db.collection('users').doc(userId).get();
 
     if (userDoc.exists) {
       Map<String, dynamic>? userData = userDoc.data() as Map<String, dynamic>?;
@@ -183,10 +178,8 @@ Future<List<Map<String, dynamic>>> getFriendRequests(String userId) async {
         // Fetch details for each friend request sender
         List<Map<String, dynamic>> friendRequestsDetails = [];
         for (String requesterId in friendRequestIds) {
-          DocumentSnapshot requesterDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(requesterId)
-              .get();
+          DocumentSnapshot requesterDoc =
+              await db.collection('users').doc(requesterId).get();
 
           if (requesterDoc.exists) {
             Map<String, dynamic>? requesterData =
@@ -214,8 +207,7 @@ Future<List<Map<String, dynamic>>> getFriendRequests(String userId) async {
 
 Future<List<String>> getRequestedFriends(String userId) async {
   try {
-    DocumentSnapshot userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    DocumentSnapshot userDoc = await db.collection('users').doc(userId).get();
 
     if (userDoc.exists) {
       Map<String, dynamic>? userData = userDoc.data() as Map<String, dynamic>?;
@@ -242,7 +234,7 @@ Future<List<String>> getRequestedFriends(String userId) async {
 Future<void> declineFriendRequest(String requesterId, String userId) async {
   try {
     // Remove from friend requests only
-    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+    await db.collection('users').doc(userId).update({
       'friend_requests': FieldValue.arrayRemove([requesterId]),
     });
 
@@ -254,10 +246,8 @@ Future<void> declineFriendRequest(String requesterId, String userId) async {
 
 Future<void> removeFriendFromUsers(String userId1, String userId2) async {
   try {
-    DocumentReference userRef1 =
-        FirebaseFirestore.instance.collection('users').doc(userId1);
-    DocumentReference userRef2 =
-        FirebaseFirestore.instance.collection('users').doc(userId2);
+    DocumentReference userRef1 = db.collection('users').doc(userId1);
+    DocumentReference userRef2 = db.collection('users').doc(userId2);
 
     // Remove each other from their friends lists
     await userRef1.update({
@@ -273,3 +263,51 @@ Future<void> removeFriendFromUsers(String userId1, String userId2) async {
     debugPrint("Error removing friend: $e");
   }
 }
+
+Future<void> addStudySpot({
+  required String name,
+  required String building,
+  required GeoPoint coordinates,
+  required String description,
+  double? rating,
+  int? reviewCount,
+  int? capacity,
+  int? crowdDensity,
+  bool? isOpen,
+  List<String>? amenities,
+  String? imageUrl,
+  List<String>? tags,
+}) async {
+  try {
+    Map<String, dynamic> studySpotData = {
+      'name': name,
+      'building': building,
+      'coordinates': coordinates,
+      'rating': rating,
+      'reviewCount': reviewCount,
+      'description': description,
+      'capacity': capacity,
+      'crowdDensity': crowdDensity,
+      'isOpen': isOpen,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    };
+
+    if (amenities != null) {
+      studySpotData['amenities'] = amenities;
+    }
+    if (imageUrl != null) {
+      studySpotData['imageUrl'] = imageUrl;
+    }
+    if (tags != null) {
+      studySpotData['tags'] = tags;
+    }
+
+    await db.collection('studySpots').add(studySpotData);
+
+    debugPrint("Study spot added successfully!");
+  } catch (e) {
+    debugPrint("Error adding study spot: $e");
+  }
+}
+
+//
