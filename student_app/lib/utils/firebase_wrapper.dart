@@ -25,9 +25,11 @@ Future<void> addUser(String name, String ccid, String discipline) async {
         FirebaseFirestore.instance.collection('users').doc(ccid);
     await documentRef.set({
       'name': name,
+      'email': "$ccid@ualberta.ca",
       'discipline': discipline,
-      'friends': <String>[], // Ensure it's a List<String>
+      'friends': <String>[],
       'friend_requests': <String>[],
+      'requested_friends': <String>[],
     });
     debugPrint("User added with doc ID: $ccid");
   } catch (e) {
