@@ -102,6 +102,25 @@ class MainPageState extends State<MainPage> {
     FriendsPage(),
   ];
 
+
+    // This function will show the location tracking dialog on first login.
+  Future<void> _askLocationTrackingPreference() async {
+    final option = await showLocationTrackingDialog(context);
+    if (option != null) {
+      // For demonstration, we just print the selected option.
+      // Here you might want to update the user's document in Firestore with their preference.
+      print("User selected location tracking: $option");
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _askLocationTrackingPreference();
+    });
+  }
+
   void _onTabTapped(int index) {
     setState(() {
       _currentIndex = index;
@@ -139,4 +158,34 @@ class MainPageState extends State<MainPage> {
       ),
     );
   }
+}
+
+enum LocationTrackingOption {live, onDemand}
+
+//store the users choice of live tracking vs only when active
+Future<LocationTrackingOption?> showLocationTrackingDialog(BuildContext context) {
+  return showDialog<LocationTrackingOption>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text("Location Tracking"),
+        content: const Text(
+            "Do you want your location to be tracked live (continually updated) or only when using the app?"),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(LocationTrackingOption.onDemand);
+            },
+            child: const Text("Only When Using App"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(LocationTrackingOption.live);
+            },
+            child: const Text("Live Tracking"),
+          ),
+        ],
+      );
+    },
+  );
 }
