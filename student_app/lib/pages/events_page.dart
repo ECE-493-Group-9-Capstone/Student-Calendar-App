@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:student_app/user_singleton.dart';
+import 'package:student_app/utils/firebase_wrapper.dart';
 
 class EventsPage extends StatelessWidget {
   const EventsPage({super.key});
