@@ -13,16 +13,19 @@ class AppUser {
   String? _email;
   String? _name;
   String? _discipline;
+  String? _educationLvl;
+  String? _degree;
+  String? _schedule;
   List<UserModel> _friends = [];
   List<Map<String, dynamic>> _friendRequests = [];
   List<String> _requestedFriends = [];
   bool _isLoaded = false;
+  String? _locationTracking;
+  Map<String, dynamic>? _currentLocation;
 
   StreamSubscription<DocumentSnapshot>? _userSubscription;
-
   // Private constructor
   AppUser._internal();
-
   // Factory constructor returns the same instance
   factory AppUser() {
     return _instance;
@@ -32,7 +35,7 @@ class AppUser {
 
   // Initialize AppUser with a Firebase User object
   Future<void> initialize(User firebaseUser) async {
-    if (_isLoaded) return; // Prevent duplicate calls
+    if (_isLoaded) return;
 
     _email = firebaseUser.email;
     _ccid = _email?.split('@')[0] ?? '';
@@ -57,6 +60,11 @@ class AppUser {
     if (userData != null) {
       _name = userData['name'];
       _discipline = userData['discipline'];
+      _educationLvl = userData['education_lvl'];
+      _degree = userData['degree'];
+      _schedule = userData['schedule'];
+      _locationTracking = userData['location_tracking'];
+      _currentLocation = userData['currentLocation']; // Fetch current location
       List<String> proccessedFriends =
           List<String>.from(userData['friends'] ?? []);
       _friends = await _friendProcessor(proccessedFriends);
@@ -81,6 +89,11 @@ class AppUser {
         if (data != null) {
           _name = data['name'];
           _discipline = data['discipline'];
+          _educationLvl = data['education_lvl'];
+          _degree = data['degree'];
+          _schedule = data['schedule'];
+          _locationTracking = data['location_tracking'];
+          _currentLocation = data['currentLocation']; // Update current location
           List<String> proccessedFriends =
               List<String>.from(data['friends'] ?? []);
           _friends = await _friendProcessor(proccessedFriends);
@@ -115,12 +128,17 @@ class AppUser {
     _email = null;
     _name = null;
     _discipline = null;
+    _educationLvl = null;
+    _degree = null;
+    _schedule = null;
     _friends = [];
     _friendRequests = [];
     _isLoaded = false;
     _requestedFriends = [];
     _userSubscription?.cancel();
     _userSubscription = null;
+    _locationTracking = null;
+    _currentLocation = null;
   }
 
   // Getter methods for user data
@@ -129,6 +147,11 @@ class AppUser {
   String? get email => _email;
   String? get name => _name;
   String? get discipline => _discipline;
+  String? get educationLvl => _educationLvl;
+  String? get degree => _degree;
+  String? get schedule => _schedule;
+  String? get locationTracking => _locationTracking;
+  Map<String, dynamic>? get currentLocation => _currentLocation;
   List<UserModel> get friends => _friends;
   List<Map<String, dynamic>> get friendRequests => _friendRequests;
   List<String> get requestedFriends => _requestedFriends;
@@ -185,5 +208,15 @@ class AppUser {
   void logout() {
     FirebaseAuth.instance.signOut();
     _resetUserData();
+    _isLoaded = false;
+  }
+
+  String toString() {
+    return 'AppUser('
+        'ccid: $_ccid, email: $_email, name: $_name, '
+        'discipline: $_discipline, educationLvl: $_educationLvl, '
+        'degree: $_degree, schedule: $_schedule, friends: $_friends, '
+        'friendRequests: $_friendRequests, requestedFriends: $_requestedFriends, '
+        'locationTracking: $_locationTracking, currentLocation: $_currentLocation)';
   }
 }

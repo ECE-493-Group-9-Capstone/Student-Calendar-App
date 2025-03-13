@@ -140,19 +140,18 @@ class FriendsPageState extends State<FriendsPage> {
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.blueAccent,
-                      child: Text(friendName.isNotEmpty
-                          ? friendName[0]
-                          : "?"), // Use "?" as a fallback
+                      child: Text(friendName.isNotEmpty ? friendName[0] : "?"),
                     ),
                     title: Text(friendName),
                     trailing: ElevatedButton(
                       onPressed: () async {
                         await appUser.sendFriendRequest(friendCcid);
-                        // Show a notification when the request is sent
+                        if (!mounted)
+                          return; // Guard against using BuildContext if not mounted.
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text("Friend Request Sent"),
-                            duration: Duration(seconds: 2), // Display time
+                            duration: Duration(seconds: 2),
                           ),
                         );
                       },

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../user_singleton.dart';
 
 class UserNotificationPopup extends StatefulWidget {
-  const UserNotificationPopup({Key? key}) : super(key: key);
+  const UserNotificationPopup({super.key});
 
   @override
   _UserNotificationPopupState createState() => _UserNotificationPopupState();
