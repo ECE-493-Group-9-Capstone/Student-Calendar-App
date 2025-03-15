@@ -112,8 +112,15 @@ class AppUser {
       debugPrint(friends[i]);
       Map<String, dynamic>? userData = await fetchUserData(friends[i]);
       if (userData != null) {
-        UserModel userModel = UserModel(friends[i], userData['name'],
-            userData["email"], userData['discipline']);
+        UserModel userModel = UserModel(
+            friends[i],
+            userData['name'],
+            userData["email"],
+            userData['discipline'],
+            userData["schedule"],
+            userData["education_1v1"],
+            userData["degree"],
+            userData["location_tracking"]);
         userFriends.add(userModel);
       } else {
         debugPrint("No user data found in Firestore!");

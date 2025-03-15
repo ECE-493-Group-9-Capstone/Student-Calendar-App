@@ -116,8 +116,15 @@ Future<List<UserModel>> getAllUsers() async {
         .toList();
 
     for (int i = 0; i < users.length; i++) {
-      UserModel user = UserModel(users[i]["id"], users[i]["name"],
-          users[i]["email"], users[i]["discipline"]);
+      UserModel user = UserModel(
+          users[i]["id"],
+          users[i]["name"],
+          users[i]["email"],
+          users[i]["discipline"],
+          users[i]["schedule"],
+          users[i]["education_1v1"],
+          users[i]["degree"],
+          users[i]["location_tracking"]);
       allUsers.add(user);
     }
     return allUsers;
