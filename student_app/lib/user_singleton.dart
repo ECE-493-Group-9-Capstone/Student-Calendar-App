@@ -118,7 +118,7 @@ class AppUser {
             userData["email"],
             userData['discipline'],
             userData["schedule"],
-            userData["education_1v1"],
+            userData["education_lvl"],
             userData["degree"],
             userData["location_tracking"]);
         userFriends.add(userModel);

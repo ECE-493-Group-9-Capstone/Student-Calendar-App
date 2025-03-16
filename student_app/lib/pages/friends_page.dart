@@ -18,7 +18,6 @@ class FriendsPageState extends State<FriendsPage> {
   TextEditingController searchController = TextEditingController();
   List<UserModel> allUsers = [];
   List<UserModel> filteredUsers = [];
-  List<Map<String, String>> usersFriends = []; // Store friend names + IDs
   List<UserModel> usersFriends1 = [];
 
   @override
@@ -92,6 +91,7 @@ class FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     bool isSearching = searchController.text.isNotEmpty;
+    debugPrint("ben ${usersFriends1.length}");
     return Scaffold(
       appBar: AppBar(
         title: Text('Friends Page'),
