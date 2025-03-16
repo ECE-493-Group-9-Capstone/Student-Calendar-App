@@ -149,7 +149,6 @@ Future<List<String>> getUserFriends(String userId) async {
 
       if (data != null && data.containsKey('friends')) {
         List<String> friends = List<String>.from(data['friends']);
-        debugPrint("User $userId friends: $friends");
         return friends;
       } else {
         debugPrint("User $userId has no friends listed.");
@@ -240,7 +239,6 @@ Future<List<String>> getRequestedFriends(String userId) async {
       if (userData != null && userData.containsKey('requested_friends')) {
         List<String> requestedFriends =
             List<String>.from(userData['requested_friends']);
-        debugPrint("User $userId requested friends: $requestedFriends");
         return requestedFriends;
       } else {
         debugPrint("User $userId has no requested friends field.");

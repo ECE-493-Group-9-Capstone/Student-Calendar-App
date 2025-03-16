@@ -109,7 +109,6 @@ class AppUser {
   Future<List<UserModel>> _friendProcessor(List<String> friends) async {
     List<UserModel> userFriends = [];
     for (int i = 0; i < friends.length; i++) {
-      debugPrint(friends[i]);
       Map<String, dynamic>? userData = await fetchUserData(friends[i]);
       if (userData != null) {
         UserModel userModel = UserModel(
@@ -218,6 +217,7 @@ class AppUser {
     _isLoaded = false;
   }
 
+  @override
   String toString() {
     return 'AppUser('
         'ccid: $_ccid, email: $_email, name: $_name, '

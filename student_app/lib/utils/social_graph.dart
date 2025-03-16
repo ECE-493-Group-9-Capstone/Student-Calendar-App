@@ -5,6 +5,7 @@ import '../utils/user.dart';
 class SocialGraph {
   Map<String, UserModel> users = {}; // Stores all users
   Map<String, List<String>> connections = {}; // Adjacency list of friends
+  Timer? _updateTimer;
 
   static final SocialGraph _instance = SocialGraph._internal();
   factory SocialGraph() => _instance;
@@ -16,10 +17,14 @@ class SocialGraph {
     users.clear();
     connections.clear();
 
+    // Preload users
     for (UserModel user in userList) {
       users[user.ccid] = user;
-      List<String> friends = await getUserFriends(user.ccid);
-      connections[user.ccid] = friends;
+    }
+
+    // Fetch all user connections (optimize by bulk fetching if possible)
+    for (String userId in users.keys) {
+      connections[userId] = await getUserFriends(userId);
     }
   }
 
@@ -29,38 +34,64 @@ class SocialGraph {
 
   List<UserModel> getFriends(String userId) {
     if (!connections.containsKey(userId)) return [];
-    return connections[userId]!.map((id) => users[id]!).toList();
+    return connections[userId]!
+        .map((id) => users[id])
+        .where((user) => user != null)
+        .cast<UserModel>()
+        .toList();
   }
 
-  Future<void> startAutoUpdate(Duration interval) async {
-    Timer.periodic(interval, (timer) async {
+  void startAutoUpdate(Duration interval) {
+    _updateTimer?.cancel(); // Ensure only one timer instance runs
+    _updateTimer = Timer.periodic(interval, (timer) async {
       await updateGraph();
     });
   }
 
+  void stopAutoUpdate() {
+    _updateTimer?.cancel();
+    _updateTimer = null;
+  }
+
   List<UserModel> getFriendRecommendations(String userId) {
     Set<String> recommended = {};
-
     if (!connections.containsKey(userId)) return [];
+
     List<String> friends = connections[userId]!;
 
     // Mutual friends recommendation
+    Map<String, int> mutualFriendCount = {};
+
     for (String friend in friends) {
       for (String mutual in connections[friend] ?? []) {
         if (mutual != userId && !friends.contains(mutual)) {
-          recommended.add(mutual);
+          mutualFriendCount[mutual] = (mutualFriendCount[mutual] ?? 0) + 1;
         }
       }
     }
 
-    // Discipline-based recommendation
+    // Discipline-based recommendation (excluding already connected users)
     String userDiscipline = users[userId]?.discipline ?? "";
     for (UserModel user in users.values) {
-      if (user.ccid != userId && user.discipline == userDiscipline) {
+      if (user.ccid != userId &&
+          user.discipline == userDiscipline &&
+          !friends.contains(user.ccid)) {
         recommended.add(user.ccid);
       }
     }
 
-    return recommended.map((id) => users[id]!).toList();
+    // Prioritize by mutual friends count
+    List<String> sortedRecommendations = mutualFriendCount.keys.toList()
+      ..sort((a, b) => mutualFriendCount[b]!.compareTo(mutualFriendCount[a]!));
+
+    // Merge sorted mutual friends & discipline-based recommendations
+    List<String> finalRecommendations =
+        sortedRecommendations + recommended.toList();
+
+    return finalRecommendations
+        .map((id) => users[id])
+        .where((user) => user != null)
+        .cast<UserModel>()
+        .toList();
   }
 }

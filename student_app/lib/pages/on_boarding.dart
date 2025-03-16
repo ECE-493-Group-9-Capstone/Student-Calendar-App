@@ -125,8 +125,9 @@ class _OnboardingState extends State<Onboarding> {
                             final result = await authService
                                 .loginWithGoogle(); // Call the function
 
-                            if (!mounted)
+                            if (!mounted) {
                               return; // Check immediately after the async call
+                            }
 
                             if (result != null) {
                               ScaffoldMessenger.of(context).showSnackBar(
