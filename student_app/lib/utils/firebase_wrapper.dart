@@ -107,8 +107,8 @@ Future<void> deleteUser(String id) async {
 Future<List<UserModel>> getAllUsers() async {
   try {
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-        .collection('users') // Specify the Firestore collection
-        .get(); // Fetch all documents in the collection
+        .collection('users')
+        .get(); 
 
     List<UserModel> allUsers = [];
     List<Map<String, dynamic>> users = querySnapshot.docs
@@ -116,23 +116,27 @@ Future<List<UserModel>> getAllUsers() async {
         .toList();
 
     for (int i = 0; i < users.length; i++) {
+
       UserModel user = UserModel(
-          users[i]["id"],
-          users[i]["name"],
-          users[i]["email"],
-          users[i]["discipline"],
-          users[i]["schedule"],
-          users[i]["education_1v1"],
-          users[i]["degree"],
-          users[i]["location_tracking"]);
+          users[i]["id"] ?? "Unknown ID",
+          users[i]["name"] ?? "Unknown", 
+          users[i]["email"] ?? "No email",
+          users[i]["discipline"] ?? "No discipline",
+          users[i]["schedule"], // This is nullable now
+          users[i]["education_lvl"] ?? "No education",
+          users[i]["degree"] ?? "No degree",
+          users[i]["location_tracking"] ?? "No tracking");
+
       allUsers.add(user);
     }
     return allUsers;
-  } catch (e) {
+  } catch (e, stacktrace) {
     debugPrint("Error fetching users: $e");
-    return []; // Return an empty list in case of error
+    debugPrint("Stacktrace: $stacktrace"); 
+    return []; 
   }
 }
+
 
 Future<List<String>> getUserFriends(String userId) async {
   try {

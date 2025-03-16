@@ -3,7 +3,7 @@ class UserModel {
   final String _username;
   final String _email;
   final String _discipline;
-  final String _schedule;
+  final String? _schedule;
   final String _educationLvl;
   final String _degree;
   final String _locationTracking;
@@ -24,7 +24,7 @@ class UserModel {
   String get email => _email;
   String get username => _username;
   String get ccid => _ccid;
-  String get schedule => _schedule;
+  String get schedule => _schedule ?? "Null";
   String get educationLv1 => _educationLvl;
   String get degree => _degree;
   String get locationTracking => _locationTracking;
