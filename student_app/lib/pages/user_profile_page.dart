@@ -7,7 +7,7 @@ AppUser appUser = AppUser();
 class UserProfilePopup extends StatelessWidget {
   final String userId;
 
-  const UserProfilePopup({Key? key, required this.userId}) : super(key: key);
+  const UserProfilePopup({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +75,8 @@ class UserProfilePopup extends StatelessWidget {
                     child: Text("Close"),
                   ),
                   ElevatedButton(
-                    onPressed: () => removeFriendFromUsers(ccid, appUser.ccid!), // Close popup
+                    onPressed: () => removeFriendFromUsers(
+                        ccid, appUser.ccid!), // Close popup
                     child: Text("Remove Friend"),
                   ),
                 ],

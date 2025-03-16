@@ -19,17 +19,21 @@ void readDocument(String id) async {
   }
 }
 
-Future<void> addUser(String name, String ccid, String discipline) async {
+Future<void> addUser(String name, String ccid) async {
   try {
     DocumentReference documentRef =
         FirebaseFirestore.instance.collection('users').doc(ccid);
     await documentRef.set({
       'name': name,
       'email': "$ccid@ualberta.ca",
-      'discipline': discipline,
+      'discipline': null,
+      'education_lvl': null,
+      'degree': null,
       'friends': <String>[],
       'friend_requests': <String>[],
       'requested_friends': <String>[],
+      'schedule': null,
+      'hasSeenBottomPopup': false,
     });
     debugPrint("User added with doc ID: $ccid");
   } catch (e) {
@@ -103,8 +107,8 @@ Future<void> deleteUser(String id) async {
 Future<List<UserModel>> getAllUsers() async {
   try {
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-        .collection('users') // Specify the Firestore collection
-        .get(); // Fetch all documents in the collection
+        .collection('users')
+        .get(); 
 
     List<UserModel> allUsers = [];
     List<Map<String, dynamic>> users = querySnapshot.docs
@@ -112,16 +116,27 @@ Future<List<UserModel>> getAllUsers() async {
         .toList();
 
     for (int i = 0; i < users.length; i++) {
-      UserModel user = UserModel(users[i]["id"], users[i]["name"],
-          users[i]["email"], users[i]["discipline"]);
+
+      UserModel user = UserModel(
+          users[i]["id"] ?? "Unknown ID",
+          users[i]["name"] ?? "Unknown", 
+          users[i]["email"] ?? "No email",
+          users[i]["discipline"] ?? "No discipline",
+          users[i]["schedule"], // This is nullable now
+          users[i]["education_lvl"] ?? "No education",
+          users[i]["degree"] ?? "No degree",
+          users[i]["location_tracking"] ?? "No tracking");
+
       allUsers.add(user);
     }
     return allUsers;
-  } catch (e) {
+  } catch (e, stacktrace) {
     debugPrint("Error fetching users: $e");
-    return []; // Return an empty list in case of error
+    debugPrint("Stacktrace: $stacktrace"); 
+    return []; 
   }
 }
+
 
 Future<List<String>> getUserFriends(String userId) async {
   try {
@@ -273,5 +288,94 @@ Future<void> removeFriendFromUsers(String userId1, String userId2) async {
     debugPrint("Users $userId1 and $userId2 are no longer friends.");
   } catch (e) {
     debugPrint("Error removing friend: $e");
+  }
+}
+
+Future<void> addUserSchedule(String userId, String scheduleContent) async {
+  try {
+    DocumentReference documentRef =
+        FirebaseFirestore.instance.collection('users').doc(userId);
+    await documentRef.update({
+      'schedule': scheduleContent, // Save the content of the .ics file
+    });
+    debugPrint("User schedule added for user $userId");
+  } catch (e) {
+    debugPrint("Error adding schedule to user: $e");
+  }
+}
+
+Future<void> markPopupAsSeen(String userId) async {
+  try {
+    DocumentReference documentRef =
+        FirebaseFirestore.instance.collection('users').doc(userId);
+    await documentRef.update({
+      'hasSeenBottomPopup': true,
+    });
+    debugPrint("Popup marked as seen for user $userId");
+  } catch (e) {
+    debugPrint("Error marking popup as seen: $e");
+  }
+}
+
+Future<void> updateUserProfile(
+  String ccid, {
+  String? discipline,
+  String? educationLvl,
+  String? degree,
+}) async {
+  try {
+    DocumentReference documentRef =
+        FirebaseFirestore.instance.collection('users').doc(ccid);
+
+    Map<String, dynamic> data = {};
+    if (discipline != null) data['discipline'] = discipline;
+    if (educationLvl != null) data['education_lvl'] = educationLvl;
+    if (degree != null) data['degree'] = degree;
+
+    await documentRef.update(data);
+    debugPrint("User profile updated for $ccid with data: $data");
+  } catch (e) {
+    debugPrint("Error updating user profile: $e");
+  }
+}
+
+Future<void> updateUserLocationPreference(
+    String ccid, String trackingOption) async {
+  try {
+    DocumentReference docref =
+        FirebaseFirestore.instance.collection('users').doc(ccid);
+    Map<String, dynamic> updates = {};
+
+    // Directly assign because trackingOption can't be null.
+    updates['location_tracking'] = trackingOption;
+
+    // Optionally, you could remove this check as well because updates won't be empty.
+    if (updates.isEmpty) {
+      debugPrint("No location preference provided. Skipping Firestore update.");
+      return;
+    }
+
+    await docref.update(updates);
+    debugPrint("Location preference updated for $ccid: $trackingOption");
+  } catch (e) {
+    debugPrint("Error updating location preference: $e");
+  }
+}
+
+Future<void> updateUserLocation(
+    String ccid, double latitude, double longitude) async {
+  try {
+    DocumentReference docRef =
+        FirebaseFirestore.instance.collection('users').doc(ccid);
+    await docRef.update({
+      'currentLocation': {
+        'lat': latitude,
+        'lng': longitude,
+        'timestamp': FieldValue.serverTimestamp(),
+      }
+    });
+    debugPrint("Location updated for user $ccid");
+  } catch (e) {
+    debugPrint("Error updating location for user $ccid: $e");
   }
 }
