@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:student_app/pages/google_signin.dart';
 import 'package:student_app/main.dart'; // Import AuthWrapper
+import 'package:student_app/user_singleton.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -15,6 +16,7 @@ class HomePage extends StatelessWidget {
             onPressed: () async {
               // Call the logout method
               await AuthService().logout();
+              AppUser.instance.logout();
 
               // Navigate back to AuthWrapper
               Navigator.pushAndRemoveUntil(

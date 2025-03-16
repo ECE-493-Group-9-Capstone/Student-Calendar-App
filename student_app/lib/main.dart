@@ -4,10 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:student_app/pages/events_page.dart';
 import 'package:student_app/pages/friends_page.dart';
 import 'package:student_app/pages/map_page.dart';
-import 'package:student_app/pages/onBoarding.dart';
+import 'package:student_app/pages/on_boarding.dart';
 import 'package:student_app/pages/home_page.dart';
 import 'firebase_options.dart';
 import 'user_singleton.dart';
+import 'utils/firebase_wrapper.dart';
+import 'pages/model/bottom_popup.dart';
+import 'dart:developer' as developer;
+import 'utils/location_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,55 +39,54 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // return const MainPage();
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator()); // Loading state
+          return const Center(child: CircularProgressIndicator()); // Loading
         }
 
-        // If user exists but is not in Firebase, log them out
         if (snapshot.hasData) {
           final user = snapshot.data;
-
-          // Check if the user still exists in Firebase
           return FutureBuilder<bool>(
-            future: _isUserValid(user),
+            future: _ensureUserExists(user),
             builder: (context, asyncSnapshot) {
               if (asyncSnapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator()); // Wait for validation
+                return const Center(child: CircularProgressIndicator());
               }
 
-              // If the user is valid, show the main page
+              // Always call initialize to update AppUser with the current user's data
               if (asyncSnapshot.hasData && asyncSnapshot.data == true) {
                 AppUser.instance.initialize(user!);
                 return const MainPage();
               }
 
-              // Otherwise, log out and redirect to onboarding
-              FirebaseAuth.instance.signOut(); // Log out the invalid user
+              // If user data is invalid, sign out and return onboarding.
+              FirebaseAuth.instance.signOut();
               return const Onboarding();
             },
           );
         }
 
+        // If not logged in
         return const Onboarding();
       },
     );
   }
+}
 
-  /// Helper function to check if a user exists in Firebase
-  Future<bool> _isUserValid(User? user) async {
-    if (user == null) return false;
-    try {
-      final idTokenResult = await user.getIdTokenResult(true);
-      // ignore: unnecessary_null_comparison
-      return idTokenResult != null; 
-    } catch (e) {
-      return false; 
-    }
+/// Helper function to check if a user exists in Firebase
+Future<bool> _ensureUserExists(User? user) async {
+  if (user == null) return false;
+  try {} catch (e) {
+    return false;
   }
+  final String ccid = user.email?.split('@')[0] ?? user.uid;
+  final firestoreData = await fetchUserData(ccid);
+  if (firestoreData == null) {
+    await addUser(user.displayName ?? "New User", ccid);
+  }
+  return true;
 }
 
 class MainPage extends StatefulWidget {
@@ -104,6 +107,81 @@ class MainPageState extends State<MainPage> {
     FriendsPage(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final ccid = AppUser.instance.ccid;
+      developer.log(ccid ?? 'ccid is null', name: 'AppUser');
+
+      if (ccid != null) {
+        // Fetch the user data from Firestore
+        final userData = await fetchUserData(ccid);
+        if (userData != null) {
+          final bool hasSeenPopup = userData['hasSeenBottomPopup'] ?? false;
+          if (!hasSeenPopup) {
+            final String firstName =
+                (AppUser.instance.name ?? 'Guest').split(' ').first;
+            developer.log(firstName, name: 'AppUser');
+
+            await showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              isDismissible: false,
+              enableDrag: false,
+              backgroundColor: Colors.transparent,
+              builder: (context) => BottomPopup(userName: firstName),
+            );
+
+            // Log the user after the popup is done
+            developer.log("AFTER bottom popup: ${AppUser.instance.toString()}",
+                name: 'MainPageState');
+
+            // Mark as seen
+            await markPopupAsSeen(ccid);
+
+            // Now that the user has chosen their location preference in the popup,
+            // let's apply it.
+            // (They might have chosen "Live Tracking" or "Only When Using App".)
+            _applyLocationTracking();
+          } else {
+            // If they've seen the popup before, we can also apply tracking here
+            // in case user preference is stored from a previous session.
+            _applyLocationTracking();
+          }
+        }
+      }
+    });
+  }
+
+  /// This method checks AppUser's location tracking and starts the relevant approach.
+  void _applyLocationTracking() {
+    final trackingPref = AppUser.instance.locationTracking;
+    developer.log("Applying location tracking preference: $trackingPref",
+        name: 'MainPageState');
+
+    // Hypothetical approach using a "LocationTrackingService".
+    // If you haven't created one, adapt to your real code.
+    // Stop any existing tracking first, to avoid duplication.
+    LocationTrackingService().stopTracking();
+
+    if (trackingPref == "Live Tracking") {
+      // Start background/continuous tracking
+      LocationTrackingService().startLiveTracking();
+    } else if (trackingPref == "Only When Using App") {
+      // Start foreground-only tracking
+      // If you REALLY only want it while user is in the foreground,
+      // you might also track app lifecycle events (didChangeAppLifecycleState)
+      // and stop tracking in the background.
+      LocationTrackingService().startForegroundTracking();
+    } else {
+      // "No Preference" or user hasn't chosen -> do nothing
+      developer.log("No valid location preference set; not tracking location.",
+          name: 'MainPageState');
+    }
+  }
+
   void _onTabTapped(int index) {
     setState(() {
       _currentIndex = index;
@@ -121,22 +199,10 @@ class MainPageState extends State<MainPage> {
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: 'Map',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.event),
-            label: "Events",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: "Friends",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
+          BottomNavigationBarItem(icon: Icon(Icons.event), label: "Events"),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: "Friends"),
         ],
       ),
     );

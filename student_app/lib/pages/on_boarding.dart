@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:student_app/pages/google_signin.dart';
 
-
 class Onboarding extends StatefulWidget {
   const Onboarding({super.key});
 
@@ -56,7 +55,8 @@ class _OnboardingState extends State<Onboarding> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(top: 40.0, left: 20.0, right: 20.0),
+                      padding: const EdgeInsets.only(
+                          top: 40.0, left: 20.0, right: 20.0),
                       child: ShaderMask(
                         shaderCallback: (bounds) => LinearGradient(
                           colors: [
@@ -97,7 +97,7 @@ class _OnboardingState extends State<Onboarding> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 40.0),
                       child: Container(
-                        height: 60.0, 
+                        height: 60.0,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
@@ -111,52 +111,57 @@ class _OnboardingState extends State<Onboarding> {
                           borderRadius: BorderRadius.circular(30.0),
                         ),
                         child: ElevatedButton(
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.transparent, // Make the button background transparent
-    shadowColor: Colors.transparent, 
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(30.0),
-    ),
-  ),
-  onPressed: () async {
-    final authService = AuthService(); // Create an instance of AuthService
-    final result = await authService.loginWithGoogle(); // Call the function
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors
+                                .transparent, // Make the button background transparent
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.0),
+                            ),
+                          ),
+                          onPressed: () async {
+                            final authService =
+                                AuthService(); // Create an instance of AuthService
+                            final result = await authService
+                                .loginWithGoogle(); // Call the function
 
-    if (mounted) {
-      if (result != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result),
-            backgroundColor: result.startsWith("Welcome") ? Colors.green : Colors.red,
-          ),
-        );
-      }
-    }
-  },
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      Image.asset(
-        "images/google.png", 
-        height: 24.0,
-        width: 24.0,
-      ),
-      SizedBox(width: 10.0),
-      Text(
-        "Sign in with Google",
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ],
-  ),
-),
+                            if (!mounted)
+                              return; // Check immediately after the async call
 
+                            if (result != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(result),
+                                  backgroundColor: result.startsWith("Welcome")
+                                      ? Colors.green
+                                      : Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(
+                                "images/google.png",
+                                height: 24.0,
+                                width: 24.0,
+                              ),
+                              SizedBox(width: 10.0),
+                              Text(
+                                "Sign in with Google",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                    Spacer(), 
+                    Spacer(),
                   ],
                 ),
               ),

@@ -75,7 +75,8 @@ class UserProfilePopup extends StatelessWidget {
                     child: Text("Close"),
                   ),
                   ElevatedButton(
-                    onPressed: () => removeFriendFromUsers(ccid, appUser.ccid!), // Close popup
+                    onPressed: () => removeFriendFromUsers(
+                        ccid, appUser.ccid!), // Close popup
                     child: Text("Remove Friend"),
                   ),
                 ],
