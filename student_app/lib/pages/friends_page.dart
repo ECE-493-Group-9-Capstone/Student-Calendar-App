@@ -91,7 +91,6 @@ class FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     bool isSearching = searchController.text.isNotEmpty;
-    debugPrint("ben ${usersFriends1.length}");
     return Scaffold(
       appBar: AppBar(
         title: Text('Friends Page'),
@@ -146,8 +145,9 @@ class FriendsPageState extends State<FriendsPage> {
                     trailing: ElevatedButton(
                       onPressed: () async {
                         await appUser.sendFriendRequest(friendCcid);
-                        if (!mounted)
+                        if (!mounted) {
                           return; // Guard against using BuildContext if not mounted.
+                        }
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text("Friend Request Sent"),

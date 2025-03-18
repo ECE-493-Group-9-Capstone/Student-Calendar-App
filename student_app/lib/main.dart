@@ -12,12 +12,15 @@ import 'utils/firebase_wrapper.dart';
 import 'pages/model/bottom_popup.dart';
 import 'dart:developer' as developer;
 import 'utils/location_service.dart';
+import 'utils/social_graph.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await SocialGraph().buildGraph();
+  SocialGraph().startAutoUpdate(Duration(minutes: 5));
   runApp(const MyApp());
 }
 
