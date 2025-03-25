@@ -16,8 +16,11 @@ class AppUser {
   String? _degree;
   String? _schedule; 
   List<UserModel> _friends = [];
+  final ValueNotifier<List<UserModel>> friendsNotifier = ValueNotifier([]);
   List<Map<String, dynamic>> _friendRequests = [];
   List<String> _requestedFriends = [];
+  final ValueNotifier<List<Map<String, dynamic>>> friendRequestsNotifier = ValueNotifier([]);
+
   bool _isLoaded = false;
   String? _locationTracking;
   Map<String, dynamic>? _currentLocation; 
@@ -65,7 +68,9 @@ class AppUser {
       _currentLocation = userData['currentLocation']; // current location
       List<String> processedFriends = List<String>.from(userData['friends'] ?? []);
       _friends = await _friendProcessor(processedFriends);
+      friendsNotifier.value = List.from(_friends);
       _friendRequests = await getFriendRequests(_ccid!);
+      friendRequestsNotifier.value = List.from(_friendRequests);
       _requestedFriends = await getRequestedFriends(_ccid!);
       debugPrint("User Data Loaded: $_name, $_discipline, Friends: $_friends");
     } else {
@@ -90,7 +95,11 @@ class AppUser {
           _photoURL = data['photoURL'];
           List<String> processedFriends = List<String>.from(data['friends'] ?? []);
           _friends = await _friendProcessor(processedFriends);
+          friendsNotifier.value = List.from(_friends);
+
           _friendRequests = await getFriendRequests(_ccid!);
+          friendRequestsNotifier.value = List.from(_friendRequests);
+
           _requestedFriends = await getRequestedFriends(_ccid!);
         }
         debugPrint("User data updated in real-time: $_name, $_discipline, Friends: $_friends");
