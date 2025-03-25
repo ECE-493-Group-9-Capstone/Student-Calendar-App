@@ -120,26 +120,28 @@ class _OnboardingState extends State<Onboarding> {
                             ),
                           ),
                           onPressed: () async {
-                            final authService =
-                                AuthService(); // Create an instance of AuthService
-                            final result = await authService
-                                .loginWithGoogle(); // Call the function
-
-                            if (!mounted) {
-                              return; // Check immediately after the async call
-                            }
-
+                            final authService = AuthService();
+                            final result = await authService.loginWithGoogle();
+                            if (!mounted) return;
                             if (result != null) {
+                              // Extract the displayName from the result Map.
+                              final displayName = result['displayName'] ?? "New User";
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(result),
-                                  backgroundColor: result.startsWith("Welcome")
-                                      ? Colors.green
-                                      : Colors.red,
+                                  content: Text("Welcome, $displayName!"),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Sign in failed"),
+                                  backgroundColor: Colors.red,
                                 ),
                               );
                             }
                           },
+
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

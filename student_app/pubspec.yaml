@@ -47,7 +47,15 @@ dependencies:
   permission_handler: ^11.4.0
   app_settings: ^5.2.0
   flutter_svg: ^2.0.17
-  geolocator: ^13.0.2
+  geolocator: ^13.0.3
+  curved_navigation_bar: ^1.0.6
+  convex_bottom_bar: ^3.2.0
+  path_provider: ^2.1.5
+  url_launcher: ^6.3.1
+
+
+
+  
 
 
 
@@ -79,6 +87,8 @@ flutter:
     - images/BearBuddyLogo.PNG
     - images/google.png
     - assets/bear-wave-ezgif.com-gif-maker (1).gif
+    - assets/marker_asset.png
+    - assets/Google_Maps_icon_(2015-2020).png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

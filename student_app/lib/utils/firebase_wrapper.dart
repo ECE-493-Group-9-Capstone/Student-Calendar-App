@@ -19,13 +19,14 @@ void readDocument(String id) async {
   }
 }
 
-Future<void> addUser(String name, String ccid) async {
+Future<void> addUser(String name, String ccid,  {String? photoURL}) async {
   try {
     DocumentReference documentRef =
         FirebaseFirestore.instance.collection('users').doc(ccid);
     await documentRef.set({
       'name': name,
       'email': "$ccid@ualberta.ca",
+      'photoURL': photoURL,
       'discipline': null,
       'education_lvl': null,
       'degree': null,
@@ -106,9 +107,8 @@ Future<void> deleteUser(String id) async {
 
 Future<List<UserModel>> getAllUsers() async {
   try {
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .get(); 
+    QuerySnapshot querySnapshot =
+        await FirebaseFirestore.instance.collection('users').get(); 
 
     List<UserModel> allUsers = [];
     List<Map<String, dynamic>> users = querySnapshot.docs
@@ -116,17 +116,18 @@ Future<List<UserModel>> getAllUsers() async {
         .toList();
 
     for (int i = 0; i < users.length; i++) {
-
       UserModel user = UserModel(
-          users[i]["id"] ?? "Unknown ID",
-          users[i]["name"] ?? "Unknown", 
-          users[i]["email"] ?? "No email",
-          users[i]["discipline"] ?? "No discipline",
-          users[i]["schedule"], // This is nullable now
-          users[i]["education_lvl"] ?? "No education",
-          users[i]["degree"] ?? "No degree",
-          users[i]["location_tracking"] ?? "No tracking");
-
+        users[i]["id"] ?? "Unknown ID",                    // ccid
+        users[i]["name"] ?? "Unknown",                     // username
+        users[i]["email"] ?? "No email",                   // email
+        users[i]["discipline"] ?? "No discipline",         // discipline
+        users[i]["schedule"],                              // schedule (nullable)
+        users[i]["education_lvl"] ?? "No education",       // educationLvl
+        users[i]["degree"] ?? "No degree",                 // degree
+        users[i]["location_tracking"] ?? "No tracking",    // locationTracking
+        users[i]["photoURL"] ?? "",                        // photoURL (nullable)
+        users[i]["currentLocation"]                        // currentLocation (Map or null)
+      );
       allUsers.add(user);
     }
     return allUsers;
@@ -136,6 +137,8 @@ Future<List<UserModel>> getAllUsers() async {
     return []; 
   }
 }
+
+
 
 
 Future<List<String>> getUserFriends(String userId) async {
@@ -294,7 +297,7 @@ Future<void> addUserSchedule(String userId, String scheduleContent) async {
     DocumentReference documentRef =
         FirebaseFirestore.instance.collection('users').doc(userId);
     await documentRef.update({
-      'schedule': scheduleContent, // Save the content of the .ics file
+      'schedule': scheduleContent,
     });
     debugPrint("User schedule added for user $userId");
   } catch (e) {
@@ -375,5 +378,18 @@ Future<void> updateUserLocation(
     debugPrint("Location updated for user $ccid");
   } catch (e) {
     debugPrint("Error updating location for user $ccid: $e");
+  }
+}
+
+Future<void> updateUserPhoto(String ccid, String photoURL) async {
+  try {
+    DocumentReference docRef =
+        FirebaseFirestore.instance.collection('users').doc(ccid);
+    await docRef.update({
+      'photoURL': photoURL,  // <-- Updates the user's profile image URL
+    });
+    debugPrint("User photo updated for $ccid");
+  } catch (e) {
+    debugPrint("Error updating user photo: $e");
   }
 }
