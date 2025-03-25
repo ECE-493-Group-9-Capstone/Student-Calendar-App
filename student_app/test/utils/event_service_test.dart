@@ -41,5 +41,21 @@ void main() {
       expect(events.length, 1);
       expect(events.first['location'], 'Calgary');
     });
+
+    test('edit event shows update', () async {
+      final date = DateTime(2025, 3, 15);
+      final events = await eventService.getEventsByDate(date);
+      expect(events.length, 1);
+      expect(events.first['name'], 'Test Event 1');
+
+      final eventId = events.first['id'];
+      await fakeFirestore.collection('events').doc(eventId).update({
+        'name': 'Updated Event',
+      });
+
+      final updatedEvents = await eventService.getEventsByDate(date);
+      expect(updatedEvents.length, 1);
+      expect(updatedEvents.first['name'], 'Updated Event');
+    });
   });
 }

@@ -58,4 +58,13 @@ class EventService {
       return [];
     }
   }
+
+  // edit event field
+  Future<void> editEvent(String id, String field, dynamic value) async {
+    try {
+      await firestore.collection('events').doc(id).update({field: value});
+    } catch (e) {
+      debugPrint("Error editing event: $e");
+    }
+  }
 }
