@@ -3,12 +3,14 @@ import 'dart:ui'; // If needed
 import 'package:flutter/material.dart';
 import 'package:custom_info_window/custom_info_window.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'maps_bottom_sheet.dart';
 import 'package:student_app/user_singleton.dart';
 import 'model/map_style.dart';
 import 'package:student_app/utils/marker_utils.dart';
-import 'package:url_launcher/url_launcher.dart'; // For launching external URLs
+import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:student_app/utils/event_service.dart';
+import 'maps_bottom_sheet.dart';
+import 'package:intl/intl.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -16,6 +18,8 @@ class MapPage extends StatefulWidget {
   @override
   MapPageState createState() => MapPageState();
 }
+
+// Optional helper to track friend marker + last update time
 class _FriendMarker {
   Marker marker;
   DateTime? lastUpdated;
@@ -23,60 +27,81 @@ class _FriendMarker {
 }
 
 final Map<String, _FriendMarker> _friendMarkers = {};
+
 class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   GoogleMapController? _controller;
   final CustomInfoWindowController _customInfoWindowController =
       CustomInfoWindowController();
 
   late CameraPosition _initialCameraPosition;
-  late CameraPosition _currentCameraPosition; // To track current camera position
+  late CameraPosition _currentCameraPosition;
 
-  // Markers and icon maps
+  // All markers (friend + event) are stored here
   final Map<MarkerId, Marker> _markers = {};
+
+  // Friend icon assets (from marker_utils)
   final Map<String, BitmapDescriptor> _circleIcons = {};
   final Map<String, BitmapDescriptor> _pinIcons = {};
   final Map<String, MemoryImage> _circleMemoryImages = {};
-  final ValueNotifier<Map<String, DateTime?>> _lastUpdatedNotifier = ValueNotifier({});
 
-
-  
-
-  Timer? _refreshTimer; // Optional periodic refresh
-  // Map to store friend document subscriptions (keyed by friend ccid)
+  // Real-time location updates for friends
   final Map<String, StreamSubscription<DocumentSnapshot>> _friendSubscriptions = {};
+  final ValueNotifier<Map<String, DateTime?>> _lastUpdatedNotifier =
+      ValueNotifier({});
+
+  // Timer for optional periodic refresh
+  Timer? _refreshTimer;
+
+  // Single event marker icon for all events
+  BitmapDescriptor? _eventMarkerIcon;
+
+  // Store list of events for bottom sheet display
+  List<dynamic> _events = [];
+
+  // NEW: DraggableScrollableController required by updated MapsBottomSheet
+  final DraggableScrollableController _draggableController = DraggableScrollableController();
 
   @override
   void initState() {
     super.initState();
 
-    // Use user singleton's current location if available,
-    // otherwise use a fallback location.
-    if (AppUser.instance.currentLocation != null &&
-        AppUser.instance.currentLocation!['lat'] != null &&
-        AppUser.instance.currentLocation!['lng'] != null) {
-      double lat = AppUser.instance.currentLocation!['lat'];
-      double lng = AppUser.instance.currentLocation!['lng'];
-      _initialCameraPosition =
-          CameraPosition(target: LatLng(lat, lng), zoom: 15.0);
+    // Decide initial camera position
+    if (AppUser.instance.currentLocation != null) {
+      final lat = AppUser.instance.currentLocation!['lat'];
+      final lng = AppUser.instance.currentLocation!['lng'];
+      if (lat != null && lng != null) {
+        _initialCameraPosition = CameraPosition(target: LatLng(lat, lng), zoom: 15.0);
+      } else {
+        _initialCameraPosition = _fallbackPosition();
+      }
     } else {
-      _initialCameraPosition = const CameraPosition(
-        target: LatLng(53.522518, -113.530457),
-        zoom: 15.0,
-      );
+      _initialCameraPosition = _fallbackPosition();
     }
-    // Initialize current camera position with the initial one.
     _currentCameraPosition = _initialCameraPosition;
 
+    // Once the widget is laid out, load data & markers
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _loadMarkerIcons();
-      _addFriendMarkers();
-      _updateFriendSubscriptions(); // Create real-time listeners for friends
-      // Optional: also use a periodic refresh as fallback.
+      await _loadFriendIcons();  // Circle & Pin from marker_utils for friends
+      await _loadEventIcon();    // Single local asset for events
+
+      await _addFriendMarkers();
+      await _addEventMarkers();  // Show event markers and update _events
+
+      _updateFriendSubscriptions(); // Real-time friend updates
+
+      // Optionally refresh everything every 10s
       _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         refreshMarkers();
         _updateFriendSubscriptions();
       });
     });
+  }
+
+  CameraPosition _fallbackPosition() {
+    return const CameraPosition(
+      target: LatLng(53.522518, -113.530457),
+      zoom: 15.0,
+    );
   }
 
   @override
@@ -89,15 +114,18 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     super.dispose();
   }
 
-  /// Refreshes friend markers by reloading icons and re-adding markers.
+  /// Re-runs friend icon logic and event logic (if needed)
   Future<void> refreshMarkers() async {
-    await _loadMarkerIcons();
-    _addFriendMarkers();
+    await _loadFriendIcons();
+    await _addFriendMarkers();
+    await _addEventMarkers();
   }
 
-  /// Pre-load marker icons and store the images.
-  Future<void> _loadMarkerIcons() async {
-    final friends = AppUser.instance.friends; // list of friend objects
+  // --------------------------------------------------
+  //  FRIENDS: Load circle + pin icons from marker_utils
+  // --------------------------------------------------
+  Future<void> _loadFriendIcons() async {
+    final friends = AppUser.instance.friends;
     for (var friend in friends) {
       final photoUrl = friend.photoURL;
       if (photoUrl != null && photoUrl.isNotEmpty) {
@@ -105,11 +133,13 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
           final circleBytes = await createCircleImageBytes(photoUrl, 80);
           final circleMemoryImage = MemoryImage(circleBytes);
           final circleIcon = BitmapDescriptor.fromBytes(circleBytes);
+
           final pinIcon = await getPinMarkerIcon(
             photoUrl,
             pinWidth: 100,
             pinAssetPath: 'assets/marker_asset.png',
           );
+
           _circleMemoryImages[friend.ccid] = circleMemoryImage;
           _circleIcons[friend.ccid] = circleIcon;
           _pinIcons[friend.ccid] = pinIcon;
@@ -125,17 +155,34 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     }
   }
 
-  /// Adds markers using the circle icon by default.
-  void _addFriendMarkers() {
+  // -------------------------------------
+  //  EVENTS: Single local asset for icon
+  // -------------------------------------
+  Future<void> _loadEventIcon() async {
+    if (_eventMarkerIcon != null) return;
+
+    try {
+      _eventMarkerIcon = await getResizedMarkerIcon('assets/event_marker.png', 80, 80);
+      debugPrint("Successfully loaded event_marker.png as custom marker");
+    } catch (e) {
+      debugPrint("Error loading event marker icon: $e");
+      _eventMarkerIcon = BitmapDescriptor.defaultMarker;
+    }
+  }
+
+  // ---------------------
+  //  FRIEND MARKER LOGIC
+  // ---------------------
+  Future<void> _addFriendMarkers() async {
     final friends = AppUser.instance.friends;
     for (var friend in friends) {
       final lat = friend.currentLocation?['lat'];
       final lng = friend.currentLocation?['lng'];
       if (lat == null || lng == null) continue;
+
       final markerId = MarkerId(friend.ccid);
-      final circleIcon =
-          _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
-      debugPrint("Creating marker for friend ${friend.ccid} with icon $circleIcon");
+      final circleIcon = _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
+
       final marker = Marker(
         markerId: markerId,
         position: LatLng(lat, lng),
@@ -143,31 +190,200 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         onTap: () {
           _switchToPinIcon(markerId, friend);
           _controller?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
-          final MemoryImage? circleMemoryImage = _circleMemoryImages[friend.ccid];
+          // Removed friend info window.
+        },
+      );
+
+      _markers[markerId] = marker;
+    }
+    setState(() {});
+  }
+
+  /// Switch from circle icon to pin icon for a friend
+  void _switchToPinIcon(MarkerId markerId, dynamic friend) {
+    final oldMarker = _markers[markerId];
+    if (oldMarker == null) return;
+    final newIcon = _pinIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
+    final updatedMarker = oldMarker.copyWith(iconParam: newIcon);
+    setState(() {
+      _markers[markerId] = updatedMarker;
+    });
+  }
+
+  /// Reset all friend markers to circle icons
+  void _resetAllMarkersToCircle() {
+    final friends = AppUser.instance.friends;
+    for (var friend in friends) {
+      final markerId = MarkerId(friend.ccid);
+      final oldMarker = _markers[markerId];
+      if (oldMarker == null) continue;
+      final circleIcon = _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
+      final updatedMarker = oldMarker.copyWith(iconParam: circleIcon);
+      _markers[markerId] = updatedMarker;
+    }
+    setState(() {});
+  }
+
+  // ------------------
+  //  EVENT MARKERS
+  // ------------------
+  Future<void> _addEventMarkers() async {
+    if (_eventMarkerIcon == null) return;
+
+    final eventService = EventService(firestore: FirebaseFirestore.instance);
+    final allEvents = await eventService.getAllEvents();
+
+    // Save events to state for bottom sheet display.
+    _events = allEvents;
+
+    for (var event in allEvents) {
+      final coords = event['coordinates'] as Map<String, dynamic>?;
+      if (coords == null) continue;
+
+      final lat = coords['lat'] as double?;
+      final lng = coords['lng'] as double?;
+      if (lat == null || lng == null) continue;
+
+      final markerId = MarkerId("event_${event['id']}");
+      final marker = Marker(
+        markerId: markerId,
+        position: LatLng(lat, lng),
+        icon: _eventMarkerIcon!, // single local asset for all events
+        onTap: () {
+          final eventLatLng = LatLng(lat, lng);
+          _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
+          // Show the event info window with a white background and gradient border.
           _customInfoWindowController.addInfoWindow!(
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
+  Container(
+    padding: const EdgeInsets.all(2), // border thickness
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [
+          Color(0xFF396548),
+          Color(0xFF6B803D),
+          Color(0xFF909533),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title
+            Text(
+              event['title'] ?? 'Event Title',
+              style: const TextStyle(
                 color: Colors.black,
-                borderRadius: BorderRadius.circular(8),
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+            ),
+            const SizedBox(height: 4),
+            // Location row
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
                 children: [
-                  circleMemoryImage != null
-                      ? CircleAvatar(backgroundImage: circleMemoryImage)
-                      : (friend.photoURL != null && friend.photoURL!.isNotEmpty)
-                          ? CircleAvatar(backgroundImage: NetworkImage(friend.photoURL!))
-                          : CircleAvatar(child: Text(friend.username[0])),
-                  const SizedBox(height: 4),
-                  Text(friend.username, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(friend.discipline),
+                  const TextSpan(
+                    text: "Location: ",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(
+                    text: event['location'] ?? 'Unknown',
+                  ),
                 ],
               ),
             ),
-            LatLng(lat, lng),
-          );
+            const SizedBox(height: 4),
+            // Date & Time processing
+            Builder(
+              builder: (context) {
+                // Process the date value
+                final dynamic dateValue = event['date'];
+                DateTime eventDate;
+                try {
+                  eventDate = dateValue is Timestamp
+                      ? dateValue.toDate()
+                      : DateTime.parse(dateValue.toString());
+                } catch (e) {
+                  debugPrint('Error parsing event date: $e');
+                  eventDate = DateTime.now();
+                }
+                final String formattedDate =
+                    DateFormat('MMMM dd, yyyy').format(eventDate);
+
+                // Process the time values
+                final startTimeStr = event['start_time'] ?? '00:00:00';
+                final endTimeStr = event['end_time'] ?? '00:00:00';
+                DateTime parsedStart;
+                DateTime parsedEnd;
+                try {
+                  parsedStart = DateFormat('HH:mm:ss').parse(startTimeStr);
+                  parsedEnd = DateFormat('HH:mm:ss').parse(endTimeStr);
+                } catch (e) {
+                  debugPrint('Error parsing event times: $e');
+                  parsedStart = DateTime(0);
+                  parsedEnd = DateTime(0);
+                }
+                if (parsedEnd.isBefore(parsedStart)) {
+                  parsedEnd = parsedEnd.add(const Duration(days: 1));
+                }
+                final formattedStart =
+                    DateFormat('h:mma').format(parsedStart).toLowerCase();
+                final formattedEnd =
+                    DateFormat('h:mma').format(parsedEnd).toLowerCase();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Date row
+                    RichText(
+                      text: TextSpan(
+                        style:
+                            const TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          const TextSpan(
+                              text: "Date: ",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          TextSpan(text: formattedDate),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Time row
+                    RichText(
+                      text: TextSpan(
+                        style:
+                            const TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          const TextSpan(
+                              text: "Time: ",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          TextSpan(text: "$formattedStart - $formattedEnd"),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+  eventLatLng,
+);
+
+
         },
       );
       _markers[markerId] = marker;
@@ -175,132 +391,85 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     setState(() {});
   }
 
-  /// Switch a marker to its pin icon.
-  void _switchToPinIcon(MarkerId markerId, dynamic friend) {
-    final oldMarker = _markers[markerId];
-    if (oldMarker == null) return;
-    final newIcon = _pinIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
-    debugPrint("Switching ${friend.ccid} to pin icon: $newIcon");
-    final updatedMarker = oldMarker.copyWith(iconParam: newIcon);
-    setState(() {
-      _markers[markerId] = updatedMarker;
-    });
-  }
+  // ----------------------------------------
+  //  FRIEND REAL-TIME LOCATION SUBSCRIPTIONS
+  // ----------------------------------------
+  void _updateFriendSubscriptions() {
+    final friendIds = AppUser.instance.friends.map((f) => f.ccid).toSet();
 
-  /// Revert all markers to circle icons.
-  void _resetAllMarkersToCircle() {
-    final friends = AppUser.instance.friends;
-    for (var friend in friends) {
-      final markerId = MarkerId(friend.ccid);
-      final oldMarker = _markers[markerId];
-      if (oldMarker == null) continue;
-      final circleIcon =
-          _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
-      final updatedMarker = oldMarker.copyWith(iconParam: circleIcon);
-      _markers[markerId] = updatedMarker;
-    }
-    setState(() {});
-  }
-
- void _updateFriendSubscriptions() {
-  final currentIds = AppUser.instance.friends.map((f) => f.ccid).toSet();
-
-  // Cancel obsolete
-  _friendSubscriptions.keys
-      .where((id) => !currentIds.contains(id))
-      .toList()
-      .forEach((id) {
-    _friendSubscriptions.remove(id)?.cancel();
-    _friendMarkers.remove(id);
-    _markers.remove(MarkerId(id));
-    setState(() {});
-  });
-
- for (final friend in AppUser.instance.friends) {
-  if (_friendSubscriptions.containsKey(friend.ccid)) continue;
-
-  final sub = FirebaseFirestore.instance
-      .collection('users')
-      .doc(friend.ccid)
-      .snapshots()
-      .listen((doc) {
-    if (!doc.exists) return;
-    final data = doc.data()!;
-    final loc = data['currentLocation'] as Map<String, dynamic>?;
-
-    // Update “last updated” notifier immediately (even if loc is null)
-    final timestamp = loc != null
-        ? (loc['timestamp'] as Timestamp?)?.toDate()
-        : null;
-    _lastUpdatedNotifier.value = {
-      ..._lastUpdatedNotifier.value,
-      friend.ccid: timestamp,
-    };
-
-    // Only proceed if lat/lng are valid
-    if (loc == null || loc['lat'] == null || loc['lng'] == null) return;
-
-    final newPos = LatLng(loc['lat'], loc['lng']);
-    final markerId = MarkerId(friend.ccid);
-    final existing = _friendMarkers[friend.ccid];
-
-    if (existing != null) {
-      if (existing.marker.position != newPos) {
-        final updatedMarker = existing.marker.copyWith(positionParam: newPos);
-        _friendMarkers[friend.ccid] = _FriendMarker(updatedMarker, lastUpdated: timestamp);
-        _markers[markerId] = updatedMarker;
-        setState(() {});
-      }
-    } else {
-      final icon = _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
-      final newMarker = Marker(
-        markerId: markerId,
-        position: newPos,
-        icon: icon,
-        onTap: () => _showInfoWindow(friend.ccid, newPos, timestamp),
-      );
-      _friendMarkers[friend.ccid] = _FriendMarker(newMarker, lastUpdated: timestamp);
-      _markers[markerId] = newMarker;
+    _friendSubscriptions.keys
+        .where((id) => !friendIds.contains(id))
+        .toList()
+        .forEach((id) {
+      _friendSubscriptions.remove(id)?.cancel();
+      _friendMarkers.remove(id);
+      _markers.remove(MarkerId(id));
       setState(() {});
+    });
+
+    for (final friend in AppUser.instance.friends) {
+      if (_friendSubscriptions.containsKey(friend.ccid)) continue;
+
+      final sub = FirebaseFirestore.instance
+          .collection('users')
+          .doc(friend.ccid)
+          .snapshots()
+          .listen((doc) {
+        if (!doc.exists) return;
+        final data = doc.data()!;
+        final loc = data['currentLocation'] as Map<String, dynamic>?;
+
+        final timestamp = loc != null
+            ? (loc['timestamp'] as Timestamp?)?.toDate()
+            : null;
+
+        _lastUpdatedNotifier.value = {
+          ..._lastUpdatedNotifier.value,
+          friend.ccid: timestamp,
+        };
+
+        if (loc == null || loc['lat'] == null || loc['lng'] == null) return;
+        final newPos = LatLng(loc['lat'], loc['lng']);
+        final markerId = MarkerId(friend.ccid);
+        final existing = _friendMarkers[friend.ccid];
+
+        if (existing != null) {
+          if (existing.marker.position != newPos) {
+            final updatedMarker = existing.marker.copyWith(positionParam: newPos);
+            _friendMarkers[friend.ccid] = _FriendMarker(updatedMarker, lastUpdated: timestamp);
+            _markers[markerId] = updatedMarker;
+            setState(() {});
+          }
+        } else {
+          final icon = _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
+          final newMarker = Marker(
+            markerId: markerId,
+            position: newPos,
+            icon: icon,
+            onTap: () {
+              // For friends, simply animate the camera without showing an info window.
+              _controller?.animateCamera(CameraUpdate.newLatLngZoom(newPos, 16));
+              _resetAllMarkersToCircle();
+            },
+          );
+
+          _friendMarkers[friend.ccid] = _FriendMarker(newMarker, lastUpdated: timestamp);
+          _markers[markerId] = newMarker;
+          setState(() {});
+        }
+      });
+
+      _friendSubscriptions[friend.ccid] = sub;
     }
-  });
+  }
 
-  _friendSubscriptions[friend.ccid] = sub;
-}
+  @override
+  bool get wantKeepAlive => true;
 
-}
-
-void _showInfoWindow(String ccid, LatLng pos, DateTime? lastUpdated) {
-  final ageText = lastUpdated == null
-    ? 'Unknown'
-    : '${DateTime.now().difference(lastUpdated).inMinutes} min ago';
-
-  final friend = AppUser.instance.friends.firstWhere((f) => f.ccid == ccid);
-  final avatar = _circleMemoryImages[ccid] != null
-    ? CircleAvatar(backgroundImage: _circleMemoryImages[ccid])
-    : CircleAvatar(child: Text(friend.username[0]));
-
-  _customInfoWindowController.addInfoWindow!(
-    Container(
-      padding: EdgeInsets.all(8),
-      decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        avatar,
-        SizedBox(height: 4),
-        Text(friend.username, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        SizedBox(height: 4),
-        Text(ageText, style: TextStyle(color: Colors.white70)),
-      ]),
-    ),
-    pos,
-  );
-}
-
-
-  // Custom gradient icon widget for the Google Maps redirection button.
+  // A custom button with gradient + white background
   Widget gradientIcon() {
     return Container(
-      padding: const EdgeInsets.all(3.0), // Border thickness
+      padding: const EdgeInsets.all(3.0),
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
@@ -312,13 +481,13 @@ void _showInfoWindow(String ccid, LatLng pos, DateTime? lastUpdated) {
         ),
       ),
       child: Container(
-        padding: const EdgeInsets.all(8.0), // Inner padding for white background
+        padding: const EdgeInsets.all(8.0),
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white,
         ),
         child: Image.asset(
-          'assets/Google_Maps_icon_(2015-2020).png', // Ensure this asset path is correct
+          'assets/Google_Maps_icon_(2015-2020).png',
           width: 30,
           height: 30,
           fit: BoxFit.contain,
@@ -328,15 +497,12 @@ void _showInfoWindow(String ccid, LatLng pos, DateTime? lastUpdated) {
   }
 
   @override
-  bool get wantKeepAlive => true;
-
-  @override
   Widget build(BuildContext context) {
-    super.build(context); // Must call super.build when using AutomaticKeepAliveClientMixin
+    super.build(context); // For AutomaticKeepAliveClientMixin
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(40), // Adjust this height as needed
+        preferredSize: const Size.fromHeight(40),
         child: AppBar(
           backgroundColor: Colors.white.withOpacity(0.2),
           elevation: 0,
@@ -360,21 +526,20 @@ void _showInfoWindow(String ccid, LatLng pos, DateTime? lastUpdated) {
             initialCameraPosition: _initialCameraPosition,
             markers: Set<Marker>.of(_markers.values),
             myLocationButtonEnabled: true,
-            onTap: (LatLng latlng) {
+            onTap: (LatLng latLng) {
               _customInfoWindowController.hideInfoWindow!();
               _resetAllMarkersToCircle();
             },
             onCameraMove: (CameraPosition position) {
               _customInfoWindowController.onCameraMove!();
-              _currentCameraPosition = position; // Update current camera position
+              _currentCameraPosition = position;
             },
-            onMapCreated: (GoogleMapController controller) {
+            onMapCreated: (controller) {
               _controller = controller;
               _customInfoWindowController.googleMapController = controller;
               controller.setMapStyle(MapStyle().retro);
             },
           ),
-          // Custom Google Maps redirection button:
           Positioned(
             top: 80,
             right: 5,
@@ -396,32 +561,172 @@ void _showInfoWindow(String ccid, LatLng pos, DateTime? lastUpdated) {
               child: gradientIcon(),
             ),
           ),
+          // Reduced overall size of the info window for events.
           CustomInfoWindow(
             controller: _customInfoWindowController,
-            height: MediaQuery.of(context).size.height * 0.35,
-            width: MediaQuery.of(context).size.width * 0.8,
-            offset: 60.0,
+            height: MediaQuery.of(context).size.height * 0.25,
+            width: MediaQuery.of(context).size.width * 0.7,
+            offset: 50.0,
           ),
+          // Updated MapsBottomSheet now receives the draggableController.
           MapsBottomSheet(
-          friends: AppUser.instance.friends,
-          circleMemoryImages: _circleMemoryImages,
-          lastUpdatedNotifier: _lastUpdatedNotifier,  // ← add this
-          onFriendTap: (friend) {
-            _customInfoWindowController.hideInfoWindow!();
-            _resetAllMarkersToCircle();
-            final lat = friend.currentLocation?['lat'];
-            final lng = friend.currentLocation?['lng'];
-            if (lat != null && lng != null) {
-              _controller?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
-            }
-          },
-        ),
+            draggableController: _draggableController,
+            friends: AppUser.instance.friends,
+            circleMemoryImages: _circleMemoryImages,
+            lastUpdatedNotifier: _lastUpdatedNotifier,
+            events: _events,
+            onFriendTap: (friend) {
+              _customInfoWindowController.hideInfoWindow!();
+              _resetAllMarkersToCircle();
+              final lat = friend.currentLocation?['lat'];
+              final lng = friend.currentLocation?['lng'];
+              if (lat != null && lng != null) {
+                _controller?.animateCamera(
+                  CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
+                );
+              }
+            },
+            onEventTap: (event) {
+              _customInfoWindowController.hideInfoWindow!();
+              final coords = event['coordinates'] as Map<String, dynamic>?;
+              if (coords == null) return;
+              final lat = coords['lat'] as double?;
+              final lng = coords['lng'] as double?;
+              if (lat != null && lng != null) {
+                final eventLatLng = LatLng(lat, lng);
+                // Animate camera to the event location with a zoom of 18.
+                _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 18));
+                // Show the event info window (with white background and gradient border).
+              _customInfoWindowController.addInfoWindow!(
+  Container(
+    padding: const EdgeInsets.all(2), // border thickness
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [
+          Color(0xFF396548),
+          Color(0xFF6B803D),
+          Color(0xFF909533),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title
+            Text(
+              event['title'] ?? 'Event Title',
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Location row
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(fontSize: 12, color: Colors.black87),
+                children: [
+                  const TextSpan(
+                    text: "Location: ",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(
+                    text: event['location'] ?? 'Unknown',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Date & Time row using your processing logic
+            Builder(
+              builder: (context) {
+                // Process the date value
+                final dynamic dateValue = event['date'];
+                DateTime eventDate;
+                try {
+                  eventDate = dateValue is Timestamp
+                      ? dateValue.toDate()
+                      : DateTime.parse(dateValue.toString());
+                } catch (e) {
+                  debugPrint('Error parsing event date: $e');
+                  eventDate = DateTime.now();
+                }
+                final String formattedDate =
+                    DateFormat('MMMM dd, yyyy').format(eventDate);
 
+                // Process the time values
+                final startTimeStr = event['start_time'] ?? '00:00:00';
+                final endTimeStr = event['end_time'] ?? '00:00:00';
+                DateTime parsedStart;
+                DateTime parsedEnd;
+                try {
+                  parsedStart = DateFormat('HH:mm:ss').parse(startTimeStr);
+                  parsedEnd = DateFormat('HH:mm:ss').parse(endTimeStr);
+                } catch (e) {
+                  debugPrint('Error parsing event times: $e');
+                  parsedStart = DateTime(0);
+                  parsedEnd = DateTime(0);
+                }
+                if (parsedEnd.isBefore(parsedStart)) {
+                  parsedEnd = parsedEnd.add(const Duration(days: 1));
+                }
+                final formattedStart =
+                    DateFormat('h:mma').format(parsedStart).toLowerCase();
+                final formattedEnd =
+                    DateFormat('h:mma').format(parsedEnd).toLowerCase();
+                final timeText =
+                    "$formattedDate  $formattedStart - $formattedEnd";
+
+                return RichText(
+                  text: TextSpan(
+                    style: const TextStyle(fontSize: 12, color: Colors.black87),
+                    children: [
+                      const TextSpan(
+                        text: "Date & Time: ",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      TextSpan(
+                        text: timeText,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+  eventLatLng,
+);
+
+
+              }
+              // Animate the bottom sheet to the collapsed size.
+              _draggableController.animateTo(
+                0.08,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
+  /// Simple bottom sheet to pick different map themes
   void _openThemeSelector() {
     showModalBottomSheet(
       context: context,
@@ -480,8 +785,6 @@ void _showInfoWindow(String ccid, LatLng pos, DateTime? lastUpdated) {
       ),
     );
   }
-
-
 
 
   final List<dynamic> _mapThemes =[

@@ -187,3 +187,16 @@ Future<Uint8List> _loadAssetBytes(String assetPath) async {
   debugPrint("[_loadAssetBytes] Loaded asset: $assetPath, size: ${byteData.lengthInBytes} bytes");
   return byteData.buffer.asUint8List();
 }
+
+Future<BitmapDescriptor> getResizedMarkerIcon(String assetPath, int width, int height) async {
+  final ByteData data = await rootBundle.load(assetPath);
+  final ui.Codec codec = await ui.instantiateImageCodec(
+    data.buffer.asUint8List(),
+    targetWidth: width,
+    targetHeight: height,
+  );
+  final ui.FrameInfo fi = await codec.getNextFrame();
+  final ByteData? byteData = await fi.image.toByteData(format: ui.ImageByteFormat.png);
+  final Uint8List resizedBytes = byteData!.buffer.asUint8List();
+  return BitmapDescriptor.fromBytes(resizedBytes);
+}
