@@ -120,12 +120,12 @@ class FriendTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const FriendTile({
-    Key? key,
+    super.key,
     required this.friend,
     required this.avatar,
     required this.lastUpdatedNotifier,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +161,7 @@ class Avatar extends StatelessWidget {
   final MemoryImage? image;
   final String fallback;
 
-  const Avatar({Key? key, this.image, required this.fallback}) : super(key: key);
+  const Avatar({super.key, this.image, required this.fallback});
 
   @override
   Widget build(BuildContext context) {

@@ -54,15 +54,17 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) => StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
           if (snapshot.hasData) {
             final user = snapshot.data!;
             return FutureBuilder<bool>(
               future: _ensureUserExists(user),
               builder: (context, asyncSnapshot) {
-                if (asyncSnapshot.connectionState == ConnectionState.waiting)
+                if (asyncSnapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
+                }
                 if (asyncSnapshot.data == true) {
                   developer.log('✅ User exists & initialized',
                       name: 'AuthWrapper');

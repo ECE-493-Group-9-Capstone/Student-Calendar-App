@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'user_notification_popup.dart'; // adjust path if needed
 
 class FriendRequestPage extends StatelessWidget {
-  const FriendRequestPage({Key? key}) : super(key: key);
+  const FriendRequestPage({super.key});
 
   @override
   Widget build(BuildContext context) {
