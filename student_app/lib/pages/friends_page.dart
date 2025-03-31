@@ -4,6 +4,8 @@ import 'package:student_app/utils/user.dart';
 import '../utils/firebase_wrapper.dart';
 import './user_profile_page.dart';
 import '../user_singleton.dart';
+import '../utils/social_graph.dart';
+import '../utils/user.dart';
 
 AppUser appUser = AppUser();
 
@@ -19,6 +21,7 @@ class FriendsPageState extends State<FriendsPage> {
   List<UserModel> allUsers = [];
   List<UserModel> filteredUsers = [];
   List<UserModel> usersFriends1 = [];
+  late Future<List<UserModel>> recommendedFriends;
 
   @override
   void initState() {
@@ -27,25 +30,43 @@ class FriendsPageState extends State<FriendsPage> {
     setState(() {
       usersFriends1 = appUser.friends;
     });
+    recommendedFriends = loadRecommendedFriends();
   }
 
   Future<void> fetchAndProcessUsers() async {
     List<UserModel> users = await getAllUsers();
-    List<String> friendsCcidList = [];
+    List<String> friendsCcidList =
+        appUser.friends.map((friend) => friend.ccid).toList();
 
-    for (int i = 0; i < appUser.friends.length; i++) {
-      friendsCcidList.add(appUser.friends[i].ccid);
-    }
     users = users
         .where((user) => user.ccid != appUser.ccid)
-        .toList(); // Filter out self
-    users = users
         .where((user) => !friendsCcidList.contains(user.ccid))
-        .toList(); // Filter out friend
+        .toList();
 
     setState(() {
       allUsers = users;
     });
+  }
+
+  Future<List<UserModel>> loadRecommendedFriends() async {
+    await SocialGraph().updateGraph();
+    List<String> alreadyRequested = appUser.requestedFriends;
+    List<String> alreadyFriends = appUser.friends.map((f) => f.ccid).toList();
+    List<UserModel> raw = SocialGraph().getFriendRecommendations(appUser.ccid!);
+    final seen = <String>{};
+    List<UserModel> unique = [];
+
+    for (var user in raw) {
+      if (!seen.contains(user.ccid) &&
+          !alreadyRequested.contains(user.ccid) &&
+          !alreadyFriends.contains(user.ccid) &&
+          user.ccid != appUser.ccid) {
+        seen.add(user.ccid);
+        unique.add(user);
+      }
+    }
+
+    return unique;
   }
 
   void updateSearchResults(String query) {
@@ -88,6 +109,33 @@ class FriendsPageState extends State<FriendsPage> {
     );
   }
 
+  Widget buildRecommendedFriendTile(UserModel user) {
+    String initials = user.username
+        .split(" ")
+        .map((e) => e.isNotEmpty ? e[0] : "")
+        .take(2)
+        .join()
+        .toUpperCase();
+
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: Colors.deepPurple,
+        child: Text(initials, style: TextStyle(color: Colors.white)),
+      ),
+      title: Text(user.username),
+      subtitle: Text(user.ccid),
+      trailing: ElevatedButton(
+        onPressed: () async {
+          await appUser.sendFriendRequest(user.ccid);
+          setState(() {
+            recommendedFriends = loadRecommendedFriends();
+          });
+        },
+        child: Text("Add"),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isSearching = searchController.text.isNotEmpty;
@@ -96,9 +144,8 @@ class FriendsPageState extends State<FriendsPage> {
         title: Text('Friends Page'),
         actions: [
           IconButton(
-            icon: Icon(Icons.notifications), // Add icon or any other icon
+            icon: Icon(Icons.notifications),
             onPressed: () {
-              // Action when the button is clicked
               navigateToNotifications("nasreddi");
             },
           ),
@@ -145,9 +192,7 @@ class FriendsPageState extends State<FriendsPage> {
                     trailing: ElevatedButton(
                       onPressed: () async {
                         await appUser.sendFriendRequest(friendCcid);
-                        if (!mounted) {
-                          return; // Guard against using BuildContext if not mounted.
-                        }
+                        if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text("Friend Request Sent"),
@@ -163,13 +208,18 @@ class FriendsPageState extends State<FriendsPage> {
             )
           else
             Expanded(
-              child: (usersFriends1.isEmpty)
-                  ? Center(child: Text("No Friends Yet"))
-                  : ListView.builder(
-                      itemCount: usersFriends1.length,
-                      itemBuilder: (context, index) {
-                        UserModel friend = usersFriends1[index];
-                        return ListTile(
+              child: ListView(
+                children: [
+                  // Current Friends List
+                  if (usersFriends1.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Text("No Friends Yet"),
+                      ),
+                    )
+                  else
+                    ...usersFriends1.map((friend) => ListTile(
                           leading: CircleAvatar(
                             backgroundColor: Colors.green,
                             child: Text(friend.username[0]),
@@ -178,10 +228,43 @@ class FriendsPageState extends State<FriendsPage> {
                           subtitle: Text("Tap to view profile"),
                           trailing: Icon(Icons.arrow_forward_ios, size: 16),
                           onTap: () => navigateToProfile(friend.ccid),
-                        );
-                      },
+                        )),
+
+                  // Divider
+                  Divider(thickness: 1, height: 32),
+
+                  // Recommended Friends Section
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: Text(
+                      "Recommended Friends",
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
-            )
+                  ),
+                  FutureBuilder<List<UserModel>>(
+                    future: recommendedFriends,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text("No recommendations at this time."),
+                        );
+                      } else {
+                        return Column(
+                          children: snapshot.data!
+                              .take(5) // Show top 5 recommendations
+                              .map(buildRecommendedFriendTile)
+                              .toList(),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
