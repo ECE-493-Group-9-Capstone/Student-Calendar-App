@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../user_singleton.dart';
+import '../utils/user.dart';
+import '../utils/social_graph.dart';
 
 class UserNotificationPopup extends StatefulWidget {
   const UserNotificationPopup({super.key});
@@ -9,11 +11,71 @@ class UserNotificationPopup extends StatefulWidget {
 }
 
 class _UserNotificationPopupState extends State<UserNotificationPopup> {
+  late Future<List<UserModel>> recommendedFriends;
+
+  @override
+  void initState() {
+    super.initState();
+    recommendedFriends = loadRecommendedFriends();
+  }
+
+  Future<List<UserModel>> loadRecommendedFriends() async {
+    await SocialGraph().updateGraph();
+
+    List<String> alreadyRequested = AppUser.instance.requestedFriends;
+    List<String> alreadyFriends =
+        AppUser.instance.friends.map((f) => f.ccid).toList();
+
+    List<UserModel> raw =
+        SocialGraph().getFriendRecommendations(AppUser.instance.ccid!);
+
+    final seen = <String>{};
+    List<UserModel> unique = [];
+
+    for (var user in raw) {
+      if (!seen.contains(user.ccid) &&
+          !alreadyRequested.contains(user.ccid) &&
+          !alreadyFriends.contains(user.ccid) &&
+          user.ccid != AppUser.instance.ccid) {
+        seen.add(user.ccid);
+        unique.add(user);
+      }
+    }
+
+    return unique;
+  }
+
+  Widget buildRecommendedFriendTile(UserModel user) {
+    String initials = user.username
+        .split(" ")
+        .map((e) => e.isNotEmpty ? e[0] : "")
+        .take(2)
+        .join()
+        .toUpperCase();
+
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: Colors.deepPurple,
+        child: Text(initials, style: TextStyle(color: Colors.white)),
+      ),
+      title: Text(user.username),
+      subtitle: Text(user.ccid),
+      trailing: ElevatedButton(
+        onPressed: () async {
+          await AppUser.instance.sendFriendRequest(user.ccid);
+          setState(() {
+            recommendedFriends = loadRecommendedFriends();
+          });
+        },
+        child: Text("Add"),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: AppUser.instance
-          .refreshUserData(), // Force refresh before showing popup
+      future: AppUser.instance.refreshUserData(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Padding(
@@ -44,7 +106,8 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                       padding: EdgeInsets.all(20.0),
                       child: Text("No friend requests found."),
                     )
-                  : Expanded(
+                  : SizedBox(
+                      height: 200,
                       child: ListView.builder(
                         shrinkWrap: true,
                         itemCount: friendRequests.length,
@@ -85,7 +148,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                                       color: Colors.green),
                                   onPressed: () async {
                                     await AppUser.instance.addFriend(id);
-                                    setState(() {}); // Refresh UI
+                                    setState(() {});
                                   },
                                 ),
                                 IconButton(
@@ -93,7 +156,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                                       color: Colors.red),
                                   onPressed: () async {
                                     await AppUser.instance.declineFriend(id);
-                                    setState(() {}); // Refresh UI
+                                    setState(() {});
                                   },
                                 ),
                               ],
@@ -102,6 +165,42 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                         },
                       ),
                     ),
+              const SizedBox(height: 20),
+              const Divider(thickness: 1),
+              const Padding(
+                padding: EdgeInsets.only(top: 8.0, bottom: 4.0),
+                child: Text(
+                  "Recommended Friends",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              FutureBuilder<List<UserModel>>(
+                future: recommendedFriends,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: CircularProgressIndicator(),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text("No recommendations right now."),
+                    );
+                  } else {
+                    return SizedBox(
+                      height: 200,
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: snapshot.data!
+                            .take(5)
+                            .map(buildRecommendedFriendTile)
+                            .toList(),
+                      ),
+                    );
+                  }
+                },
+              ),
               const SizedBox(height: 15),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
