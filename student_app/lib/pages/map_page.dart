@@ -11,6 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:student_app/utils/event_service.dart';
 import 'maps_bottom_sheet.dart';
 import 'package:intl/intl.dart';
+import 'dart:math';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -29,6 +30,8 @@ class _FriendMarker {
 final Map<String, _FriendMarker> _friendMarkers = {};
 
 class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
+  bool _showHeatmap = false;
+  Set<Circle> _heatmapCircles = {};
   GoogleMapController? _controller;
   final CustomInfoWindowController _customInfoWindowController =
       CustomInfoWindowController();
@@ -45,7 +48,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   final Map<String, MemoryImage> _circleMemoryImages = {};
 
   // Real-time location updates for friends
-  final Map<String, StreamSubscription<DocumentSnapshot>> _friendSubscriptions = {};
+  final Map<String, StreamSubscription<DocumentSnapshot>> _friendSubscriptions =
+      {};
   final ValueNotifier<Map<String, DateTime?>> _lastUpdatedNotifier =
       ValueNotifier({});
 
@@ -58,8 +62,131 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   // Store list of events for bottom sheet display
   List<dynamic> _events = [];
 
-  // NEW: DraggableScrollableController required by updated MapsBottomSheet
-  final DraggableScrollableController _draggableController = DraggableScrollableController();
+  // DraggableScrollableController required by updated MapsBottomSheet
+  final DraggableScrollableController _draggableController =
+      DraggableScrollableController();
+
+  double _calculateDistanceMeters(LatLng a, LatLng b) {
+    const earthRadius = 6371000; // meters
+    final dLat = _degToRad(b.latitude - a.latitude);
+    final dLng = _degToRad(b.longitude - a.longitude);
+
+    final originLat = _degToRad(a.latitude);
+    final targetLat = _degToRad(b.latitude);
+
+    final aVal = sin(dLat / 2) * sin(dLat / 2) +
+        sin(dLng / 2) * sin(dLng / 2) * cos(originLat) * cos(targetLat);
+    final c = 2 * atan2(sqrt(aVal), sqrt(1 - aVal));
+    return earthRadius * c;
+  }
+
+  Color _getDensityColor(int count) {
+    if (count == 0) return Colors.transparent;
+    if (count < 3) return Colors.green.withOpacity(0.3);
+    if (count < 7) return Colors.orange.withOpacity(0.4);
+    return Colors.red.withOpacity(0.5);
+  }
+
+  Future<void> _generateStudySpotHeatmap() async {
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    try {
+      final spotsSnapshot = await firestore.collection('studySpots').get();
+      final spots = spotsSnapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            final dynamic coord = data['coordinates'];
+
+            double? lat;
+            double? lng;
+
+            if (coord is GeoPoint) {
+              lat = coord.latitude;
+              lng = coord.longitude;
+            } else if (coord is Map<String, dynamic>) {
+              lat = coord['lat'];
+              lng = coord['lng'];
+            } else {
+              debugPrint("Invalid coordinates format for: ${data['name']}");
+            }
+
+            if (lat != null && lng != null) {
+              return {
+                'name': data['name'],
+                'location': LatLng(lat, lng),
+              };
+            }
+
+            return null; // Skip if we couldn’t get valid coords
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
+
+
+      final usersSnapshot = await firestore
+          .collection('users')
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      final userLocations = usersSnapshot.docs
+          .map((doc) {
+            final loc = doc['currentLocation'];
+            if (loc == null || loc['lat'] == null || loc['lng'] == null) {
+              debugPrint("Skipping user with missing location: ${doc.id}");
+              return null;
+            }
+            return LatLng(loc['lat'], loc['lng']);
+          })
+          .whereType<LatLng>()
+          .toList();
+
+      Set<Circle> spotCircles = {};
+
+      for (int i = 0; i < spots.length; i++) {
+        final spot = spots[i];
+        final LatLng spotLocation = spot['location'];
+
+        int count = userLocations
+            .where((userLoc) =>
+                _calculateDistanceMeters(spotLocation, userLoc) <= 50)
+            .length;
+
+
+
+        final circle = Circle(
+          circleId: CircleId("spot_${spot['name']}"),
+          center: spotLocation,
+          radius: 50,
+          strokeWidth: 0,
+          fillColor: _getDensityColor(count),
+        );
+
+        spotCircles.add(circle);
+      }
+
+      setState(() {
+        _heatmapCircles = spotCircles;
+      });
+    } catch (e) {
+      debugPrint("Error in _generateStudySpotHeatmap: $e");
+    }
+  }
+
+  double _degToRad(double deg) => deg * (pi / 180);
+
+  void _toggleHeatmap() {
+    setState(() {
+      _showHeatmap = !_showHeatmap;
+    });
+
+    if (_showHeatmap) {
+      _generateStudySpotHeatmap();
+    } else {
+      setState(() {
+        _heatmapCircles.clear();
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -70,7 +197,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
       final lat = AppUser.instance.currentLocation!['lat'];
       final lng = AppUser.instance.currentLocation!['lng'];
       if (lat != null && lng != null) {
-        _initialCameraPosition = CameraPosition(target: LatLng(lat, lng), zoom: 15.0);
+        _initialCameraPosition =
+            CameraPosition(target: LatLng(lat, lng), zoom: 15.0);
       } else {
         _initialCameraPosition = _fallbackPosition();
       }
@@ -79,20 +207,17 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     }
     _currentCameraPosition = _initialCameraPosition;
 
-    // Once the widget is laid out, load data & markers
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _loadFriendIcons();  // Circle & Pin from marker_utils for friends
-      await _loadEventIcon();    // Single local asset for events
+      await _loadFriendIcons(); // Circle & Pin from marker_utils for friends
+      await _loadEventIcon(); // Single local asset for events
 
       await _addFriendMarkers();
-      await _addEventMarkers();  // Show event markers and update _events
+      await _addEventMarkers(); // Show event markers and update _events
 
       _updateFriendSubscriptions(); // Real-time friend updates
 
-      // Optionally refresh everything every 10s
-      _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-        refreshMarkers();
-        _updateFriendSubscriptions();
+      _refreshTimer = Timer.periodic(Duration(seconds: 15), (_) {
+        if (_showHeatmap) _generateStudySpotHeatmap();
       });
     });
   }
@@ -162,7 +287,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     if (_eventMarkerIcon != null) return;
 
     try {
-      _eventMarkerIcon = await getResizedMarkerIcon('assets/event_marker.png', 80, 80);
+      _eventMarkerIcon =
+          await getResizedMarkerIcon('assets/event_marker.png', 80, 80);
       debugPrint("Successfully loaded event_marker.png as custom marker");
     } catch (e) {
       debugPrint("Error loading event marker icon: $e");
@@ -181,7 +307,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
       if (lat == null || lng == null) continue;
 
       final markerId = MarkerId(friend.ccid);
-      final circleIcon = _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
+      final circleIcon =
+          _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
 
       final marker = Marker(
         markerId: markerId,
@@ -189,7 +316,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         icon: circleIcon,
         onTap: () {
           _switchToPinIcon(markerId, friend);
-          _controller?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
+          _controller
+              ?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
           // Removed friend info window.
         },
       );
@@ -217,7 +345,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
       final markerId = MarkerId(friend.ccid);
       final oldMarker = _markers[markerId];
       if (oldMarker == null) continue;
-      final circleIcon = _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
+      final circleIcon =
+          _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
       final updatedMarker = oldMarker.copyWith(iconParam: circleIcon);
       _markers[markerId] = updatedMarker;
     }
@@ -251,139 +380,148 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         icon: _eventMarkerIcon!, // single local asset for all events
         onTap: () {
           final eventLatLng = LatLng(lat, lng);
-          _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
+          _controller
+              ?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
           // Show the event info window with a white background and gradient border.
           _customInfoWindowController.addInfoWindow!(
-  Container(
-    padding: const EdgeInsets.all(2), // border thickness
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [
-          Color(0xFF396548),
-          Color(0xFF6B803D),
-          Color(0xFF909533),
-        ],
-      ),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title
-            Text(
-              event['title'] ?? 'Event Title',
-              style: const TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 4),
-            // Location row
-            RichText(
-              text: TextSpan(
-                style: const TextStyle(fontSize: 14, color: Colors.black87),
-                children: [
-                  const TextSpan(
-                    text: "Location: ",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  TextSpan(
-                    text: event['location'] ?? 'Unknown',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 4),
-            // Date & Time processing
-            Builder(
-              builder: (context) {
-                // Process the date value
-                final dynamic dateValue = event['date'];
-                DateTime eventDate;
-                try {
-                  eventDate = dateValue is Timestamp
-                      ? dateValue.toDate()
-                      : DateTime.parse(dateValue.toString());
-                } catch (e) {
-                  debugPrint('Error parsing event date: $e');
-                  eventDate = DateTime.now();
-                }
-                final String formattedDate =
-                    DateFormat('MMMM dd, yyyy').format(eventDate);
-
-                // Process the time values
-                final startTimeStr = event['start_time'] ?? '00:00:00';
-                final endTimeStr = event['end_time'] ?? '00:00:00';
-                DateTime parsedStart;
-                DateTime parsedEnd;
-                try {
-                  parsedStart = DateFormat('HH:mm:ss').parse(startTimeStr);
-                  parsedEnd = DateFormat('HH:mm:ss').parse(endTimeStr);
-                } catch (e) {
-                  debugPrint('Error parsing event times: $e');
-                  parsedStart = DateTime(0);
-                  parsedEnd = DateTime(0);
-                }
-                if (parsedEnd.isBefore(parsedStart)) {
-                  parsedEnd = parsedEnd.add(const Duration(days: 1));
-                }
-                final formattedStart =
-                    DateFormat('h:mma').format(parsedStart).toLowerCase();
-                final formattedEnd =
-                    DateFormat('h:mma').format(parsedEnd).toLowerCase();
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Date row
-                    RichText(
-                      text: TextSpan(
-                        style:
-                            const TextStyle(fontSize: 14, color: Colors.black87),
-                        children: [
-                          const TextSpan(
-                              text: "Date: ",
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          TextSpan(text: formattedDate),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // Time row
-                    RichText(
-                      text: TextSpan(
-                        style:
-                            const TextStyle(fontSize: 14, color: Colors.black87),
-                        children: [
-                          const TextSpan(
-                              text: "Time: ",
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          TextSpan(text: "$formattedStart - $formattedEnd"),
-                        ],
-                      ),
-                    ),
+            Container(
+              padding: const EdgeInsets.all(2), // border thickness
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF396548),
+                    Color(0xFF6B803D),
+                    Color(0xFF909533),
                   ],
-                );
-              },
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title
+                      Text(
+                        event['title'] ?? 'Event Title',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Location row
+                      RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                              fontSize: 14, color: Colors.black87),
+                          children: [
+                            const TextSpan(
+                              text: "Location: ",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            TextSpan(
+                              text: event['location'] ?? 'Unknown',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Date & Time processing
+                      Builder(
+                        builder: (context) {
+                          // Process the date value
+                          final dynamic dateValue = event['date'];
+                          DateTime eventDate;
+                          try {
+                            eventDate = dateValue is Timestamp
+                                ? dateValue.toDate()
+                                : DateTime.parse(dateValue.toString());
+                          } catch (e) {
+                            debugPrint('Error parsing event date: $e');
+                            eventDate = DateTime.now();
+                          }
+                          final String formattedDate =
+                              DateFormat('MMMM dd, yyyy').format(eventDate);
+
+                          // Process the time values
+                          final startTimeStr =
+                              event['start_time'] ?? '00:00:00';
+                          final endTimeStr = event['end_time'] ?? '00:00:00';
+                          DateTime parsedStart;
+                          DateTime parsedEnd;
+                          try {
+                            parsedStart =
+                                DateFormat('HH:mm:ss').parse(startTimeStr);
+                            parsedEnd =
+                                DateFormat('HH:mm:ss').parse(endTimeStr);
+                          } catch (e) {
+                            debugPrint('Error parsing event times: $e');
+                            parsedStart = DateTime(0);
+                            parsedEnd = DateTime(0);
+                          }
+                          if (parsedEnd.isBefore(parsedStart)) {
+                            parsedEnd = parsedEnd.add(const Duration(days: 1));
+                          }
+                          final formattedStart = DateFormat('h:mma')
+                              .format(parsedStart)
+                              .toLowerCase();
+                          final formattedEnd = DateFormat('h:mma')
+                              .format(parsedEnd)
+                              .toLowerCase();
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Date row
+                              RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(
+                                      fontSize: 14, color: Colors.black87),
+                                  children: [
+                                    const TextSpan(
+                                        text: "Date: ",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold)),
+                                    TextSpan(text: formattedDate),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              // Time row
+                              RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(
+                                      fontSize: 14, color: Colors.black87),
+                                  children: [
+                                    const TextSpan(
+                                        text: "Time: ",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold)),
+                                    TextSpan(
+                                        text:
+                                            "$formattedStart - $formattedEnd"),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
-      ),
-    ),
-  ),
-  eventLatLng,
-);
-
-
+            eventLatLng,
+          );
         },
       );
       _markers[markerId] = marker;
@@ -419,9 +557,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         final data = doc.data()!;
         final loc = data['currentLocation'] as Map<String, dynamic>?;
 
-        final timestamp = loc != null
-            ? (loc['timestamp'] as Timestamp?)?.toDate()
-            : null;
+        final timestamp =
+            loc != null ? (loc['timestamp'] as Timestamp?)?.toDate() : null;
 
         _lastUpdatedNotifier.value = {
           ..._lastUpdatedNotifier.value,
@@ -435,25 +572,30 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
         if (existing != null) {
           if (existing.marker.position != newPos) {
-            final updatedMarker = existing.marker.copyWith(positionParam: newPos);
-            _friendMarkers[friend.ccid] = _FriendMarker(updatedMarker, lastUpdated: timestamp);
+            final updatedMarker =
+                existing.marker.copyWith(positionParam: newPos);
+            _friendMarkers[friend.ccid] =
+                _FriendMarker(updatedMarker, lastUpdated: timestamp);
             _markers[markerId] = updatedMarker;
             setState(() {});
           }
         } else {
-          final icon = _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
+          final icon =
+              _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
           final newMarker = Marker(
             markerId: markerId,
             position: newPos,
             icon: icon,
             onTap: () {
               // For friends, simply animate the camera without showing an info window.
-              _controller?.animateCamera(CameraUpdate.newLatLngZoom(newPos, 16));
+              _controller
+                  ?.animateCamera(CameraUpdate.newLatLngZoom(newPos, 16));
               _resetAllMarkersToCircle();
             },
           );
 
-          _friendMarkers[friend.ccid] = _FriendMarker(newMarker, lastUpdated: timestamp);
+          _friendMarkers[friend.ccid] =
+              _FriendMarker(newMarker, lastUpdated: timestamp);
           _markers[markerId] = newMarker;
           setState(() {});
         }
@@ -526,6 +668,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
             initialCameraPosition: _initialCameraPosition,
             markers: Set<Marker>.of(_markers.values),
             myLocationButtonEnabled: true,
+            circles:
+                _heatmapCircles, // ✅ Add this line to enable heatmap rendering
             onTap: (LatLng latLng) {
               _customInfoWindowController.hideInfoWindow!();
               _resetAllMarkersToCircle();
@@ -540,6 +684,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
               controller.setMapStyle(MapStyle().retro);
             },
           ),
+
           Positioned(
             top: 80,
             right: 5,
@@ -549,7 +694,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
               onPressed: () async {
                 final lat = _currentCameraPosition.target.latitude;
                 final lng = _currentCameraPosition.target.longitude;
-                final url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng';
+                final url =
+                    'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng';
                 if (await canLaunch(url)) {
                   await launch(url);
                 } else {
@@ -561,6 +707,21 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
               child: gradientIcon(),
             ),
           ),
+          Positioned(
+            top: 140, // adjust if needed
+            right: 5,
+            child: FloatingActionButton(
+              mini: true,
+              heroTag: "toggle_heatmap",
+              onPressed: _toggleHeatmap,
+              backgroundColor: Colors.white,
+              child: Icon(
+                _showHeatmap ? Icons.visibility_off : Icons.visibility,
+                color: Color(0xFF396548),
+              ),
+            ),
+          ),
+
           // Reduced overall size of the info window for events.
           CustomInfoWindow(
             controller: _customInfoWindowController,
@@ -595,123 +756,134 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
               if (lat != null && lng != null) {
                 final eventLatLng = LatLng(lat, lng);
                 // Animate camera to the event location with a zoom of 18.
-                _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 18));
+                _controller?.animateCamera(
+                    CameraUpdate.newLatLngZoom(eventLatLng, 18));
                 // Show the event info window (with white background and gradient border).
-              _customInfoWindowController.addInfoWindow!(
-  Container(
-    padding: const EdgeInsets.all(2), // border thickness
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [
-          Color(0xFF396548),
-          Color(0xFF6B803D),
-          Color(0xFF909533),
-        ],
-      ),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title
-            Text(
-              event['title'] ?? 'Event Title',
-              style: const TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 4),
-            // Location row
-            RichText(
-              text: TextSpan(
-                style: const TextStyle(fontSize: 12, color: Colors.black87),
-                children: [
-                  const TextSpan(
-                    text: "Location: ",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  TextSpan(
-                    text: event['location'] ?? 'Unknown',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 4),
-            // Date & Time row using your processing logic
-            Builder(
-              builder: (context) {
-                // Process the date value
-                final dynamic dateValue = event['date'];
-                DateTime eventDate;
-                try {
-                  eventDate = dateValue is Timestamp
-                      ? dateValue.toDate()
-                      : DateTime.parse(dateValue.toString());
-                } catch (e) {
-                  debugPrint('Error parsing event date: $e');
-                  eventDate = DateTime.now();
-                }
-                final String formattedDate =
-                    DateFormat('MMMM dd, yyyy').format(eventDate);
-
-                // Process the time values
-                final startTimeStr = event['start_time'] ?? '00:00:00';
-                final endTimeStr = event['end_time'] ?? '00:00:00';
-                DateTime parsedStart;
-                DateTime parsedEnd;
-                try {
-                  parsedStart = DateFormat('HH:mm:ss').parse(startTimeStr);
-                  parsedEnd = DateFormat('HH:mm:ss').parse(endTimeStr);
-                } catch (e) {
-                  debugPrint('Error parsing event times: $e');
-                  parsedStart = DateTime(0);
-                  parsedEnd = DateTime(0);
-                }
-                if (parsedEnd.isBefore(parsedStart)) {
-                  parsedEnd = parsedEnd.add(const Duration(days: 1));
-                }
-                final formattedStart =
-                    DateFormat('h:mma').format(parsedStart).toLowerCase();
-                final formattedEnd =
-                    DateFormat('h:mma').format(parsedEnd).toLowerCase();
-                final timeText =
-                    "$formattedDate  $formattedStart - $formattedEnd";
-
-                return RichText(
-                  text: TextSpan(
-                    style: const TextStyle(fontSize: 12, color: Colors.black87),
-                    children: [
-                      const TextSpan(
-                        text: "Date & Time: ",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                _customInfoWindowController.addInfoWindow!(
+                  Container(
+                    padding: const EdgeInsets.all(2), // border thickness
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF396548),
+                          Color(0xFF6B803D),
+                          Color(0xFF909533),
+                        ],
                       ),
-                      TextSpan(
-                        text: timeText,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                    ],
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title
+                            Text(
+                              event['title'] ?? 'Event Title',
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            // Location row
+                            RichText(
+                              text: TextSpan(
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.black87),
+                                children: [
+                                  const TextSpan(
+                                    text: "Location: ",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  TextSpan(
+                                    text: event['location'] ?? 'Unknown',
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            // Date & Time row using your processing logic
+                            Builder(
+                              builder: (context) {
+                                // Process the date value
+                                final dynamic dateValue = event['date'];
+                                DateTime eventDate;
+                                try {
+                                  eventDate = dateValue is Timestamp
+                                      ? dateValue.toDate()
+                                      : DateTime.parse(dateValue.toString());
+                                } catch (e) {
+                                  debugPrint('Error parsing event date: $e');
+                                  eventDate = DateTime.now();
+                                }
+                                final String formattedDate =
+                                    DateFormat('MMMM dd, yyyy')
+                                        .format(eventDate);
+
+                                // Process the time values
+                                final startTimeStr =
+                                    event['start_time'] ?? '00:00:00';
+                                final endTimeStr =
+                                    event['end_time'] ?? '00:00:00';
+                                DateTime parsedStart;
+                                DateTime parsedEnd;
+                                try {
+                                  parsedStart = DateFormat('HH:mm:ss')
+                                      .parse(startTimeStr);
+                                  parsedEnd =
+                                      DateFormat('HH:mm:ss').parse(endTimeStr);
+                                } catch (e) {
+                                  debugPrint('Error parsing event times: $e');
+                                  parsedStart = DateTime(0);
+                                  parsedEnd = DateTime(0);
+                                }
+                                if (parsedEnd.isBefore(parsedStart)) {
+                                  parsedEnd =
+                                      parsedEnd.add(const Duration(days: 1));
+                                }
+                                final formattedStart = DateFormat('h:mma')
+                                    .format(parsedStart)
+                                    .toLowerCase();
+                                final formattedEnd = DateFormat('h:mma')
+                                    .format(parsedEnd)
+                                    .toLowerCase();
+                                final timeText =
+                                    "$formattedDate  $formattedStart - $formattedEnd";
+
+                                return RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(
+                                        fontSize: 12, color: Colors.black87),
+                                    children: [
+                                      const TextSpan(
+                                        text: "Date & Time: ",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      TextSpan(
+                                        text: timeText,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
+                  eventLatLng,
                 );
-              },
-            ),
-          ],
-        ),
-      ),
-    ),
-  ),
-  eventLatLng,
-);
-
-
               }
               // Animate the bottom sheet to the collapsed size.
               _draggableController.animateTo(
@@ -786,37 +958,42 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     );
   }
 
-
-  final List<dynamic> _mapThemes =[
+  final List<dynamic> _mapThemes = [
     {
       'name': 'Standard',
       'style': MapStyle().dark,
-      'image': 'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:labels%7Cvisibility:off&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.neighborhood%7Cvisibility:off&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
+      'image':
+          'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:labels%7Cvisibility:off&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.neighborhood%7Cvisibility:off&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
     },
     {
       'name': 'Sliver',
       'style': MapStyle().sliver,
-      'image': 'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0xf5f5f5&style=element:labels%7Cvisibility:off&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x616161&style=element:labels.text.stroke%7Ccolor:0xf5f5f5&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:poi%7Celement:geometry%7Ccolor:0xeeeeee&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Celement:geometry%7Ccolor:0xe5e5e5&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:road%7Celement:geometry%7Ccolor:0xffffff&style=feature:road.arterial%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:road.highway%7Celement:geometry%7Ccolor:0xdadada&style=feature:road.highway%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:transit.line%7Celement:geometry%7Ccolor:0xe5e5e5&style=feature:transit.station%7Celement:geometry%7Ccolor:0xeeeeee&style=feature:water%7Celement:geometry%7Ccolor:0xc9c9c9&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
+      'image':
+          'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0xf5f5f5&style=element:labels%7Cvisibility:off&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x616161&style=element:labels.text.stroke%7Ccolor:0xf5f5f5&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:poi%7Celement:geometry%7Ccolor:0xeeeeee&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Celement:geometry%7Ccolor:0xe5e5e5&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:road%7Celement:geometry%7Ccolor:0xffffff&style=feature:road.arterial%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:road.highway%7Celement:geometry%7Ccolor:0xdadada&style=feature:road.highway%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:transit.line%7Celement:geometry%7Ccolor:0xe5e5e5&style=feature:transit.station%7Celement:geometry%7Ccolor:0xeeeeee&style=feature:water%7Celement:geometry%7Ccolor:0xc9c9c9&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
     },
     {
       'name': 'Retro',
       'style': MapStyle().retro,
-      'image': 'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0xebe3cd&style=element:labels%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x523735&style=element:labels.text.stroke%7Ccolor:0xf5f1e6&style=feature:administrative%7Celement:geometry.stroke%7Ccolor:0xc9b2a6&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:geometry.stroke%7Ccolor:0xdcd2be&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0xae9e90&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:landscape.natural%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:poi%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x93817c&style=feature:poi.park%7Celement:geometry.fill%7Ccolor:0xa5b076&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x447530&style=feature:road%7Celement:geometry%7Ccolor:0xf5f1e6&style=feature:road.arterial%7Celement:geometry%7Ccolor:0xfdfcf8&style=feature:road.highway%7Celement:geometry%7Ccolor:0xf8c967&style=feature:road.highway%7Celement:geometry.stroke%7Ccolor:0xe9bc62&style=feature:road.highway.controlled_access%7Celement:geometry%7Ccolor:0xe98d58&style=feature:road.highway.controlled_access%7Celement:geometry.stroke%7Ccolor:0xdb8555&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x806b63&style=feature:transit.line%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:transit.line%7Celement:labels.text.fill%7Ccolor:0x8f7d77&style=feature:transit.line%7Celement:labels.text.stroke%7Ccolor:0xebe3cd&style=feature:transit.station%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:water%7Celement:geometry.fill%7Ccolor:0xb9d3c2&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x92998d&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
+      'image':
+          'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0xebe3cd&style=element:labels%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x523735&style=element:labels.text.stroke%7Ccolor:0xf5f1e6&style=feature:administrative%7Celement:geometry.stroke%7Ccolor:0xc9b2a6&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:geometry.stroke%7Ccolor:0xdcd2be&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0xae9e90&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:landscape.natural%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:poi%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x93817c&style=feature:poi.park%7Celement:geometry.fill%7Ccolor:0xa5b076&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x447530&style=feature:road%7Celement:geometry%7Ccolor:0xf5f1e6&style=feature:road.arterial%7Celement:geometry%7Ccolor:0xfdfcf8&style=feature:road.highway%7Celement:geometry%7Ccolor:0xf8c967&style=feature:road.highway%7Celement:geometry.stroke%7Ccolor:0xe9bc62&style=feature:road.highway.controlled_access%7Celement:geometry%7Ccolor:0xe98d58&style=feature:road.highway.controlled_access%7Celement:geometry.stroke%7Ccolor:0xdb8555&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x806b63&style=feature:transit.line%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:transit.line%7Celement:labels.text.fill%7Ccolor:0x8f7d77&style=feature:transit.line%7Celement:labels.text.stroke%7Ccolor:0xebe3cd&style=feature:transit.station%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:water%7Celement:geometry.fill%7Ccolor:0xb9d3c2&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x92998d&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
     },
     {
       'name': 'Dark',
       'style': MapStyle().dark,
-      'image': 'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0x212121&style=element:labels%7Cvisibility:off&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x757575&style=element:labels.text.stroke%7Ccolor:0x212121&style=feature:administrative%7Celement:geometry%7Ccolor:0x757575&style=feature:administrative.country%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.locality%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Celement:geometry%7Ccolor:0x181818&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:poi.park%7Celement:labels.text.stroke%7Ccolor:0x1b1b1b&style=feature:road%7Celement:geometry.fill%7Ccolor:0x2c2c2c&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x8a8a8a&style=feature:road.arterial%7Celement:geometry%7Ccolor:0x373737&style=feature:road.highway%7Celement:geometry%7Ccolor:0x3c3c3c&style=feature:road.highway.controlled_access%7Celement:geometry%7Ccolor:0x4e4e4e&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:transit%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:water%7Celement:geometry%7Ccolor:0x000000&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x3d3d3d&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
+      'image':
+          'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0x212121&style=element:labels%7Cvisibility:off&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x757575&style=element:labels.text.stroke%7Ccolor:0x212121&style=feature:administrative%7Celement:geometry%7Ccolor:0x757575&style=feature:administrative.country%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.locality%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Celement:geometry%7Ccolor:0x181818&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:poi.park%7Celement:labels.text.stroke%7Ccolor:0x1b1b1b&style=feature:road%7Celement:geometry.fill%7Ccolor:0x2c2c2c&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x8a8a8a&style=feature:road.arterial%7Celement:geometry%7Ccolor:0x373737&style=feature:road.highway%7Celement:geometry%7Ccolor:0x3c3c3c&style=feature:road.highway.controlled_access%7Celement:geometry%7Ccolor:0x4e4e4e&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:transit%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:water%7Celement:geometry%7Ccolor:0x000000&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x3d3d3d&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
     },
     {
       'name': 'Night',
       'style': MapStyle().night,
-      'image': 'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0x242f3e&style=element:labels%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x746855&style=element:labels.text.stroke%7Ccolor:0x242f3e&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.locality%7Celement:labels.text.fill%7Ccolor:0xd59563&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0xd59563&style=feature:poi.park%7Celement:geometry%7Ccolor:0x263c3f&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x6b9a76&style=feature:road%7Celement:geometry%7Ccolor:0x38414e&style=feature:road%7Celement:geometry.stroke%7Ccolor:0x212a37&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x9ca5b3&style=feature:road.highway%7Celement:geometry%7Ccolor:0x746855&style=feature:road.highway%7Celement:geometry.stroke%7Ccolor:0x1f2835&style=feature:road.highway%7Celement:labels.text.fill%7Ccolor:0xf3d19c&style=feature:transit%7Celement:geometry%7Ccolor:0x2f3948&style=feature:transit.station%7Celement:labels.text.fill%7Ccolor:0xd59563&style=feature:water%7Celement:geometry%7Ccolor:0x17263c&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x515c6d&style=feature:water%7Celement:labels.text.stroke%7Ccolor:0x17263c&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
+      'image':
+          'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0x242f3e&style=element:labels%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x746855&style=element:labels.text.stroke%7Ccolor:0x242f3e&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.locality%7Celement:labels.text.fill%7Ccolor:0xd59563&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0xd59563&style=feature:poi.park%7Celement:geometry%7Ccolor:0x263c3f&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x6b9a76&style=feature:road%7Celement:geometry%7Ccolor:0x38414e&style=feature:road%7Celement:geometry.stroke%7Ccolor:0x212a37&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x9ca5b3&style=feature:road.highway%7Celement:geometry%7Ccolor:0x746855&style=feature:road.highway%7Celement:geometry.stroke%7Ccolor:0x1f2835&style=feature:road.highway%7Celement:labels.text.fill%7Ccolor:0xf3d19c&style=feature:transit%7Celement:geometry%7Ccolor:0x2f3948&style=feature:transit.station%7Celement:labels.text.fill%7Ccolor:0xd59563&style=feature:water%7Celement:geometry%7Ccolor:0x17263c&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x515c6d&style=feature:water%7Celement:labels.text.stroke%7Ccolor:0x17263c&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
     },
     {
       'name': 'Aubergine',
       'style': MapStyle().aubergine,
-      'image': 'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0x1d2c4d&style=element:labels%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x8ec3b9&style=element:labels.text.stroke%7Ccolor:0x1a3646&style=feature:administrative.country%7Celement:geometry.stroke%7Ccolor:0x4b6878&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0x64779e&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:administrative.province%7Celement:geometry.stroke%7Ccolor:0x4b6878&style=feature:landscape.man_made%7Celement:geometry.stroke%7Ccolor:0x334e87&style=feature:landscape.natural%7Celement:geometry%7Ccolor:0x023e58&style=feature:poi%7Celement:geometry%7Ccolor:0x283d6a&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x6f9ba5&style=feature:poi%7Celement:labels.text.stroke%7Ccolor:0x1d2c4d&style=feature:poi.park%7Celement:geometry.fill%7Ccolor:0x023e58&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x3C7680&style=feature:road%7Celement:geometry%7Ccolor:0x304a7d&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x98a5be&style=feature:road%7Celement:labels.text.stroke%7Ccolor:0x1d2c4d&style=feature:road.highway%7Celement:geometry%7Ccolor:0x2c6675&style=feature:road.highway%7Celement:geometry.stroke%7Ccolor:0x255763&style=feature:road.highway%7Celement:labels.text.fill%7Ccolor:0xb0d5ce&style=feature:road.highway%7Celement:labels.text.stroke%7Ccolor:0x023e58&style=feature:transit%7Celement:labels.text.fill%7Ccolor:0x98a5be&style=feature:transit%7Celement:labels.text.stroke%7Ccolor:0x1d2c4d&style=feature:transit.line%7Celement:geometry.fill%7Ccolor:0x283d6a&style=feature:transit.station%7Celement:geometry%7Ccolor:0x3a4762&style=feature:water%7Celement:geometry%7Ccolor:0x0e1626&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x4e6d70&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
+      'image':
+          'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0x1d2c4d&style=element:labels%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x8ec3b9&style=element:labels.text.stroke%7Ccolor:0x1a3646&style=feature:administrative.country%7Celement:geometry.stroke%7Ccolor:0x4b6878&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0x64779e&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:administrative.province%7Celement:geometry.stroke%7Ccolor:0x4b6878&style=feature:landscape.man_made%7Celement:geometry.stroke%7Ccolor:0x334e87&style=feature:landscape.natural%7Celement:geometry%7Ccolor:0x023e58&style=feature:poi%7Celement:geometry%7Ccolor:0x283d6a&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x6f9ba5&style=feature:poi%7Celement:labels.text.stroke%7Ccolor:0x1d2c4d&style=feature:poi.park%7Celement:geometry.fill%7Ccolor:0x023e58&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x3C7680&style=feature:road%7Celement:geometry%7Ccolor:0x304a7d&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x98a5be&style=feature:road%7Celement:labels.text.stroke%7Ccolor:0x1d2c4d&style=feature:road.highway%7Celement:geometry%7Ccolor:0x2c6675&style=feature:road.highway%7Celement:geometry.stroke%7Ccolor:0x255763&style=feature:road.highway%7Celement:labels.text.fill%7Ccolor:0xb0d5ce&style=feature:road.highway%7Celement:labels.text.stroke%7Ccolor:0x023e58&style=feature:transit%7Celement:labels.text.fill%7Ccolor:0x98a5be&style=feature:transit%7Celement:labels.text.stroke%7Ccolor:0x1d2c4d&style=feature:transit.line%7Celement:geometry.fill%7Ccolor:0x283d6a&style=feature:transit.station%7Celement:geometry%7Ccolor:0x3a4762&style=feature:water%7Celement:geometry%7Ccolor:0x0e1626&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x4e6d70&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
     }
   ];
 }

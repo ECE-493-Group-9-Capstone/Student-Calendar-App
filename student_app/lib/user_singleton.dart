@@ -15,6 +15,7 @@ class AppUser {
   String? _educationLvl;
   String? _degree;
   String? _schedule; 
+  bool _isActive = false;
   List<UserModel> _friends = [];
   final ValueNotifier<List<UserModel>> friendsNotifier = ValueNotifier([]);
   List<Map<String, dynamic>> _friendRequests = [];
@@ -66,6 +67,7 @@ class AppUser {
       _schedule = userData['schedule'];
       _locationTracking = userData['location_tracking'];
       _currentLocation = userData['currentLocation']; // current location
+      _isActive = userData["isActive"] ?? false;
       List<String> processedFriends = List<String>.from(userData['friends'] ?? []);
       _friends = await _friendProcessor(processedFriends);
       friendsNotifier.value = List.from(_friends);
@@ -93,6 +95,7 @@ class AppUser {
           _locationTracking = data['location_tracking'];
           _currentLocation = data['currentLocation'];
           _photoURL = data['photoURL'];
+          _isActive = data["isActive"] ?? false;
           List<String> processedFriends = List<String>.from(data['friends'] ?? []);
           _friends = await _friendProcessor(processedFriends);
           friendsNotifier.value = List.from(_friends);
@@ -151,6 +154,7 @@ class AppUser {
     _locationTracking = null;
     _currentLocation = null;
     _photoURL = null;
+    _isActive = false;
   }
 
   // Getters
@@ -186,6 +190,8 @@ class AppUser {
     await removeFriendFromUsers(_ccid!, friendId);
     await refreshUserData();
   }
+
+  bool get isActive => _isActive;
 
   // Send a friend request or accept if one exists
   Future<void> sendFriendRequest(String receiverID) async {

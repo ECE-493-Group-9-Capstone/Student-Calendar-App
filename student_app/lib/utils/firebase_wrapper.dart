@@ -35,6 +35,7 @@ Future<void> addUser(String name, String ccid,  {String? photoURL}) async {
       'requested_friends': <String>[],
       'schedule': null,
       'hasSeenBottomPopup': false,
+      'isActive': false,
     });
     debugPrint("User added with doc ID: $ccid");
   } catch (e) {
@@ -391,5 +392,16 @@ Future<void> updateUserPhoto(String ccid, String photoURL) async {
     debugPrint("User photo updated for $ccid");
   } catch (e) {
     debugPrint("Error updating user photo: $e");
+  }
+}
+
+Future<void> updateUserActiveStatus(String ccid, bool isActive) async {
+  try {
+    DocumentReference docRef =
+        FirebaseFirestore.instance.collection('users').doc(ccid);
+    await docRef.update({'isActive': isActive});
+    debugPrint("User $ccid activity status updated: $isActive");
+  } catch (e) {
+    debugPrint("Error updating isActive status for user $ccid: $e");
   }
 }
