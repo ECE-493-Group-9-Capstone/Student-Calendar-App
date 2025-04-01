@@ -157,8 +157,12 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
       _lastState = state;
 
       final pref = AppUser.instance.locationTracking;
+      final ccid = AppUser.instance.ccid;
       developer.log('MAJOR Lifecycle → $state | pref=$pref', name: 'MainPage');
 
+      if (ccid != null) {
+        updateUserActiveStatus(ccid, state == AppLifecycleState.resumed);
+      }
       // Stop current tracking first.
       LocationTrackingService().stopTracking();
 
