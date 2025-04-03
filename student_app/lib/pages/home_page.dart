@@ -20,10 +20,14 @@ class _HomePageState extends State<HomePage> {
   List<Appointment> _appointments = [];
   bool _isLoading = true;
   CalendarView _calendarView = CalendarView.week;
+  DateTime? _selectedDate;
+
 
   @override
   void initState() {
     super.initState();
+    _selectedDate = DateTime.now(); 
+
     _loadCalendarEvents();
   }
 
@@ -77,6 +81,24 @@ class _HomePageState extends State<HomePage> {
       _isLoading = false;
     });
   }
+
+    List<Appointment> _getFilteredAppointments() {
+    final now = DateTime.now();
+
+    return _appointments.where((appt) {
+      final start = appt.startTime;
+
+      if (_selectedDate != null) {
+        return start.year == _selectedDate!.year &&
+            start.month == _selectedDate!.month &&
+            start.day == _selectedDate!.day;
+      }
+
+      return start.isAfter(now) || start.day == now.day;
+    }).toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+  }
+
 
   void _changeView(CalendarView newView) {
     setState(() {
@@ -269,143 +291,335 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showCreateEventDialog(BuildContext context, DateTime defaultStart) {
-    final titleController = TextEditingController();
-    final emailsController = TextEditingController();
-    DateTime selectedStart = defaultStart;
-    DateTime selectedEnd = defaultStart.add(Duration(hours: 1));
+  final titleController = TextEditingController();
+  final emailsController = TextEditingController();
+  DateTime selectedStart = defaultStart;
+  DateTime selectedEnd = defaultStart.add(Duration(hours: 1));
 
-    showDialog(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          title: const Text("Create Event"),
-          content: SingleChildScrollView(
+  showDialog(
+    context: context,
+    builder: (_) {
+      return Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(labelText: "Event Title"),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: emailsController,
-                  decoration: const InputDecoration(
-                    labelText: "Invitees (comma-separated emails)",
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+                  blendMode: BlendMode.srcIn,
+                  child: const Text(
+                    "Create Event",
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
+
+                _buildTextField("Event Title", titleController),
+                const SizedBox(height: 20),
+                _buildTextField("Invitees (comma-separated emails)", emailsController),
+
+                const SizedBox(height: 20),
                 Text("Start: ${formatDateTime(selectedStart)}"),
                 Text("End: ${formatDateTime(selectedEnd)}"),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () async {
-                    Navigator.pop(context);
-                    final title = titleController.text;
-                    final emails = emailsController.text
-                        .split(',')
-                        .map((e) => e.trim())
-                        .where((e) => e.isNotEmpty)
-                        .toList();
 
-                    if (emails.isEmpty || title.isEmpty) return;
+                const SizedBox(height: 24),
 
-                    await _findBestTimeAndCreateEvent(
-                      title,
-                      emails,
-                      selectedStart,
-                      selectedEnd,
-                    );
-                  },
-                  child: const Text("Find Best Time"),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(2),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                      elevation: 0,
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      final title = titleController.text;
+                      final emails = emailsController.text
+                          .split(',')
+                          .map((e) => e.trim())
+                          .where((e) => e.isNotEmpty)
+                          .toList();
+
+                      if (emails.isEmpty || title.isEmpty) return;
+
+                      await _findBestTimeAndCreateEvent(
+                        title,
+                        emails,
+                        selectedStart,
+                        selectedEnd,
+                      );
+                    },
+                    child: const Text("Find Best Time", style: TextStyle(fontSize: 16)),
+                  ),
                 ),
               ],
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
+Widget _buildTextField(String hint, TextEditingController controller) {
+  return Container(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(25),
+      gradient: const LinearGradient(
+        colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+    ),
+    padding: const EdgeInsets.all(2),
+    child: Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(25),
+        color: Colors.white,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(fontSize: 16),
+          border: InputBorder.none,
+        ),
+      ),
+    ),
+  );
+}
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("My Calendar"),
-        actions: [
-          PopupMenuButton<CalendarView>(
-            icon: const Icon(Icons.view_week),
-            onSelected: _changeView,
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: CalendarView.day,
-                child: Text("Day View"),
+
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : Column(
+            children: [
+              // Gradient-bordered calendar inside an Expanded
+              Expanded(
+                flex: 7,
+                child: Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF396548),
+                          Color(0xFF6B803D),
+                          Color(0xFF909533),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(30),
+                        bottomRight: Radius.circular(30),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(3),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(27),
+                      child: Container(
+                          padding: const EdgeInsets.only(top: 16), 
+
+                        child: SfCalendar(
+                          view: CalendarView.month,
+                          dataSource: EventDataSource(_appointments),
+                          backgroundColor: Colors.white,
+                          todayHighlightColor: const Color(0xFF909533),
+                          showNavigationArrow: true,
+                          viewHeaderHeight: 40,
+                          headerHeight: 50,
+                          cellBorderColor: Colors.transparent,
+                          selectionDecoration: BoxDecoration(),
+                          headerStyle: CalendarHeaderStyle(
+                            textAlign: TextAlign.center,
+                            backgroundColor: Colors.transparent,
+                            textStyle: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          monthViewSettings: const MonthViewSettings(
+                            appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
+                            showAgenda: false,
+                            showTrailingAndLeadingDates: false,
+                            dayFormat: 'EEE',
+                            numberOfWeeksInView: 5,
+                          ),
+                          onTap: (CalendarTapDetails details) {
+  if (details.date != null) {
+    final tappedDate = details.date!.toLocal();
+    setState(() {
+      _selectedDate = tappedDate;
+    });
+
+    _showCreateEventDialog(context, tappedDate);
+  }
+},
+
+                          monthCellBuilder: (BuildContext context, MonthCellDetails details) {
+                            final isToday = DateTime.now().year == details.date.year &&
+                                DateTime.now().month == details.date.month &&
+                                DateTime.now().day == details.date.day;
+                        
+                            final isSelected = _selectedDate != null &&
+                                _selectedDate!.year == details.date.year &&
+                                _selectedDate!.month == details.date.month &&
+                                _selectedDate!.day == details.date.day;
+                        
+                            return Center(
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: isSelected
+                                      ? Border.all(width: 3, color: Colors.transparent)
+                                      : isToday
+                                          ? Border.all(width: 2, color: Color(0xFF909533))
+                                          : null,
+                                  gradient: isSelected
+                                      ? const LinearGradient(
+                                          colors: [
+                                            Color(0xFF396548),
+                                            Color(0xFF6B803D),
+                                            Color(0xFF909533),
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        )
+                                      : null,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${details.date.day}',
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.black,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              PopupMenuItem(
-                value: CalendarView.week,
-                child: Text("Week View"),
+
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Upcoming Events",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
               ),
-              PopupMenuItem(
-                value: CalendarView.month,
-                child: Text("Month View"),
+              const SizedBox(height: 10),
+
+              // Upcoming events list
+              Expanded(
+                flex: 4,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: ListView(
+                    children: [
+                      if (_getFilteredAppointments().isEmpty)
+                        const Text("No events found.", style: TextStyle(color: Colors.grey)),
+
+                      ..._getFilteredAppointments().map((appt) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Column(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF909533),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                Container(
+                                  width: 2,
+                                  height: 60,
+                                  color: Colors.grey.shade300,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      appt.subject.split('\n')[0],
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "${formatDateTime(appt.startTime)} → ${formatDateTime(appt.endTime)}",
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await AuthService().logout();
-              AppUser.instance.logout();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const AuthWrapper()),
-                (route) => false,
-              );
-            },
-          )
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SfCalendar(
-              key: ValueKey(_calendarView),
-              view: _calendarView,
-              dataSource: EventDataSource(_appointments),
-              monthViewSettings: const MonthViewSettings(
-                appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
-              ),
-              appointmentTextStyle: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-              todayHighlightColor: Colors.green,
-              onTap: (CalendarTapDetails details) {
-                if (details.appointments == null ||
-                    details.appointments!.isEmpty) {
-                  _showCreateEventDialog(context, details.date!);
-                } else {
-                  final appointment = details.appointments!.first;
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: Text(appointment.subject),
-                      content: Text(
-                        'Start: ${appointment.startTime}\n'
-                        'End: ${appointment.endTime}\n'
-                        'Location: ${appointment.location ?? "Unknown"}',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Close'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-              },
-            ),
-    );
-  }
+  );
+}
+
 }
 
 class EventDataSource extends CalendarDataSource {

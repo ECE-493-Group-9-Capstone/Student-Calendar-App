@@ -12,6 +12,8 @@ import 'package:student_app/utils/event_service.dart';
 import 'maps_bottom_sheet.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
+import 'package:student_app/utils/study_spot_service.dart';
+
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -39,7 +41,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   late CameraPosition _initialCameraPosition;
   late CameraPosition _currentCameraPosition;
 
-  // All markers (friend + event) are stored here
+  // All markers (friend + event + study spot) are stored here
   final Map<MarkerId, Marker> _markers = {};
 
   // Friend icon assets (from marker_utils)
@@ -58,6 +60,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
   // Single event marker icon for all events
   BitmapDescriptor? _eventMarkerIcon;
+  // New study spot marker icon
+  BitmapDescriptor? _studySpotIcon;
 
   // Store list of events for bottom sheet display
   List<dynamic> _events = [];
@@ -122,7 +126,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
           .whereType<Map<String, dynamic>>()
           .toList();
 
-
       final usersSnapshot = await firestore
           .collection('users')
           .where('isActive', isEqualTo: true)
@@ -150,8 +153,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
             .where((userLoc) =>
                 _calculateDistanceMeters(spotLocation, userLoc) <= 50)
             .length;
-
-
 
         final circle = Circle(
           circleId: CircleId("spot_${spot['name']}"),
@@ -210,9 +211,11 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _loadFriendIcons(); // Circle & Pin from marker_utils for friends
       await _loadEventIcon(); // Single local asset for events
+      await _loadStudySpotIcon(); // Load study spot marker asset
 
       await _addFriendMarkers();
       await _addEventMarkers(); // Show event markers and update _events
+      await _addStudySpotMarkers(); // Add study spot markers
 
       _updateFriendSubscriptions(); // Real-time friend updates
 
@@ -244,6 +247,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     await _loadFriendIcons();
     await _addFriendMarkers();
     await _addEventMarkers();
+    await _addStudySpotMarkers();
   }
 
   // --------------------------------------------------
@@ -296,6 +300,22 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     }
   }
 
+  // --------------------------------------------------
+  // STUDY SPOTS: Load study spot marker asset
+  // --------------------------------------------------
+  Future<void> _loadStudySpotIcon() async {
+    if (_studySpotIcon != null) return;
+
+    try {
+      _studySpotIcon =
+          await getResizedMarkerIcon('assets/study_spot.png', 80, 80);
+      debugPrint("Successfully loaded study_spot_marker.png as custom marker");
+    } catch (e) {
+      debugPrint("Error loading study spot marker icon: $e");
+      _studySpotIcon = BitmapDescriptor.defaultMarker;
+    }
+  }
+
   // ---------------------
   //  FRIEND MARKER LOGIC
   // ---------------------
@@ -316,8 +336,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         icon: circleIcon,
         onTap: () {
           _switchToPinIcon(markerId, friend);
-          _controller
-              ?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
+          _controller?.animateCamera(
+              CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
           // Removed friend info window.
         },
       );
@@ -380,8 +400,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         icon: _eventMarkerIcon!, // single local asset for all events
         onTap: () {
           final eventLatLng = LatLng(lat, lng);
-          _controller
-              ?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
+          _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
           // Show the event info window with a white background and gradient border.
           _customInfoWindowController.addInfoWindow!(
             Container(
@@ -437,7 +456,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                       // Date & Time processing
                       Builder(
                         builder: (context) {
-                          // Process the date value
                           final dynamic dateValue = event['date'];
                           DateTime eventDate;
                           try {
@@ -451,7 +469,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                           final String formattedDate =
                               DateFormat('MMMM dd, yyyy').format(eventDate);
 
-                          // Process the time values
                           final startTimeStr =
                               event['start_time'] ?? '00:00:00';
                           final endTimeStr = event['end_time'] ?? '00:00:00';
@@ -480,7 +497,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Date row
                               RichText(
                                 text: TextSpan(
                                   style: const TextStyle(
@@ -495,7 +511,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              // Time row
                               RichText(
                                 text: TextSpan(
                                   style: const TextStyle(
@@ -525,6 +540,44 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         },
       );
       _markers[markerId] = marker;
+    }
+    setState(() {});
+  }
+
+  // ---------------------------
+  // STUDY SPOT MARKERS
+  // ---------------------------
+  Future<void> _addStudySpotMarkers() async {
+    // Ensure the study spot icon is loaded
+    if (_studySpotIcon == null) return;
+
+    final studySpotService =
+        StudySpotService(firestore: FirebaseFirestore.instance);
+    final allStudySpots = await studySpotService.getAllStudySpots();
+
+    for (var spot in allStudySpots) {
+      // Extract coordinates (supporting both GeoPoint and Map format)
+      final dynamic coord = spot['coordinates'];
+      double? lat;
+      double? lng;
+      if (coord is GeoPoint) {
+        lat = coord.latitude;
+        lng = coord.longitude;
+      } else if (coord is Map<String, dynamic>) {
+        lat = coord['lat'];
+        lng = coord['lng'];
+      }
+      final markerId = MarkerId("studySpot_${spot['id']}");
+final marker = Marker(
+  markerId: markerId,
+  position: LatLng(lat!, lng!),
+  icon: _studySpotIcon!,
+  onTap: () {
+    _controller?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat!, lng!), 16));
+  },
+);
+_markers[markerId] = marker;
+
     }
     setState(() {});
   }
@@ -587,7 +640,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
             position: newPos,
             icon: icon,
             onTap: () {
-              // For friends, simply animate the camera without showing an info window.
               _controller
                   ?.animateCamera(CameraUpdate.newLatLngZoom(newPos, 16));
               _resetAllMarkersToCircle();
@@ -668,8 +720,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
             initialCameraPosition: _initialCameraPosition,
             markers: Set<Marker>.of(_markers.values),
             myLocationButtonEnabled: true,
-            circles:
-                _heatmapCircles, // ✅ Add this line to enable heatmap rendering
+            circles: _heatmapCircles,
             onTap: (LatLng latLng) {
               _customInfoWindowController.hideInfoWindow!();
               _resetAllMarkersToCircle();
@@ -684,7 +735,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
               controller.setMapStyle(MapStyle().retro);
             },
           ),
-
           Positioned(
             top: 80,
             right: 5,
@@ -708,7 +758,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
             ),
           ),
           Positioned(
-            top: 140, // adjust if needed
+            top: 140,
             right: 5,
             child: FloatingActionButton(
               mini: true,
@@ -717,19 +767,16 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
               backgroundColor: Colors.white,
               child: Icon(
                 _showHeatmap ? Icons.visibility_off : Icons.visibility,
-                color: Color(0xFF396548),
+                color: const Color(0xFF396548),
               ),
             ),
           ),
-
-          // Reduced overall size of the info window for events.
           CustomInfoWindow(
             controller: _customInfoWindowController,
             height: MediaQuery.of(context).size.height * 0.25,
             width: MediaQuery.of(context).size.width * 0.7,
             offset: 50.0,
           ),
-          // Updated MapsBottomSheet now receives the draggableController.
           MapsBottomSheet(
             draggableController: _draggableController,
             friends: AppUser.instance.friends,
@@ -755,13 +802,11 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
               final lng = coords['lng'] as double?;
               if (lat != null && lng != null) {
                 final eventLatLng = LatLng(lat, lng);
-                // Animate camera to the event location with a zoom of 18.
                 _controller?.animateCamera(
                     CameraUpdate.newLatLngZoom(eventLatLng, 18));
-                // Show the event info window (with white background and gradient border).
                 _customInfoWindowController.addInfoWindow!(
                   Container(
-                    padding: const EdgeInsets.all(2), // border thickness
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [
@@ -783,7 +828,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Title
                             Text(
                               event['title'] ?? 'Event Title',
                               style: const TextStyle(
@@ -793,7 +837,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            // Location row
                             RichText(
                               text: TextSpan(
                                 style: const TextStyle(
@@ -811,10 +854,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            // Date & Time row using your processing logic
                             Builder(
                               builder: (context) {
-                                // Process the date value
                                 final dynamic dateValue = event['date'];
                                 DateTime eventDate;
                                 try {
@@ -829,7 +870,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                                     DateFormat('MMMM dd, yyyy')
                                         .format(eventDate);
 
-                                // Process the time values
                                 final startTimeStr =
                                     event['start_time'] ?? '00:00:00';
                                 final endTimeStr =
@@ -847,8 +887,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                                   parsedEnd = DateTime(0);
                                 }
                                 if (parsedEnd.isBefore(parsedStart)) {
-                                  parsedEnd =
-                                      parsedEnd.add(const Duration(days: 1));
+                                  parsedEnd = parsedEnd.add(const Duration(days: 1));
                                 }
                                 final formattedStart = DateFormat('h:mma')
                                     .format(parsedStart)
@@ -856,6 +895,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                                 final formattedEnd = DateFormat('h:mma')
                                     .format(parsedEnd)
                                     .toLowerCase();
+
                                 final timeText =
                                     "$formattedDate  $formattedStart - $formattedEnd";
 
@@ -882,10 +922,9 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                       ),
                     ),
                   ),
-                  eventLatLng,
+                  LatLng(lat!, lng!),
                 );
               }
-              // Animate the bottom sheet to the collapsed size.
               _draggableController.animateTo(
                 0.08,
                 duration: const Duration(milliseconds: 300),
@@ -957,6 +996,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
       ),
     );
   }
+
 
   final List<dynamic> _mapThemes = [
     {
