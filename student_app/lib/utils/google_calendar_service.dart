@@ -23,7 +23,6 @@ class GoogleCalendarService {
         "primary",
         singleEvents: true,
         orderBy: 'startTime',
-        timeMin: DateTime.now().toUtc(),
       );
 
       return calEvents.items ?? [];
