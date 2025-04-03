@@ -7,7 +7,7 @@ import '../user_singleton.dart';
 import 'dart:typed_data';
 import 'package:student_app/utils/cache_helper.dart';
 import '../utils/firebase_wrapper.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Needed for canceling request
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -33,6 +33,7 @@ class _FriendsPageState extends State<FriendsPage> {
   void initState() {
     super.initState();
     _initializeNotifications();
+    _requestIOSPermissions();
     AppUser.instance.friendRequestsNotifier.addListener(() {
       final currentCount = AppUser.instance.friendRequestsNotifier.value.length;
       if (currentCount > _lastRequestCount) {
@@ -58,9 +59,26 @@ class _FriendsPageState extends State<FriendsPage> {
 
   void _initializeNotifications() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const iOS = DarwinInitializationSettings();
+
     await flutterLocalNotificationsPlugin.initialize(
-      InitializationSettings(android: android),
+      InitializationSettings(
+        android: android,
+        iOS: iOS,
+      ),
     );
+  }
+
+  void _requestIOSPermissions() {
+    flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
   }
 
   Future<void> _loadUsers() async {
@@ -71,8 +89,7 @@ class _FriendsPageState extends State<FriendsPage> {
       // Only include users who are not the current user and not already friends.
       allUsers = users
           .where((u) =>
-              u.ccid != AppUser.instance.ccid &&
-              !friendsCcids.contains(u.ccid))
+              u.ccid != AppUser.instance.ccid && !friendsCcids.contains(u.ccid))
           .toList();
     });
   }
@@ -127,8 +144,9 @@ class _FriendsPageState extends State<FriendsPage> {
   Future<void> _cancelFriendRequest(String ccid) async {
     try {
       // Remove from current user's requested_friends list
-      DocumentReference senderRef =
-          FirebaseFirestore.instance.collection('users').doc(AppUser.instance.ccid);
+      DocumentReference senderRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(AppUser.instance.ccid);
       // Remove current user from the other user's friend_requests list
       DocumentReference receiverRef =
           FirebaseFirestore.instance.collection('users').doc(ccid);
@@ -142,8 +160,8 @@ class _FriendsPageState extends State<FriendsPage> {
       setState(() {
         _requestedFriends.remove(ccid);
       });
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Friend request canceled')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Friend request canceled')));
     } catch (e) {
       debugPrint("Error canceling friend request: $e");
     }
@@ -331,8 +349,7 @@ class _FriendsPageState extends State<FriendsPage> {
                         'circle_${user.photoURL.hashCode}_80.0'),
                     builder: (ctx, snap) {
                       if (snap.connectionState != ConnectionState.done)
-                        return const CircularProgressIndicator(
-                            strokeWidth: 2);
+                        return const CircularProgressIndicator(strokeWidth: 2);
                       final bytes = snap.data;
                       if (bytes != null && bytes.isNotEmpty) {
                         return ClipOval(
@@ -412,8 +429,7 @@ class _FriendsPageState extends State<FriendsPage> {
                         'circle_${user.photoURL.hashCode}_80.0'),
                     builder: (ctx, snap) {
                       if (snap.connectionState != ConnectionState.done)
-                        return const CircularProgressIndicator(
-                            strokeWidth: 2);
+                        return const CircularProgressIndicator(strokeWidth: 2);
                       final bytes = snap.data;
                       if (bytes != null && bytes.isNotEmpty) {
                         return ClipOval(
