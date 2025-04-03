@@ -8,7 +8,8 @@ class UserModel {
   final String _degree;
   final String _locationTracking;
   final String? _photoURL;
-  final Map<String, dynamic>? _currentLocation; // NEW field
+  final String? _phoneNumber;
+  final Map<String, dynamic>? _currentLocation; 
 
   UserModel(
     this._ccid,
@@ -20,7 +21,8 @@ class UserModel {
     this._degree,
     this._locationTracking,
     this._photoURL,
-    this._currentLocation, // NEW: current location data
+    this._currentLocation, 
+    this._phoneNumber,
   );
 
   // Getters
@@ -32,6 +34,7 @@ class UserModel {
   String get educationLv1 => _educationLvl;
   String get degree => _degree;
   String get locationTracking => _locationTracking;
+  String? get phoneNumber => _phoneNumber;
   String? get photoURL => _photoURL;
-  Map<String, dynamic>? get currentLocation => _currentLocation; // NEW getter
+  Map<String, dynamic>? get currentLocation => _currentLocation; 
 }
