@@ -127,7 +127,8 @@ Future<List<UserModel>> getAllUsers() async {
         users[i]["degree"] ?? "No degree",                 // degree
         users[i]["location_tracking"] ?? "No tracking",    // locationTracking
         users[i]["photoURL"] ?? "",                        // photoURL (nullable)
-        users[i]["currentLocation"]                        // currentLocation (Map or null)
+        users[i]["currentLocation"],                       // currentLocation (Map or null)
+        users[i]["phone_number"],
       );
       allUsers.add(user);
     }
@@ -405,3 +406,14 @@ Future<void> updateUserActiveStatus(String ccid, bool isActive) async {
     debugPrint("Error updating isActive status for user $ccid: $e");
   }
 }
+
+Future<void> uploadPhoneNumber(String userId, String phoneNumber) async {
+  try {
+    DocumentReference docRef =
+        FirebaseFirestore.instance.collection('users').doc(userId);
+    await docRef.set({'phone_number': phoneNumber}, SetOptions(merge: true));
+  } catch (e) {
+    debugPrint("Error uploading phone number for user $userId: $e");
+  }
+}
+

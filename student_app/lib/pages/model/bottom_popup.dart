@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'welcome_view.dart';
 import 'discipline_view.dart';
 import 'schedule_view.dart';
-import 'location_permission.dart'; // This is the LocationView file.
+import 'location_permission.dart';
 import 'package:student_app/user_singleton.dart';
 import 'package:student_app/utils/firebase_wrapper.dart';
 import 'dart:developer' as developer;
@@ -12,6 +12,7 @@ class BottomPopup extends StatefulWidget {
   final String userName;
   const BottomPopup({super.key, required this.userName});
   String get firstName => userName.split(' ').first;
+
   @override
   BottomPopupState createState() => BottomPopupState();
 }
@@ -20,12 +21,14 @@ class BottomPopupState extends State<BottomPopup> {
   static int _savedStep = 0;
   int _currentStep = 0;
 
+  final GlobalKey<ScheduleViewState> _scheduleKey =
+      GlobalKey<ScheduleViewState>();
+
   String? _selectedEducationLevel;
   String? _selectedDegree;
   String? _selectedMajor;
   String _selectedLocationOption = "Only When Using App";
 
-  //change these based on actual degrees
   final List<String> _educationLevels = ["Undergraduate", "Graduate"];
   final List<String> _degreeOptions = [
     "Bachelor of Science",
@@ -52,7 +55,6 @@ class BottomPopupState extends State<BottomPopup> {
         name: 'BottomPopup');
   }
 
-  //location setter
   void _updateLocationPreference(String preference) {
     developer.log("Updating location preference to: $preference",
         name: 'BottomPopup');
@@ -67,45 +69,36 @@ class BottomPopupState extends State<BottomPopup> {
     switch (_currentStep) {
       case 0:
         return WelcomeView(firstName: widget.firstName);
-
       case 1:
         return DisciplineView(
           selectedEducationLevel: _selectedEducationLevel,
           selectedDegree: _selectedDegree,
           selectedMajor: _selectedMajor,
           onEducationLevelChanged: (value) {
-            developer.log("Education level changed to: $value",
-                name: 'BottomPopup');
             setState(() => _selectedEducationLevel = value);
           },
           onDegreeChanged: (value) {
-            developer.log("Degree changed to: $value", name: 'BottomPopup');
             setState(() => _selectedDegree = value);
           },
           onMajorChanged: (value) {
-            developer.log("Major changed to: $value", name: 'BottomPopup');
             setState(() => _selectedMajor = value);
           },
           educationLevels: _educationLevels,
           degreeOptions: _degreeOptions,
           majorOptions: _majorOptions,
         );
-
       case 2:
-        return const ScheduleView();
-
+        return ScheduleView(key: _scheduleKey);
       case 3:
         return LocationView(
           onPreferenceUpdated: _updateLocationPreference,
           parentContext: Navigator.of(context, rootNavigator: true).context,
         );
-
       default:
         return Container();
     }
   }
 
-  //floating button
   Widget _buildFloatingButton() {
     IconData icon;
     VoidCallback? onPressed;
@@ -117,13 +110,10 @@ class BottomPopupState extends State<BottomPopup> {
           developer.log("Floating button pressed at step: $_currentStep",
               name: 'BottomPopup');
 
-          // On step 1, we ensure discipline fields are not empty before proceeding.
           if (_currentStep == 1) {
             if (_selectedEducationLevel == null ||
                 _selectedDegree == null ||
                 _selectedMajor == null) {
-              developer.log("Incomplete discipline fields",
-                  name: 'BottomPopup');
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                     content:
@@ -134,9 +124,6 @@ class BottomPopupState extends State<BottomPopup> {
 
             final ccid = AppUser.instance.ccid;
             if (ccid != null) {
-              developer.log("Updating user profile with discipline data",
-                  name: 'BottomPopup');
-              // This calls Firestore and updates the user doc
               await updateUserProfile(
                 ccid,
                 discipline: _selectedMajor,
@@ -146,11 +133,22 @@ class BottomPopupState extends State<BottomPopup> {
             }
           }
 
+          if (_currentStep == 2) {
+            final success =
+                await _scheduleKey.currentState?.submitPhoneNumber() ?? false;
+            if (!success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content:
+                        Text('Please enter and submit a valid phone number.')),
+              );
+              return;
+            }
+          }
+
           setState(() {
             _currentStep++;
             _savedStep = _currentStep;
-            developer.log("Moving to next step: $_currentStep",
-                name: 'BottomPopup');
           });
         } catch (e, stack) {
           developer.log("Exception in floating button onPressed: $e",
@@ -158,20 +156,14 @@ class BottomPopupState extends State<BottomPopup> {
         }
       };
     } else {
-      // If we're on the last step => checkmark
       icon = Icons.check;
       onPressed = () async {
         try {
-          developer.log(
-              "Final step pressed. Saving location preference: $_selectedLocationOption",
-              name: 'BottomPopup');
           final ccid = AppUser.instance.ccid;
           if (ccid != null) {
             await updateUserLocationPreference(ccid, _selectedLocationOption);
           }
           _savedStep = 0;
-          developer.log("Popup flow complete. Closing BottomPopup",
-              name: 'BottomPopup');
           if (mounted) {
             Navigator.of(context).pop();
           }
@@ -228,8 +220,6 @@ class BottomPopupState extends State<BottomPopup> {
   @override
   Widget build(BuildContext context) {
     final double sheetHeight = MediaQuery.of(context).size.height * 0.75;
-    developer.log("Building BottomPopup widget with height: $sheetHeight",
-        name: 'BottomPopup');
     return FadeInUp(
       duration: const Duration(milliseconds: 1000),
       delay: const Duration(milliseconds: 500),

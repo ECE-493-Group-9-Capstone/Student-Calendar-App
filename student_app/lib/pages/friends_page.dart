@@ -212,7 +212,6 @@ class _FriendsPageState extends State<FriendsPage> {
             const SizedBox(height: 30),
             _buildSearchBar(),
             const SizedBox(height: 40),
-            // Conditionally display search results or the friends list.
             isSearching ? _buildSearchResults() : _buildFriendsList(),
           ],
         ),
@@ -392,8 +391,7 @@ class _FriendsPageState extends State<FriendsPage> {
               color: Colors.white, borderRadius: BorderRadius.circular(30)),
           child: InkWell(
             borderRadius: BorderRadius.circular(30),
-            // If a request has been sent already, tapping the icon will cancel it;
-            // otherwise, it sends a friend request.
+          
             onTap: () {
               if (_requestedFriends.contains(user.ccid)) {
                 _cancelFriendRequest(user.ccid);
@@ -449,7 +447,6 @@ class _FriendsPageState extends State<FriendsPage> {
                     ],
                   ),
                 ),
-                // Icon changes based on friend request status.
                 (_requestedFriends.contains(user.ccid))
                     ? IconButton(
                         icon: const Icon(Icons.hourglass_empty),

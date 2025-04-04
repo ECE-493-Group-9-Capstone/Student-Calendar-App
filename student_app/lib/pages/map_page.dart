@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:ui'; // If needed
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:custom_info_window/custom_info_window.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -14,7 +14,6 @@ import 'package:intl/intl.dart';
 import 'dart:math';
 import 'package:student_app/utils/study_spot_service.dart';
 
-
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
 
@@ -22,7 +21,6 @@ class MapPage extends StatefulWidget {
   MapPageState createState() => MapPageState();
 }
 
-// Optional helper to track friend marker + last update time
 class _FriendMarker {
   Marker marker;
   DateTime? lastUpdated;
@@ -41,37 +39,29 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   late CameraPosition _initialCameraPosition;
   late CameraPosition _currentCameraPosition;
 
-  // All markers (friend + event + study spot) are stored here
   final Map<MarkerId, Marker> _markers = {};
 
-  // Friend icon assets (from marker_utils)
   final Map<String, BitmapDescriptor> _circleIcons = {};
   final Map<String, BitmapDescriptor> _pinIcons = {};
   final Map<String, MemoryImage> _circleMemoryImages = {};
 
-  // Real-time location updates for friends
   final Map<String, StreamSubscription<DocumentSnapshot>> _friendSubscriptions =
       {};
   final ValueNotifier<Map<String, DateTime?>> _lastUpdatedNotifier =
       ValueNotifier({});
 
-  // Timer for optional periodic refresh
   Timer? _refreshTimer;
 
-  // Single event marker icon for all events
   BitmapDescriptor? _eventMarkerIcon;
-  // New study spot marker icon
   BitmapDescriptor? _studySpotIcon;
 
-  // Store list of events for bottom sheet display
   List<dynamic> _events = [];
 
-  // DraggableScrollableController required by updated MapsBottomSheet
   final DraggableScrollableController _draggableController =
       DraggableScrollableController();
 
   double _calculateDistanceMeters(LatLng a, LatLng b) {
-    const earthRadius = 6371000; // meters
+    const earthRadius = 6371000;
     final dLat = _degToRad(b.latitude - a.latitude);
     final dLng = _degToRad(b.longitude - a.longitude);
 
@@ -120,8 +110,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                 'location': LatLng(lat, lng),
               };
             }
-
-            return null; // Skip if we couldn’t get valid coords
+            return null;
           })
           .whereType<Map<String, dynamic>>()
           .toList();
@@ -193,7 +182,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   void initState() {
     super.initState();
 
-    // Decide initial camera position
     if (AppUser.instance.currentLocation != null) {
       final lat = AppUser.instance.currentLocation!['lat'];
       final lng = AppUser.instance.currentLocation!['lng'];
@@ -209,15 +197,15 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     _currentCameraPosition = _initialCameraPosition;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _loadFriendIcons(); // Circle & Pin from marker_utils for friends
-      await _loadEventIcon(); // Single local asset for events
-      await _loadStudySpotIcon(); // Load study spot marker asset
+      await _loadFriendIcons();
+      await _loadEventIcon();
+      await _loadStudySpotIcon();
 
       await _addFriendMarkers();
-      await _addEventMarkers(); // Show event markers and update _events
-      await _addStudySpotMarkers(); // Add study spot markers
+      await _addEventMarkers();
+      await _addStudySpotMarkers();
 
-      _updateFriendSubscriptions(); // Real-time friend updates
+      _updateFriendSubscriptions();
 
       _refreshTimer = Timer.periodic(Duration(seconds: 15), (_) {
         if (_showHeatmap) _generateStudySpotHeatmap();
@@ -235,14 +223,12 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   @override
   void dispose() {
     _refreshTimer?.cancel();
-    // Cancel all friend subscriptions
     for (var sub in _friendSubscriptions.values) {
       sub.cancel();
     }
     super.dispose();
   }
 
-  /// Re-runs friend icon logic and event logic (if needed)
   Future<void> refreshMarkers() async {
     await _loadFriendIcons();
     await _addFriendMarkers();
@@ -250,9 +236,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     await _addStudySpotMarkers();
   }
 
-  // --------------------------------------------------
-  //  FRIENDS: Load circle + pin icons from marker_utils
-  // --------------------------------------------------
   Future<void> _loadFriendIcons() async {
     final friends = AppUser.instance.friends;
     for (var friend in friends) {
@@ -284,9 +267,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     }
   }
 
-  // -------------------------------------
-  //  EVENTS: Single local asset for icon
-  // -------------------------------------
   Future<void> _loadEventIcon() async {
     if (_eventMarkerIcon != null) return;
 
@@ -300,9 +280,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     }
   }
 
-  // --------------------------------------------------
-  // STUDY SPOTS: Load study spot marker asset
-  // --------------------------------------------------
   Future<void> _loadStudySpotIcon() async {
     if (_studySpotIcon != null) return;
 
@@ -316,9 +293,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     }
   }
 
-  // ---------------------
-  //  FRIEND MARKER LOGIC
-  // ---------------------
   Future<void> _addFriendMarkers() async {
     final friends = AppUser.instance.friends;
     for (var friend in friends) {
@@ -338,7 +312,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
           _switchToPinIcon(markerId, friend);
           _controller?.animateCamera(
               CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
-          // Removed friend info window.
         },
       );
 
@@ -347,7 +320,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     setState(() {});
   }
 
-  /// Switch from circle icon to pin icon for a friend
   void _switchToPinIcon(MarkerId markerId, dynamic friend) {
     final oldMarker = _markers[markerId];
     if (oldMarker == null) return;
@@ -358,7 +330,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     });
   }
 
-  /// Reset all friend markers to circle icons
   void _resetAllMarkersToCircle() {
     final friends = AppUser.instance.friends;
     for (var friend in friends) {
@@ -373,16 +344,12 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     setState(() {});
   }
 
-  // ------------------
-  //  EVENT MARKERS
-  // ------------------
   Future<void> _addEventMarkers() async {
     if (_eventMarkerIcon == null) return;
 
     final eventService = EventService(firestore: FirebaseFirestore.instance);
     final allEvents = await eventService.getAllEvents();
 
-    // Save events to state for bottom sheet display.
     _events = allEvents;
 
     for (var event in allEvents) {
@@ -397,14 +364,13 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
       final marker = Marker(
         markerId: markerId,
         position: LatLng(lat, lng),
-        icon: _eventMarkerIcon!, // single local asset for all events
+        icon: _eventMarkerIcon!,
         onTap: () {
           final eventLatLng = LatLng(lat, lng);
           _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
-          // Show the event info window with a white background and gradient border.
           _customInfoWindowController.addInfoWindow!(
             Container(
-              padding: const EdgeInsets.all(2), // border thickness
+              padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [
@@ -426,7 +392,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title
                       Text(
                         event['title'] ?? 'Event Title',
                         style: const TextStyle(
@@ -436,7 +401,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      // Location row
                       RichText(
                         text: TextSpan(
                           style: const TextStyle(
@@ -453,7 +417,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      // Date & Time processing
                       Builder(
                         builder: (context) {
                           final dynamic dateValue = event['date'];
@@ -544,11 +507,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     setState(() {});
   }
 
-  // ---------------------------
-  // STUDY SPOT MARKERS
-  // ---------------------------
   Future<void> _addStudySpotMarkers() async {
-    // Ensure the study spot icon is loaded
     if (_studySpotIcon == null) return;
 
     final studySpotService =
@@ -556,7 +515,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     final allStudySpots = await studySpotService.getAllStudySpots();
 
     for (var spot in allStudySpots) {
-      // Extract coordinates (supporting both GeoPoint and Map format)
       final dynamic coord = spot['coordinates'];
       double? lat;
       double? lng;
@@ -568,23 +526,20 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         lng = coord['lng'];
       }
       final markerId = MarkerId("studySpot_${spot['id']}");
-final marker = Marker(
-  markerId: markerId,
-  position: LatLng(lat!, lng!),
-  icon: _studySpotIcon!,
-  onTap: () {
-    _controller?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat!, lng!), 16));
-  },
-);
-_markers[markerId] = marker;
-
+      final marker = Marker(
+        markerId: markerId,
+        position: LatLng(lat!, lng!),
+        icon: _studySpotIcon!,
+        onTap: () {
+          _controller?.animateCamera(
+              CameraUpdate.newLatLngZoom(LatLng(lat!, lng!), 16));
+        },
+      );
+      _markers[markerId] = marker;
     }
     setState(() {});
   }
 
-  // ----------------------------------------
-  //  FRIEND REAL-TIME LOCATION SUBSCRIPTIONS
-  // ----------------------------------------
   void _updateFriendSubscriptions() {
     final friendIds = AppUser.instance.friends.map((f) => f.ccid).toSet();
 
@@ -660,7 +615,6 @@ _markers[markerId] = marker;
   @override
   bool get wantKeepAlive => true;
 
-  // A custom button with gradient + white background
   Widget gradientIcon() {
     return Container(
       padding: const EdgeInsets.all(3.0),
@@ -692,7 +646,7 @@ _markers[markerId] = marker;
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // For AutomaticKeepAliveClientMixin
+    super.build(context);
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
@@ -937,7 +891,6 @@ _markers[markerId] = marker;
     );
   }
 
-  /// Simple bottom sheet to pick different map themes
   void _openThemeSelector() {
     showModalBottomSheet(
       context: context,
@@ -996,6 +949,32 @@ _markers[markerId] = marker;
       ),
     );
   }
+
+  final List<dynamic> _mapThemes = [
+    {
+      'name': 'Standard',
+      'style': MapStyle().dark,
+      'image':
+          'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:labels%7Cvisibility:off&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.neighborhood%7Cvisibility:off&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
+    },
+    {
+      'name': 'Sliver',
+      'style': MapStyle().sliver,
+      'image':
+          'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0xf5f5f5&style=element:labels%7Cvisibility:off&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x616161&style=element:labels.text.stroke%7Ccolor:0xf5f5f5&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:poi%7Celement:geometry%7Ccolor:0xeeeeee&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Celement:geometry%7Ccolor:0xe5e5e5&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:road%7Celement:geometry%7Ccolor:0xffffff&style=feature:road.arterial%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:road.highway%7Celement:geometry%7Ccolor:0xdadada&style=feature:road.highway%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:transit.line%7Celement:geometry%7Ccolor:0xe5e5e5&style=feature:transit.station%7Celement:geometry%7Ccolor:0xeeeeee&style=feature:water%7Celement:geometry%7Ccolor:0xc9c9c9&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
+    },
+    {
+      'name': 'Retro',
+      'style': MapStyle().retro,
+      'image':
+          'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0xebe3cd&style=element:labels%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x523735&style=element:labels.text.stroke%7Ccolor:0xf5f1e6&style=feature:administrative%7Celement:geometry.stroke%7Ccolor:0xc9b2a6&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.land_parcel%7Celement:geometry.stroke%7Ccolor:0xdcd2be&style=feature:administrative.land_parcel%7Celement:labels.text.fill%7Ccolor:0xae9e90&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:landscape.natural%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:poi%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x93817c&style=feature:poi.park%7Celement:geometry.fill%7Ccolor:0xa5b076&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x447530&style=feature:road%7Celement:geometry%7Ccolor:0xf5f1e6&style=feature:road.arterial%7Celement:geometry%7Ccolor:0xfdfcf8&style=feature:road.highway%7Celement:geometry%7Ccolor:0xf8c967&style=feature:road.highway%7Celement:geometry.stroke%7Ccolor:0xe9bc62&style=feature:road.highway.controlled_access%7Celement:geometry%7Ccolor:0xe98d58&style=feature:road.highway.controlled_access%7Celement:geometry.stroke%7Ccolor:0xdb8555&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x806b63&style=feature:transit.line%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:transit.line%7Celement:labels.text.fill%7Ccolor:0x8f7d77&style=feature:transit.line%7Celement:labels.text.stroke%7Ccolor:0xebe3cd&style=feature:transit.station%7Celement:geometry%7Ccolor:0xdfd2ae&style=feature:water%7Celement:geometry.fill%7Ccolor:0xb9d3c2&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x92998d&size=164x132&key=AIzaSyDk4C4EBWgjuL1eBnJlu1J80WytEtSIags&scale=2'
+    },
+    {
+      'name': 'Dark',
+      'style': MapStyle().dark,
+      'image':
+          'https://maps.googleapis.com/maps/api/staticmap?center=-33.9775,151.036&zoom=13&format=png&maptype=roadmap&style=element:geometry%7Ccolor:0x212121&style=element:labels%7Cvisibility:off&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x757575&style=element:labels.text.stroke%7Ccolor:0x212121&style=feature:administrative%7Celement:geometry%7Ccolor:0x757575&style=feature:administrative.country%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.locality%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:administrative.neighborhood%7Cvisibility:off&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Celement:geometry%7Ccolor:0x181818&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:poi.park%7Celement:labels.text.stroke%7Ccolor:0x1b1b1b&style=feature:road%7Celement:geometry.fill%7Ccolor:0x2c2c2c&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x8a8a8a&style=feature:road.arterial%7Celement:geometry%7Ccolor:0x373737&style=feature:road.highway%7Celement:geometry%7Ccolor:0x3c3c3c&style=feature:road.highway.controlled_access%7C
+
 
 
   final List<dynamic> _mapThemes = [

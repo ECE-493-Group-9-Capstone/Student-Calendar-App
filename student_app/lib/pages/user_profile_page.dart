@@ -32,10 +32,10 @@ class UserProfilePopup extends StatelessWidget {
         String name = userData["name"] ?? "Unknown";
         String bio = userData["discipline"] ?? "No bio available";
         String email = userData["email"] ?? "Unknown";
+        String phoneNumber = userData["phone_number"] ?? "No phone number";
         String ccid = userId;
-        String profilePic =
-            userData["profilePic"] ?? // Maybe add this later if we have time?
-                "https://via.placeholder.com/150"; // Default profile image
+        String profilePic = userData["profilePic"] ??
+            "https://via.placeholder.com/150";
 
         return Container(
           width: 300,
@@ -44,7 +44,7 @@ class UserProfilePopup extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min, // Ensure the popup isn't too large
+            mainAxisSize: MainAxisSize.min,
             children: [
               CircleAvatar(
                 radius: 40,
@@ -67,16 +67,23 @@ class UserProfilePopup extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey[700]),
               ),
+              SizedBox(height: 5),
+              Text(
+                phoneNumber,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[700]),
+              ),
               SizedBox(height: 15),
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(context), // Close popup
+                    onPressed: () => Navigator.pop(context),
                     child: Text("Close"),
                   ),
                   ElevatedButton(
-                    onPressed: () => removeFriendFromUsers(
-                        ccid, appUser.ccid!), // Close popup
+                    onPressed: () =>
+                        removeFriendFromUsers(ccid, appUser.ccid!),
                     child: Text("Remove Friend"),
                   ),
                 ],
