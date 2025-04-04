@@ -16,7 +16,6 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
@@ -26,17 +25,28 @@ Future<void> main() async {
 
   const AndroidInitializationSettings androidInit =
       AndroidInitializationSettings('@mipmap/ic_launcher');
-  await flutterLocalNotificationsPlugin.initialize(
-    InitializationSettings(android: androidInit),
+
+  const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: androidInit,
+    iOS: iosInit, // <-- THIS is what fixes the crash
   );
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.requestNotificationsPermission();
+          IOSFlutterLocalNotificationsPlugin>()
+      ?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -69,7 +79,8 @@ class AuthWrapper extends StatelessWidget {
                   developer.log('✅ User exists & initialized',
                       name: 'AuthWrapper');
                   AppUser.instance.initialize(user);
-                  developer.log('AppUser instance: ${AppUser.instance.toString()}',
+                  developer.log(
+                      'AppUser instance: ${AppUser.instance.toString()}',
                       name: 'AuthWrapper');
                   return const MainPage();
                 }
@@ -85,15 +96,18 @@ class AuthWrapper extends StatelessWidget {
 
 Future<bool> _ensureUserExists(User user) async {
   final ccid = user.email?.split('@')[0] ?? user.uid;
-  developer.log('Checking Firestore for CCID: $ccid', name: '_ensureUserExists');
+  developer.log('Checking Firestore for CCID: $ccid',
+      name: '_ensureUserExists');
   final firestoreData = await fetchUserData(ccid);
   if (firestoreData == null) {
-    await addUser(user.displayName ?? 'New User', ccid, photoURL: user.photoURL);
+    await addUser(user.displayName ?? 'New User', ccid,
+        photoURL: user.photoURL);
     developer.log('🆕 Created new Firestore user', name: '_ensureUserExists');
   } else if (user.photoURL != null &&
       firestoreData['photoURL'] != user.photoURL) {
     await updateUserPhoto(ccid, user.photoURL!);
-    developer.log('🔄 Updated photoURL in Firestore', name: '_ensureUserExists');
+    developer.log('🔄 Updated photoURL in Firestore',
+        name: '_ensureUserExists');
   }
   return true;
 }
@@ -206,7 +220,8 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
     // Defer location tracking until after the UI is rendered.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      developer.log('➡️ Starting FOREGROUND tracking (deferred)', name: 'MainPage');
+      developer.log('➡️ Starting FOREGROUND tracking (deferred)',
+          name: 'MainPage');
       LocationTrackingService().startForegroundTracking();
     });
   }
@@ -227,7 +242,10 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
             shape: BoxShape.circle,
             color: Colors.white,
             boxShadow: [
-              BoxShadow(color: Colors.black26, blurRadius: 8, offset: const Offset(0, 4))
+              BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 8,
+                  offset: const Offset(0, 4))
             ],
           ),
           child: Icon(icon, size: 30, color: const Color(0xFF396548)),

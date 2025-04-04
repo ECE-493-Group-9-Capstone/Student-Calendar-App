@@ -22,11 +22,13 @@ class EventService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getEventsByDate(DateTime date) async {
+  // get events by start date
+  Future<List<Map<String, dynamic>>> getEventsByStartDate(
+      DateTime startDate) async {
     try {
       QuerySnapshot querySnapshot = await firestore
           .collection('events')
-          .where('date', isEqualTo: date)
+          .where('startDate', isEqualTo: startDate)
           .get();
 
       List<Map<String, dynamic>> events = querySnapshot.docs
@@ -35,7 +37,7 @@ class EventService {
 
       return events;
     } catch (e) {
-      debugPrint("Error fetching events by date: $e");
+      debugPrint("Error fetching events by start date: $e");
       return [];
     }
   }
