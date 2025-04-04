@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -20,11 +21,22 @@ class _HomePageState extends State<HomePage> {
   List<Appointment> _appointments = [];
   bool _isLoading = true;
   CalendarView _calendarView = CalendarView.week;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadCalendarEvents();
+
+    _refreshTimer = Timer.periodic(Duration(minutes: 1), (timer) {
+      _refreshCalendarEvents();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   String formatDateTime(DateTime dt) {
@@ -39,19 +51,20 @@ class _HomePageState extends State<HomePage> {
       });
       return;
     }
+    await _refreshCalendarEvents();
+    setState(() => _isLoading = false);
+  }
 
+  Future<void> _refreshCalendarEvents() async {
     final authService = AuthService();
     final accessToken = await authService.getAccessToken();
 
-    if (accessToken == null) {
-      setState(() => _isLoading = false);
-      return;
-    }
+    if (accessToken == null) return;
 
     final calendarService = GoogleCalendarService();
     final googleEvents = await calendarService.fetchCalendarEvents(accessToken);
 
-    List<Appointment> appointments = [];
+    List<Appointment> freshAppointments = [];
 
     for (var event in googleEvents) {
       final start = (event.start?.dateTime ?? event.start?.date)?.toLocal();
@@ -60,7 +73,7 @@ class _HomePageState extends State<HomePage> {
       final location = event.location ?? "No Location";
 
       if (start != null && end != null) {
-        appointments.add(
+        freshAppointments.add(
           Appointment(
             startTime: start,
             endTime: end,
@@ -72,9 +85,8 @@ class _HomePageState extends State<HomePage> {
     }
 
     setState(() {
-      _appointments = appointments;
-      _cachedAppointments = appointments;
-      _isLoading = false;
+      _appointments = freshAppointments;
+      _cachedAppointments = freshAppointments;
     });
   }
 
@@ -137,7 +149,7 @@ class _HomePageState extends State<HomePage> {
     final accessToken = await authService.getAccessToken();
 
     final timeMin = preferredStart.toUtc();
-    final timeMax = timeMin.add(Duration(days: 7)); // Search within next 7 days
+    final timeMax = timeMin.add(Duration(days: 7));
 
     final url = Uri.parse("https://www.googleapis.com/calendar/v3/freeBusy");
     final response = await http.post(
@@ -173,7 +185,6 @@ class _HomePageState extends State<HomePage> {
 
     busyBlocks.sort((a, b) => a['start']!.compareTo(b['start']!));
 
-    // Check if preferred time is clear
     bool isFree = busyBlocks.every((b) =>
         preferredEnd.isBefore(b['start']!) ||
         preferredStart.isAfter(b['end']!));
@@ -188,7 +199,6 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // Search next free 1-hour slot (8am–8pm)
     DateTime searchCursor = DateTime.now().add(Duration(minutes: 30));
     final duration = preferredEnd.difference(preferredStart);
     final endLimit = DateTime.now().add(Duration(days: 7));
@@ -197,7 +207,6 @@ class _HomePageState extends State<HomePage> {
       final proposedStart = searchCursor;
       final proposedEnd = proposedStart.add(duration);
 
-      // Skip overnight hours (10pm–6am)
       if (proposedStart.hour < 8 || proposedStart.hour > 19) {
         searchCursor = DateTime(
           proposedStart.year,
@@ -262,10 +271,94 @@ class _HomePageState extends State<HomePage> {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       _showSnack("Event created and invites sent!");
+      await _refreshCalendarEvents();
     } else {
       debugPrint("Create event error: ${response.body}");
       _showSnack("Failed to create event.");
     }
+  }
+
+  void _showCreateEventDialogWithTimePicker(
+      BuildContext context, DateTime date) {
+    final titleController = TextEditingController();
+    final emailsController = TextEditingController();
+    TimeOfDay selectedTime = TimeOfDay(hour: 9, minute: 0);
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text("Create Event"),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: "Event Title"),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: emailsController,
+                    decoration: const InputDecoration(
+                      labelText: "Invitees (comma-separated emails)",
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final pickedTime = await showTimePicker(
+                        context: context,
+                        initialTime: selectedTime,
+                      );
+                      if (pickedTime != null) {
+                        setState(() {
+                          selectedTime = pickedTime;
+                        });
+                      }
+                    },
+                    child: Text("Select Time: ${selectedTime.format(context)}"),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      final title = titleController.text;
+                      final emails = emailsController.text
+                          .split(',')
+                          .map((e) => e.trim())
+                          .where((e) => e.isNotEmpty)
+                          .toList();
+
+                      if (emails.isEmpty || title.isEmpty) return;
+
+                      final startDateTime = DateTime(
+                        date.year,
+                        date.month,
+                        date.day,
+                        selectedTime.hour,
+                        selectedTime.minute,
+                      );
+
+                      final endDateTime = startDateTime.add(Duration(hours: 1));
+
+                      await _findBestTimeAndCreateEvent(
+                        title,
+                        emails,
+                        startDateTime,
+                        endDateTime,
+                      );
+                    },
+                    child: const Text("Find Best Time"),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 
   void _showCreateEventDialog(BuildContext context, DateTime defaultStart) {
@@ -361,7 +454,7 @@ class _HomePageState extends State<HomePage> {
                 (route) => false,
               );
             },
-          )
+          ),
         ],
       ),
       body: _isLoading
@@ -378,10 +471,15 @@ class _HomePageState extends State<HomePage> {
                 fontWeight: FontWeight.w500,
               ),
               todayHighlightColor: Colors.green,
-              onTap: (CalendarTapDetails details) {
+              onTap: (details) {
                 if (details.appointments == null ||
                     details.appointments!.isEmpty) {
-                  _showCreateEventDialog(context, details.date!);
+                  final tappedDate = details.date!;
+                  if (_calendarView == CalendarView.month) {
+                    _showCreateEventDialogWithTimePicker(context, tappedDate);
+                  } else {
+                    _showCreateEventDialog(context, tappedDate);
+                  }
                 } else {
                   final appointment = details.appointments!.first;
                   showDialog(

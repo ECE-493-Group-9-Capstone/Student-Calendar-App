@@ -25,17 +25,28 @@ Future<void> main() async {
 
   const AndroidInitializationSettings androidInit =
       AndroidInitializationSettings('@mipmap/ic_launcher');
-  await flutterLocalNotificationsPlugin.initialize(
-    InitializationSettings(android: androidInit),
+
+  const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: androidInit,
+    iOS: iosInit, // <-- THIS is what fixes the crash
   );
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.requestNotificationsPermission();
+          IOSFlutterLocalNotificationsPlugin>()
+      ?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -160,8 +171,12 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
       _lastState = state;
 
       final pref = AppUser.instance.locationTracking;
+      final ccid = AppUser.instance.ccid;
       developer.log('MAJOR Lifecycle → $state | pref=$pref', name: 'MainPage');
 
+      if (ccid != null) {
+        updateUserActiveStatus(ccid, state == AppLifecycleState.resumed);
+      }
       // Stop current tracking first.
       LocationTrackingService().stopTracking();
 

@@ -36,6 +36,7 @@ Future<void> addUser(String name, String ccid, {String? photoURL}) async {
       'requested_friends': <String>[],
       'schedule': null,
       'hasSeenBottomPopup': false,
+      'isActive': false,
     });
     debugPrint("User added with doc ID: $ccid");
   } catch (e) {
@@ -114,17 +115,18 @@ Future<List<UserModel>> getAllUsers() async {
 
     for (int i = 0; i < users.length; i++) {
       UserModel user = UserModel(
-          users[i]["id"] ?? "Unknown ID", // ccid
-          users[i]["name"] ?? "Unknown", // username
-          users[i]["email"] ?? "No email", // email
-          users[i]["discipline"] ?? "No discipline", // discipline
-          users[i]["schedule"], // schedule (nullable)
-          users[i]["education_lvl"] ?? "No education", // educationLvl
-          users[i]["degree"] ?? "No degree", // degree
-          users[i]["location_tracking"] ?? "No tracking", // locationTracking
-          users[i]["photoURL"] ?? "", // photoURL (nullable)
-          users[i]["currentLocation"] // currentLocation (Map or null)
-          );
+        users[i]["id"] ?? "Unknown ID", // ccid
+        users[i]["name"] ?? "Unknown", // username
+        users[i]["email"] ?? "No email", // email
+        users[i]["discipline"] ?? "No discipline", // discipline
+        users[i]["schedule"], // schedule (nullable)
+        users[i]["education_lvl"] ?? "No education", // educationLvl
+        users[i]["degree"] ?? "No degree", // degree
+        users[i]["location_tracking"] ?? "No tracking", // locationTracking
+        users[i]["photoURL"] ?? "", // photoURL (nullable)
+        users[i]["currentLocation"], // currentLocation (Map or null)
+        users[i]["phone_number"],
+      );
       allUsers.add(user);
     }
     return allUsers;
@@ -378,5 +380,26 @@ Future<void> updateUserPhoto(String ccid, String photoURL) async {
     debugPrint("User photo updated for $ccid");
   } catch (e) {
     debugPrint("Error updating user photo: $e");
+  }
+}
+
+Future<void> updateUserActiveStatus(String ccid, bool isActive) async {
+  try {
+    DocumentReference docRef =
+        FirebaseFirestore.instance.collection('users').doc(ccid);
+    await docRef.update({'isActive': isActive});
+    debugPrint("User $ccid activity status updated: $isActive");
+  } catch (e) {
+    debugPrint("Error updating isActive status for user $ccid: $e");
+  }
+}
+
+Future<void> uploadPhoneNumber(String userId, String phoneNumber) async {
+  try {
+    DocumentReference docRef =
+        FirebaseFirestore.instance.collection('users').doc(userId);
+    await docRef.set({'phone_number': phoneNumber}, SetOptions(merge: true));
+  } catch (e) {
+    debugPrint("Error uploading phone number for user $userId: $e");
   }
 }

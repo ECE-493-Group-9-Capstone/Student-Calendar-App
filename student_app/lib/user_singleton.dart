@@ -15,6 +15,8 @@ class AppUser {
   String? _educationLvl;
   String? _degree;
   String? _schedule; 
+  String? _phoneNumber;
+  bool _isActive = false;
   List<UserModel> _friends = [];
   final ValueNotifier<List<UserModel>> friendsNotifier = ValueNotifier([]);
   List<Map<String, dynamic>> _friendRequests = [];
@@ -66,6 +68,8 @@ class AppUser {
       _schedule = userData['schedule'];
       _locationTracking = userData['location_tracking'];
       _currentLocation = userData['currentLocation']; // current location
+      _isActive = userData["isActive"] ?? false;
+      _phoneNumber = userData["phone_number"];
       List<String> processedFriends = List<String>.from(userData['friends'] ?? []);
       _friends = await _friendProcessor(processedFriends);
       friendsNotifier.value = List.from(_friends);
@@ -93,6 +97,8 @@ class AppUser {
           _locationTracking = data['location_tracking'];
           _currentLocation = data['currentLocation'];
           _photoURL = data['photoURL'];
+          _isActive = data["isActive"] ?? false;
+          _phoneNumber = data["phone_number"];
           List<String> processedFriends = List<String>.from(data['friends'] ?? []);
           _friends = await _friendProcessor(processedFriends);
           friendsNotifier.value = List.from(_friends);
@@ -123,7 +129,8 @@ class AppUser {
           userData['degree'] ?? "No degree",               // degree
           userData['location_tracking'] ?? "No tracking",  // locationTracking
           userData['photoURL'] ?? "",                      // photoURL
-          userData['currentLocation']                      // currentLocation
+          userData['currentLocation'],                     // currentLocation
+          userData['phone_number'],   
         );
         userFriends.add(userModel);
       } else {
@@ -151,6 +158,8 @@ class AppUser {
     _locationTracking = null;
     _currentLocation = null;
     _photoURL = null;
+    _isActive = false;
+    _phoneNumber = null;
   }
 
   // Getters
@@ -163,6 +172,7 @@ class AppUser {
   String? get degree => _degree;
   String? get schedule => _schedule;
   String? get locationTracking => _locationTracking;
+  String? get phoneNumber => _phoneNumber;
   Map<String, dynamic>? get currentLocation => _currentLocation;
   List<UserModel> get friends => _friends;
   List<Map<String, dynamic>> get friendRequests => _friendRequests;
@@ -186,6 +196,8 @@ class AppUser {
     await removeFriendFromUsers(_ccid!, friendId);
     await refreshUserData();
   }
+
+  bool get isActive => _isActive;
 
   // Send a friend request or accept if one exists
   Future<void> sendFriendRequest(String receiverID) async {
