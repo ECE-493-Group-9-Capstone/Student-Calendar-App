@@ -13,13 +13,13 @@ void main() {
 
       fakeFirestore.collection('events').add({
         'name': 'Test Event 1',
-        'date': DateTime(2025, 3, 15),
+        'startDate': DateTime(2025, 3, 15),
         'location': 'Edmonton',
       });
 
       fakeFirestore.collection('events').add({
         'name': 'Test Event 2',
-        'date': DateTime(2025, 3, 16),
+        'startDate': DateTime(2025, 3, 16),
         'location': 'Calgary',
       });
     });
@@ -31,7 +31,7 @@ void main() {
 
     test('gets events for a specific date', () async {
       final date = DateTime(2025, 3, 15);
-      final events = await eventService.getEventsByDate(date);
+      final events = await eventService.getEventsByStartDate(date);
       expect(events.length, 1);
       expect(events.first['name'], 'Test Event 1');
     });
@@ -44,7 +44,7 @@ void main() {
 
     test('edit event shows update', () async {
       final date = DateTime(2025, 3, 15);
-      final events = await eventService.getEventsByDate(date);
+      final events = await eventService.getEventsByStartDate(date);
       expect(events.length, 1);
       expect(events.first['name'], 'Test Event 1');
 
@@ -53,7 +53,7 @@ void main() {
         'name': 'Updated Event',
       });
 
-      final updatedEvents = await eventService.getEventsByDate(date);
+      final updatedEvents = await eventService.getEventsByStartDate(date);
       expect(updatedEvents.length, 1);
       expect(updatedEvents.first['name'], 'Updated Event');
     });

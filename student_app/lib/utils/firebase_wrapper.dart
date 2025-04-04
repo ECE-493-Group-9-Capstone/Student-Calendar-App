@@ -2,10 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import './user.dart';
 import 'package:flutter/material.dart';
 
+final FirebaseFirestore db = FirebaseFirestore.instance;
+
 void readDocument(String id) async {
   try {
     DocumentSnapshot documentSnapshot =
-        await FirebaseFirestore.instance.collection('users').doc(id).get();
+        await db.collection('users').doc(id).get();
 
     if (documentSnapshot.exists) {
       Map<String, dynamic>? data =
@@ -19,10 +21,9 @@ void readDocument(String id) async {
   }
 }
 
-Future<void> addUser(String name, String ccid,  {String? photoURL}) async {
+Future<void> addUser(String name, String ccid, {String? photoURL}) async {
   try {
-    DocumentReference documentRef =
-        FirebaseFirestore.instance.collection('users').doc(ccid);
+    DocumentReference documentRef = db.collection('users').doc(ccid);
     await documentRef.set({
       'name': name,
       'email': "$ccid@ualberta.ca",
@@ -45,10 +46,8 @@ Future<void> addUser(String name, String ccid,  {String? photoURL}) async {
 
 Future<void> acceptFriendRequest(String userId1, String userId2) async {
   try {
-    DocumentReference userRef1 =
-        FirebaseFirestore.instance.collection('users').doc(userId1);
-    DocumentReference userRef2 =
-        FirebaseFirestore.instance.collection('users').doc(userId2);
+    DocumentReference userRef1 = db.collection('users').doc(userId1);
+    DocumentReference userRef2 = db.collection('users').doc(userId2);
 
     // Add each other to their friends lists
     await userRef1.update({
@@ -73,10 +72,8 @@ Future<void> acceptFriendRequest(String userId1, String userId2) async {
 
 Future<void> sendRecieveRequest(String senderId, String receiverId) async {
   try {
-    DocumentReference senderRef =
-        FirebaseFirestore.instance.collection('users').doc(senderId);
-    DocumentReference receiverRef =
-        FirebaseFirestore.instance.collection('users').doc(receiverId);
+    DocumentReference senderRef = db.collection('users').doc(senderId);
+    DocumentReference receiverRef = db.collection('users').doc(receiverId);
 
     // Add senderId to receiver's friend_requests list
     await receiverRef.update({
@@ -96,7 +93,7 @@ Future<void> sendRecieveRequest(String senderId, String receiverId) async {
 
 Future<void> deleteUser(String id) async {
   try {
-    await FirebaseFirestore.instance
+    await db
         .collection('users') // Specify the collection
         .doc(id) // Specify the document ID
         .delete(); // Delete the document
@@ -109,7 +106,7 @@ Future<void> deleteUser(String id) async {
 Future<List<UserModel>> getAllUsers() async {
   try {
     QuerySnapshot querySnapshot =
-        await FirebaseFirestore.instance.collection('users').get(); 
+        await FirebaseFirestore.instance.collection('users').get();
 
     List<UserModel> allUsers = [];
     List<Map<String, dynamic>> users = querySnapshot.docs
@@ -118,16 +115,16 @@ Future<List<UserModel>> getAllUsers() async {
 
     for (int i = 0; i < users.length; i++) {
       UserModel user = UserModel(
-        users[i]["id"] ?? "Unknown ID",                    // ccid
-        users[i]["name"] ?? "Unknown",                     // username
-        users[i]["email"] ?? "No email",                   // email
-        users[i]["discipline"] ?? "No discipline",         // discipline
-        users[i]["schedule"],                              // schedule (nullable)
-        users[i]["education_lvl"] ?? "No education",       // educationLvl
-        users[i]["degree"] ?? "No degree",                 // degree
-        users[i]["location_tracking"] ?? "No tracking",    // locationTracking
-        users[i]["photoURL"] ?? "",                        // photoURL (nullable)
-        users[i]["currentLocation"],                       // currentLocation (Map or null)
+        users[i]["id"] ?? "Unknown ID", // ccid
+        users[i]["name"] ?? "Unknown", // username
+        users[i]["email"] ?? "No email", // email
+        users[i]["discipline"] ?? "No discipline", // discipline
+        users[i]["schedule"], // schedule (nullable)
+        users[i]["education_lvl"] ?? "No education", // educationLvl
+        users[i]["degree"] ?? "No degree", // degree
+        users[i]["location_tracking"] ?? "No tracking", // locationTracking
+        users[i]["photoURL"] ?? "", // photoURL (nullable)
+        users[i]["currentLocation"], // currentLocation (Map or null)
         users[i]["phone_number"],
       );
       allUsers.add(user);
@@ -135,18 +132,15 @@ Future<List<UserModel>> getAllUsers() async {
     return allUsers;
   } catch (e, stacktrace) {
     debugPrint("Error fetching users: $e");
-    debugPrint("Stacktrace: $stacktrace"); 
-    return []; 
+    debugPrint("Stacktrace: $stacktrace");
+    return [];
   }
 }
-
-
-
 
 Future<List<String>> getUserFriends(String userId) async {
   try {
     DocumentSnapshot documentSnapshot =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        await db.collection('users').doc(userId).get();
 
     if (documentSnapshot.exists) {
       Map<String, dynamic>? data =
@@ -171,8 +165,7 @@ Future<List<String>> getUserFriends(String userId) async {
 
 Future<Map<String, dynamic>?> fetchUserData(String userId) async {
   try {
-    DocumentSnapshot userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    DocumentSnapshot userDoc = await db.collection('users').doc(userId).get();
 
     if (userDoc.exists) {
       return userDoc.data() as Map<String, dynamic>;
@@ -187,8 +180,7 @@ Future<Map<String, dynamic>?> fetchUserData(String userId) async {
 
 Future<List<Map<String, dynamic>>> getFriendRequests(String userId) async {
   try {
-    DocumentSnapshot userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    DocumentSnapshot userDoc = await db.collection('users').doc(userId).get();
 
     if (userDoc.exists) {
       Map<String, dynamic>? userData = userDoc.data() as Map<String, dynamic>?;
@@ -204,10 +196,8 @@ Future<List<Map<String, dynamic>>> getFriendRequests(String userId) async {
         // Fetch details for each friend request sender
         List<Map<String, dynamic>> friendRequestsDetails = [];
         for (String requesterId in friendRequestIds) {
-          DocumentSnapshot requesterDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(requesterId)
-              .get();
+          DocumentSnapshot requesterDoc =
+              await db.collection('users').doc(requesterId).get();
 
           if (requesterDoc.exists) {
             Map<String, dynamic>? requesterData =
@@ -235,8 +225,7 @@ Future<List<Map<String, dynamic>>> getFriendRequests(String userId) async {
 
 Future<List<String>> getRequestedFriends(String userId) async {
   try {
-    DocumentSnapshot userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    DocumentSnapshot userDoc = await db.collection('users').doc(userId).get();
 
     if (userDoc.exists) {
       Map<String, dynamic>? userData = userDoc.data() as Map<String, dynamic>?;
@@ -262,7 +251,7 @@ Future<List<String>> getRequestedFriends(String userId) async {
 Future<void> declineFriendRequest(String requesterId, String userId) async {
   try {
     // Remove from friend requests only
-    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+    await db.collection('users').doc(userId).update({
       'friend_requests': FieldValue.arrayRemove([requesterId]),
     });
 
@@ -274,10 +263,8 @@ Future<void> declineFriendRequest(String requesterId, String userId) async {
 
 Future<void> removeFriendFromUsers(String userId1, String userId2) async {
   try {
-    DocumentReference userRef1 =
-        FirebaseFirestore.instance.collection('users').doc(userId1);
-    DocumentReference userRef2 =
-        FirebaseFirestore.instance.collection('users').doc(userId2);
+    DocumentReference userRef1 = db.collection('users').doc(userId1);
+    DocumentReference userRef2 = db.collection('users').doc(userId2);
 
     // Remove each other from their friends lists
     await userRef1.update({
@@ -388,7 +375,7 @@ Future<void> updateUserPhoto(String ccid, String photoURL) async {
     DocumentReference docRef =
         FirebaseFirestore.instance.collection('users').doc(ccid);
     await docRef.update({
-      'photoURL': photoURL,  // <-- Updates the user's profile image URL
+      'photoURL': photoURL, // <-- Updates the user's profile image URL
     });
     debugPrint("User photo updated for $ccid");
   } catch (e) {
@@ -416,4 +403,3 @@ Future<void> uploadPhoneNumber(String userId, String phoneNumber) async {
     debugPrint("Error uploading phone number for user $userId: $e");
   }
 }
-
