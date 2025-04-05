@@ -876,7 +876,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
                       ),
                     ),
                   ),
-                  LatLng(lat!, lng!),
+                  LatLng(lat, lng),
                 );
               }
               _draggableController.animateTo(

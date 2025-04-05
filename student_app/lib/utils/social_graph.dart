@@ -22,7 +22,7 @@ class SocialGraph {
       users[user.ccid] = user;
     }
 
-    // Fetch all user connections (optimize by bulk fetching if possible)
+    // Fetch all user connections
     for (String userId in users.keys) {
       connections[userId] = await getUserFriends(userId);
     }
@@ -42,7 +42,7 @@ class SocialGraph {
   }
 
   void startAutoUpdate(Duration interval) {
-    _updateTimer?.cancel(); // Ensure only one timer instance runs
+    _updateTimer?.cancel();
     _updateTimer = Timer.periodic(interval, (timer) async {
       await updateGraph();
     });
@@ -58,40 +58,42 @@ class SocialGraph {
     if (!connections.containsKey(userId)) return [];
 
     List<String> friends = connections[userId]!;
+    Set<String> friendSet = friends.toSet();
 
-    // Mutual friends recommendation
+    // Mutual Friends Logic
     Map<String, int> mutualFriendCount = {};
 
     for (String friend in friends) {
       for (String mutual in connections[friend] ?? []) {
-        if (mutual != userId && !friends.contains(mutual)) {
+        if (mutual != userId && !friendSet.contains(mutual)) {
           mutualFriendCount[mutual] = (mutualFriendCount[mutual] ?? 0) + 1;
         }
       }
     }
 
-    // Discipline-based recommendation (excluding already connected users)
+    // Discipline-based Logic
     String userDiscipline = users[userId]?.discipline ?? "";
     for (UserModel user in users.values) {
       if (user.ccid != userId &&
           user.discipline == userDiscipline &&
-          !friends.contains(user.ccid)) {
+          !friendSet.contains(user.ccid)) {
         recommended.add(user.ccid);
       }
     }
 
-    // Prioritize by mutual friends count
-    List<String> sortedRecommendations = mutualFriendCount.keys.toList()
+    // Sort by mutual friend count
+    List<String> sortedMutuals = mutualFriendCount.keys.toList()
       ..sort((a, b) => mutualFriendCount[b]!.compareTo(mutualFriendCount[a]!));
 
-    // Merge sorted mutual friends & discipline-based recommendations
-    List<String> finalRecommendations =
-        sortedRecommendations + recommended.toList();
+    // Combine both, avoiding duplicates
+    Set<String> combined = {...sortedMutuals, ...recommended};
 
-    return finalRecommendations
-        .map((id) => users[id])
-        .where((user) => user != null)
-        .cast<UserModel>()
+    // remove self, friends, and invalid users
+    List<UserModel> finalRecommendations = combined
+        .where((id) =>
+            id != userId && !friendSet.contains(id) && users.containsKey(id))
+        .map((id) => users[id]!)
         .toList();
+    return finalRecommendations;
   }
 }

@@ -13,7 +13,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 class FriendsPage extends StatefulWidget {
-  const FriendsPage({Key? key}) : super(key: key);
+  const FriendsPage({super.key});
 
   @override
   _FriendsPageState createState() => _FriendsPageState();
@@ -347,8 +347,9 @@ class _FriendsPageState extends State<FriendsPage> {
                     future: loadCachedImageBytes(
                         'circle_${user.photoURL.hashCode}_80.0'),
                     builder: (ctx, snap) {
-                      if (snap.connectionState != ConnectionState.done)
+                      if (snap.connectionState != ConnectionState.done) {
                         return const CircularProgressIndicator(strokeWidth: 2);
+                      }
                       final bytes = snap.data;
                       if (bytes != null && bytes.isNotEmpty) {
                         return ClipOval(
@@ -426,8 +427,9 @@ class _FriendsPageState extends State<FriendsPage> {
                     future: loadCachedImageBytes(
                         'circle_${user.photoURL.hashCode}_80.0'),
                     builder: (ctx, snap) {
-                      if (snap.connectionState != ConnectionState.done)
+                      if (snap.connectionState != ConnectionState.done) {
                         return const CircularProgressIndicator(strokeWidth: 2);
+                      }
                       final bytes = snap.data;
                       if (bytes != null && bytes.isNotEmpty) {
                         return ClipOval(
