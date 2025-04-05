@@ -696,7 +696,7 @@ Widget _buildWeekCalendarContainer(Widget calendarChild) {
                         ),
                       ],
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),

@@ -5,9 +5,6 @@ import 'dart:ui';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// ------------------------
-// Updated MapsBottomSheet
-// ------------------------
 class MapsBottomSheet extends StatelessWidget {
   final DraggableScrollableController draggableController;
   final List<dynamic> friends;
@@ -99,12 +96,12 @@ class _FriendsList extends StatelessWidget {
   final void Function(dynamic) onFriendTap;
 
   const _FriendsList({
-    Key? key,
+    super.key,
     required this.friends,
     required this.circleMemoryImages,
     required this.lastUpdatedNotifier,
     required this.onFriendTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -194,10 +191,10 @@ class _EventsList extends StatelessWidget {
   final void Function(dynamic) onEventTap;
 
   const _EventsList({
-    Key? key,
+    super.key,
     required this.events,
     required this.onEventTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -266,7 +263,7 @@ class _EventsList extends StatelessWidget {
 }
 
 class _EventsHeader extends StatelessWidget {
-  const _EventsHeader({Key? key}) : super(key: key);
+  const _EventsHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -294,10 +291,10 @@ class EventTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const EventTile({
-    Key? key,
+    super.key,
     required this.event,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
