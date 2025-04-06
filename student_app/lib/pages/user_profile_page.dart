@@ -118,10 +118,6 @@ class UserProfilePopup extends StatelessWidget {
                     onPressed: () => Navigator.pop(context),
                     child: const Text("Close"),
                   ),
-                  ElevatedButton(
-                    onPressed: () => removeFriendFromUsers(ccid, appUser.ccid!),
-                    child: const Text("Remove Friend"),
-                  ),
                 ],
               ),
             ],
