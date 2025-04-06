@@ -16,6 +16,7 @@ class AppUser {
   String? _degree;
   String? _schedule; 
   String? _phoneNumber;
+  String? _instagram;
   bool _isActive = false;
   List<UserModel> _friends = [];
   final ValueNotifier<List<UserModel>> friendsNotifier = ValueNotifier([]);
@@ -70,6 +71,7 @@ class AppUser {
       _currentLocation = userData['currentLocation']; // current location
       _isActive = userData["isActive"] ?? false;
       _phoneNumber = userData["phone_number"];
+      _instagram = userData["instagram"];
       List<String> processedFriends = List<String>.from(userData['friends'] ?? []);
       _friends = await _friendProcessor(processedFriends);
       friendsNotifier.value = List.from(_friends);
@@ -99,6 +101,7 @@ class AppUser {
           _photoURL = data['photoURL'];
           _isActive = data["isActive"] ?? false;
           _phoneNumber = data["phone_number"];
+          _instagram = data["instagram"];
           List<String> processedFriends = List<String>.from(data['friends'] ?? []);
           _friends = await _friendProcessor(processedFriends);
           friendsNotifier.value = List.from(_friends);
@@ -130,7 +133,8 @@ class AppUser {
           userData['location_tracking'] ?? "No tracking",  // locationTracking
           userData['photoURL'] ?? "",                      // photoURL
           userData['currentLocation'],                     // currentLocation
-          userData['phone_number'],   
+          userData['phone_number'],
+          userData['instagram'],   
         );
         userFriends.add(userModel);
       } else {
@@ -150,6 +154,7 @@ class AppUser {
     _degree = null;
     _schedule = null;
     _friends = [];
+    _instagram = null;
     _friendRequests = [];
     _isLoaded = false;
     _requestedFriends = [];
@@ -173,6 +178,7 @@ class AppUser {
   String? get schedule => _schedule;
   String? get locationTracking => _locationTracking;
   String? get phoneNumber => _phoneNumber;
+  String? get instagram => _instagram;
   Map<String, dynamic>? get currentLocation => _currentLocation;
   List<UserModel> get friends => _friends;
   List<Map<String, dynamic>> get friendRequests => _friendRequests;

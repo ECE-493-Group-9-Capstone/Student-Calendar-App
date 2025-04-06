@@ -130,6 +130,7 @@ Future<List<UserModel>> getAllUsers() async {
         users[i]["photoURL"] ?? "", // photoURL (nullable)
         users[i]["currentLocation"], // currentLocation (Map or null)
         users[i]["phone_number"],
+        users[i]["insagram"],
       );
       allUsers.add(user);
     }
@@ -407,6 +408,18 @@ Future<void> uploadPhoneNumber(String userId, String phoneNumber) async {
     debugPrint("Error uploading phone number for user $userId: $e");
   }
 }
+
+
+Future<void> uploadInstagramLink(String userId, String instagramUrl) async {
+  try {
+    DocumentReference docRef =
+        FirebaseFirestore.instance.collection('users').doc(userId);
+    await docRef.set({'instagram': instagramUrl}, SetOptions(merge: true));
+  } catch (e) {
+    debugPrint("Error uploading Instagram link for user $userId: $e");
+  }
+}
+
 
 Future<Uint8List?> downloadImageBytes(String photoURL) async {
   try {
