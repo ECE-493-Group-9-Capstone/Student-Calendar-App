@@ -112,7 +112,6 @@ class _CachedProfileImageState extends State<CachedProfileImage> {
     );
   }
 }
-
 class UserProfilePopup extends StatelessWidget {
   final String userId;
   const UserProfilePopup({Key? key, required this.userId}) : super(key: key);
@@ -159,12 +158,12 @@ class UserProfilePopup extends StatelessWidget {
   }
 }
 
+
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 class FriendsPage extends StatefulWidget {
-  const FriendsPage({Key? key}) : super(key: key);
-
+  const FriendsPage({super.key});
   @override
   _FriendsPageState createState() => _FriendsPageState();
 }

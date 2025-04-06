@@ -194,9 +194,14 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
 
   /// Loads recommended friends filtering out already requested or existing friends.
   Future<List<UserModel>> loadRecommendedFriends() async {
+    await AppUser.instance.refreshUserData();
     await SocialGraph().updateGraph();
     List<String> alreadyRequested = AppUser.instance.requestedFriends;
     List<String> alreadyFriends = AppUser.instance.friends.map((f) => f.ccid).toList();
+    List<String> pendingRequestsToYou = AppUser.instance.friendRequests
+        .map((req) => req["id"] as String)
+        .toList();
+
     List<UserModel> raw = SocialGraph().getFriendRecommendations(AppUser.instance.ccid!);
     final seen = <String>{};
     List<UserModel> unique = [];
@@ -204,6 +209,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
       if (!seen.contains(user.ccid) &&
           !alreadyRequested.contains(user.ccid) &&
           !alreadyFriends.contains(user.ccid) &&
+          !pendingRequestsToYou.contains(user.ccid) &&
           user.ccid != AppUser.instance.ccid) {
         seen.add(user.ccid);
         unique.add(user);
@@ -257,14 +263,16 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                   children: [
                     Text(
                       name,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 5),
                     Text(
                       id,
-                      style: TextStyle(fontSize: 14, color: Colors.black.withOpacity(0.5)),
+                      style: TextStyle(
+                          fontSize: 14, color: Colors.black.withOpacity(0.5)),
                     ),
                   ],
                 ),
@@ -309,7 +317,11 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                     child: Center(
                       child: ShaderMask(
                         shaderCallback: (bounds) => _tileGradient.createShader(bounds),
-                        child: const Icon(Icons.close, size: 24, color: Colors.white),
+                        child: const Icon(
+                          Icons.close,
+                          size: 24,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -355,11 +367,39 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
           child: Row(
             children: [
               const SizedBox(width: 20),
-              CachedProfileImage(
-                photoURL: user.photoURL,
-                size: 64,
-                fallbackText: initials,
-                fallbackBackgroundColor: const Color(0xFF909533),
+              // Custom Profile Picture for Friend Recommendation:
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.transparent,
+                child: FutureBuilder<Uint8List?>(
+                  future: (user.photoURL?.isNotEmpty ?? false)
+                      ? loadCachedImageBytes('circle_${user.photoURL!.hashCode}_80.0')
+                      : Future.value(null),
+                  builder: (ctx, snap) {
+                    if (snap.connectionState != ConnectionState.done) {
+                      return const CircularProgressIndicator(strokeWidth: 2);
+                    }
+                    final bytes = snap.data;
+                    if (bytes != null && bytes.isNotEmpty) {
+                      return ClipOval(
+                        child: Image.memory(
+                          bytes,
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.cover,
+                        ),
+                      );
+                    }
+                    return CircleAvatar(
+                      radius: 32,
+                      backgroundColor: Colors.deepPurple,
+                      child: Text(
+                        initials,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    );
+                  },
+                ),
               ),
               const SizedBox(width: 20),
               Expanded(
@@ -369,14 +409,16 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                   children: [
                     Text(
                       user.username,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 5),
                     Text(
                       user.ccid,
-                      style: TextStyle(fontSize: 14, color: Colors.black.withOpacity(0.5)),
+                      style: TextStyle(
+                          fontSize: 14, color: Colors.black.withOpacity(0.5)),
                     ),
                   ],
                 ),
@@ -390,7 +432,11 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                 },
                 icon: ShaderMask(
                   shaderCallback: (bounds) => _tileGradient.createShader(bounds),
-                  child: const Icon(Icons.add, size: 30, color: Colors.white),
+                  child: const Icon(
+                    Icons.add,
+                    size: 30,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -414,7 +460,9 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
+
             List<Map<String, dynamic>> friendRequests = AppUser.instance.friendRequests;
+
             return Padding(
               padding: const EdgeInsets.only(left: 8, right: 8, bottom: 16),
               child: Column(
@@ -422,7 +470,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                 children: [
                   const Text(
                     "Friend Requests",
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black54),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color:  Colors.black54),
                   ),
                   const SizedBox(height: 13),
                   friendRequests.isEmpty
@@ -440,14 +488,18 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                           child: ListView.builder(
                             itemCount: friendRequests.length,
                             itemBuilder: (context, index) {
-                              return buildFriendRequestTile(friendRequests[index]);
+                              return buildFriendRequestTile(
+                                  friendRequests[index]);
                             },
                           ),
                         ),
                   const SizedBox(height: 20),
                   const Text(
                     "Friend Recommendations",
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black54),
+                    style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54),
                   ),
                   const SizedBox(height: 13),
                   FutureBuilder<List<UserModel>>(

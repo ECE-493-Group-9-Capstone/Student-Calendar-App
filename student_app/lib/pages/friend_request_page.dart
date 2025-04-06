@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'user_notification_popup.dart'; // Adjust the path if needed
-import 'friends_page.dart'; // Adjust the path if needed
+// Adjust the path if needed
 
 class FriendRequestPage extends StatelessWidget {
   const FriendRequestPage({super.key});

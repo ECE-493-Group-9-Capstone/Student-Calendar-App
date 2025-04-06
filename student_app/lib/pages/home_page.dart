@@ -145,9 +145,16 @@ class _HomePageState extends State<HomePage> {
 
   Future<List<UserModel>> _loadRecommendedFriends() async {
     setState(() => _isLoadingFriends = true);
+
+    await AppUser.instance.refreshUserData(); // Refresh friend data
     await SocialGraph().updateGraph();
+
     final alreadyRequested = AppUser.instance.requestedFriends;
     final alreadyFriends = AppUser.instance.friends.map((f) => f.ccid).toList();
+    final pendingRequestsToYou = AppUser.instance.friendRequests
+        .map((req) => req["id"] as String)
+        .toList();
+
     final raw = SocialGraph().getFriendRecommendations(AppUser.instance.ccid!);
     final seen = <String>{};
     final List<UserModel> unique = [];
@@ -156,6 +163,7 @@ class _HomePageState extends State<HomePage> {
       if (!seen.contains(user.ccid) &&
           !alreadyRequested.contains(user.ccid) &&
           !alreadyFriends.contains(user.ccid) &&
+          !pendingRequestsToYou.contains(user.ccid) &&
           user.ccid != AppUser.instance.ccid) {
         seen.add(user.ccid);
         unique.add(user);
@@ -197,7 +205,8 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: Colors.transparent,
             child: FutureBuilder<Uint8List?>(
               future: (user.photoURL?.isNotEmpty ?? false)
-                  ? loadCachedImageBytes('circle_${user.photoURL!.hashCode}_80.0')
+                  ? loadCachedImageBytes(
+                      'circle_${user.photoURL!.hashCode}_80.0')
                   : Future.value(null),
               builder: (ctx, snap) {
                 if (snap.connectionState != ConnectionState.done) {
@@ -236,7 +245,8 @@ class _HomePageState extends State<HomePage> {
             user.ccid,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
+            style:
+                TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
           ),
           const SizedBox(height: 6),
           InkWell(
@@ -272,7 +282,8 @@ class _HomePageState extends State<HomePage> {
     return FutureBuilder<List<UserModel>>(
       future: _recommendedFriendsFuture,
       builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting || _isLoadingFriends) {
+        if (snap.connectionState == ConnectionState.waiting ||
+            _isLoadingFriends) {
           return const SizedBox(
             height: 80,
             child: Center(child: CircularProgressIndicator()),
@@ -421,7 +432,8 @@ class _HomePageState extends State<HomePage> {
           );
         }
         if (!snap.hasData || snap.data!.isEmpty) {
-          return const Text("No upcoming events in the next 30 days with images.");
+          return const Text(
+              "No upcoming events in the next 30 days with images.");
         }
         final events = snap.data!;
         return SizedBox(
@@ -466,12 +478,17 @@ class _HomePageState extends State<HomePage> {
             DrawerHeader(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)],
+                  colors: [
+                    Color(0xFF396548),
+                    Color(0xFF6B803D),
+                    Color(0xFF909533)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
               ),
-              child: Text('Menu', style: TextStyle(color: Colors.white, fontSize: 24)),
+              child: Text('Menu',
+                  style: TextStyle(color: Colors.white, fontSize: 24)),
             ),
             ListTile(
               leading: Icon(Icons.home),
@@ -694,10 +711,10 @@ class GradientText extends StatelessWidget {
 
   const GradientText(
     this.text, {
-    Key? key,
+    super.key,
     required this.gradient,
     this.style,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -119,12 +119,12 @@ class _FriendsList extends StatelessWidget {
   final ScrollController controller;
 
   const _FriendsList({
-    Key? key,
+    super.key,
     required this.friends,
     required this.lastUpdatedNotifier,
     required this.onFriendTap,
     required this.controller,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -212,8 +212,10 @@ class FriendTile extends StatelessWidget {
 }
 
 ///
-/// CachedProfileImage widget follows the same approach as in your friends page.
-/// It downloads the image on the first load (from Firebase) and then caches it for future use.
+/// The following helper and widget implement image fetching and caching:
+/// - When the image is first needed, it will be downloaded from the network,
+///   then stored in cache via `cacheImageBytes`.
+/// - On subsequent uses, `loadCachedImageBytes` is used to retrieve the image bytes.
 ///
 Future<Uint8List?> downloadImageBytes(String photoURL) async {
   try {
@@ -248,6 +250,8 @@ class _CachedProfileImageState extends State<CachedProfileImage> {
   @override
   void initState() {
     super.initState();
+    // When the widget is first created, try to fetch the image from cache.
+    // If not available, it downloads the image and caches it.
     if (widget.photoURL != null && widget.photoURL!.isNotEmpty) {
       _imageFuture = _getProfileImage(widget.photoURL!);
     }
@@ -255,8 +259,10 @@ class _CachedProfileImageState extends State<CachedProfileImage> {
 
   Future<Uint8List?> _getProfileImage(String photoURL) async {
     final key = 'circle_${photoURL.hashCode}_${widget.size}';
+    // Try loading from cache first.
     Uint8List? bytes = await loadCachedImageBytes(key);
     if (bytes != null) return bytes;
+    // If not cached, download from network.
     bytes = await downloadImageBytes(photoURL);
     if (bytes != null) await cacheImageBytes(key, bytes);
     return bytes;
@@ -265,6 +271,7 @@ class _CachedProfileImageState extends State<CachedProfileImage> {
   @override
   Widget build(BuildContext context) {
     if (widget.photoURL == null || widget.photoURL!.isEmpty) {
+      // If no photo URL, display a fallback avatar.
       return CircleAvatar(
         radius: widget.size / 2,
         backgroundColor: widget.fallbackBackgroundColor ?? Colors.grey,
@@ -299,6 +306,7 @@ class _CachedProfileImageState extends State<CachedProfileImage> {
             ),
           );
         }
+        // In case of error, display fallback.
         return CircleAvatar(
           radius: widget.size / 2,
           backgroundColor: widget.fallbackBackgroundColor ?? Colors.grey,
