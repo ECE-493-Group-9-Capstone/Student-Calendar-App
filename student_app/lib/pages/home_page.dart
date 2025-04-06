@@ -11,6 +11,7 @@ import 'package:student_app/utils/social_graph.dart';
 import 'package:student_app/utils/user.dart';
 import 'package:student_app/utils/cache_helper.dart';
 import 'package:student_app/utils/event_service.dart';
+import '../main.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,7 +20,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with RouteAware {
   final LinearGradient _greenGradient = const LinearGradient(
     colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)],
     begin: Alignment.topLeft,
@@ -40,6 +41,25 @@ class _HomePageState extends State<HomePage> {
     _fetchTodayEvents();
     _recommendedFriendsFuture = _loadRecommendedFriends();
     _upcomingEventsFuture = _loadUpcomingEvents();
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    setState(() {
+      _recommendedFriendsFuture = _loadRecommendedFriends();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
   Future<void> _fetchTodayEvents() async {
@@ -336,7 +356,6 @@ class _HomePageState extends State<HomePage> {
     return upcoming;
   }
 
-  /// THIS METHOD NOW HANDLES TIMESTAMP/STRING DATES AND DISPLAYS ONLY THE DATE
   Widget _buildUpcomingEventCard(Map<String, dynamic> event) {
     final imageUrl = event['imageUrl'] as String? ?? '';
     final title = event['title'] as String? ?? 'Untitled Event';
@@ -361,7 +380,6 @@ class _HomePageState extends State<HomePage> {
       }
     }
 
-    // You can keep times as they are if they're already strings (e.g., "14:00")
     final startTime = event['start_time']?.toString() ?? '';
     final endTime = event['end_time']?.toString() ?? '';
 
