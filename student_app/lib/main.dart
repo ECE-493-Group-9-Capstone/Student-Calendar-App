@@ -16,6 +16,10 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+
+
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
@@ -55,6 +59,7 @@ class MyApp extends StatelessWidget {
         title: 'Bottom Navigation Example',
         theme: ThemeData(primarySwatch: Colors.blue),
         home: const AuthWrapper(),
+         navigatorObservers: [routeObserver],
       );
 }
 
@@ -123,11 +128,9 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
   AppLifecycleState? _lastState;
   Timer? _debounce;
 
-  // Lazy-load pages list: initially null so that pages are built only on first request.
   final List<Widget?> _pages = List<Widget?>.filled(4, null, growable: false);
   final GlobalKey<MapPageState> _mapPageKey = GlobalKey<MapPageState>();
 
-  // Lazy builder: only build a page when it's first requested.
   Widget _getPage(int index) {
     if (_pages[index] == null) {
       switch (index) {
