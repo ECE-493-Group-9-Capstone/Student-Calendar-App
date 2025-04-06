@@ -10,8 +10,11 @@ class GoogleCalendarService {
       final authenticatedClient = auth.authenticatedClient(
         client,
         auth.AccessCredentials(
-          auth.AccessToken('Bearer', accessToken,
-              DateTime.now().add(Duration(hours: 1)).toUtc()),
+          auth.AccessToken(
+            'Bearer',
+            accessToken,
+            DateTime.now().add(Duration(hours: 1)).toUtc(),
+          ),
           null,
           ['https://www.googleapis.com/auth/calendar'],
         ),
@@ -28,6 +31,45 @@ class GoogleCalendarService {
       return calEvents.items ?? [];
     } catch (e) {
       print("Error fetching calendar events: $e");
+      return [];
+    }
+  }
+
+  Future<List<calendar.Event>> fetchTodayCalendarEvents(String accessToken) async {
+    try {
+      final client = http.Client();
+
+      final authenticatedClient = auth.authenticatedClient(
+        client,
+        auth.AccessCredentials(
+          auth.AccessToken(
+            'Bearer',
+            accessToken,
+            DateTime.now().add(Duration(hours: 1)).toUtc(),
+          ),
+          null,
+          ['https://www.googleapis.com/auth/calendar'],
+        ),
+      );
+
+      final calendarApi = calendar.CalendarApi(authenticatedClient);
+
+      // Calculate today's start and end boundaries in UTC.
+      final now = DateTime.now();
+      final startOfToday = DateTime(now.year, now.month, now.day);
+      final endOfToday = startOfToday.add(const Duration(days: 1));
+
+      final calEvents = await calendarApi.events.list(
+        "primary",
+        timeMin: startOfToday.toUtc(),
+        timeMax: endOfToday.toUtc(),
+        singleEvents: true,
+        orderBy: 'startTime',
+      );
+
+      return calEvents.items ?? [];
+    } catch (e) {
+      print("Error fetching today's calendar events: $e");
       return [];
     }
   }

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
 import 'package:intl/intl.dart';
+import 'package:student_app/main.dart'; // For AuthWrapper
 import 'package:student_app/user_singleton.dart';
 import 'package:student_app/utils/google_calendar_service.dart';
 import 'package:student_app/pages/google_signin.dart';
@@ -11,7 +12,6 @@ import 'package:student_app/utils/social_graph.dart';
 import 'package:student_app/utils/user.dart';
 import 'package:student_app/utils/cache_helper.dart';
 import 'package:student_app/utils/event_service.dart';
-import '../main.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,7 +20,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with RouteAware {
+class _HomePageState extends State<HomePage> {
   final LinearGradient _greenGradient = const LinearGradient(
     colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)],
     begin: Alignment.topLeft,
@@ -43,25 +43,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
     _upcomingEventsFuture = _loadUpcomingEvents();
   }
 
-  @override
-  void dispose() {
-    routeObserver.unsubscribe(this);
-    super.dispose();
-  }
-
-  @override
-  void didPopNext() {
-    setState(() {
-      _recommendedFriendsFuture = _loadRecommendedFriends();
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    routeObserver.subscribe(this, ModalRoute.of(context)!);
-  }
-
   Future<void> _fetchTodayEvents() async {
     setState(() => _isLoadingEvents = true);
     final authService = AuthService();
@@ -71,22 +52,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
       return;
     }
     final calendarService = GoogleCalendarService();
-    final allEvents = await calendarService.fetchCalendarEvents(accessToken);
-    final now = DateTime.now();
-    final startOfToday = DateTime(now.year, now.month, now.day);
-    final endOfToday = startOfToday.add(const Duration(days: 1));
-    final eventsToday = <gcal.Event>[];
-
-    for (var event in allEvents) {
-      final start = (event.start?.dateTime ?? event.start?.date)?.toLocal();
-      final end = (event.end?.dateTime ?? event.end?.date)?.toLocal();
-      if (start == null || end == null) continue;
-      final isToday = end.isAfter(startOfToday) && start.isBefore(endOfToday);
-      if (isToday) {
-        eventsToday.add(event);
-      }
-    }
-
+    final eventsToday = await calendarService.fetchTodayCalendarEvents(accessToken);
     setState(() {
       _todayEvents = eventsToday;
       _isLoadingEvents = false;
@@ -298,19 +264,22 @@ class _HomePageState extends State<HomePage> with RouteAware {
     );
   }
 
+  // The recommendations area always reserves a fixed height
   Widget _buildRecommendedFriendsHorizontal() {
     return FutureBuilder<List<UserModel>>(
       future: _recommendedFriendsFuture,
       builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting ||
-            _isLoadingFriends) {
+        if (snap.connectionState == ConnectionState.waiting || _isLoadingFriends) {
           return const SizedBox(
-            height: 80,
+            height: 160,
             child: Center(child: CircularProgressIndicator()),
           );
         }
         if (!snap.hasData || snap.data!.isEmpty) {
-          return const Text("No recommendations right now.");
+          return const SizedBox(
+            height: 160,
+            child: Center(child: Text("No recommendations right now.")),
+          );
         }
         final recs = snap.data!;
         return SizedBox(
@@ -494,33 +463,39 @@ class _HomePageState extends State<HomePage> with RouteAware {
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
-          children: const [
+          children: [
             DrawerHeader(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF396548),
-                    Color(0xFF6B803D),
-                    Color(0xFF909533)
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: _greenGradient,
               ),
-              child: Text('Menu',
+              child: const Text('Menu',
                   style: TextStyle(color: Colors.white, fontSize: 24)),
             ),
-            ListTile(
+            const ListTile(
               leading: Icon(Icons.home),
               title: Text('Home'),
             ),
-            ListTile(
+            const ListTile(
               leading: Icon(Icons.calendar_today),
               title: Text('Calendar'),
             ),
-            ListTile(
+            const ListTile(
               leading: Icon(Icons.settings),
               title: Text('Settings'),
+            ),
+            // Logout button moved to the sidebar
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () async {
+                await AuthService().logout();
+                AppUser.instance.logout();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AuthWrapper()),
+                  (route) => false,
+                );
+              },
             ),
           ],
         ),
@@ -554,7 +529,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   // "Today's Events" box with the bear "peeking" over
                   Stack(
                     clipBehavior: Clip.none,
@@ -594,7 +568,9 @@ class _HomePageState extends State<HomePage> with RouteAware {
                               )
                             else
                               Column(
-                                children: _todayEvents.map(_buildTodayEventItem).toList(),
+                                children: _todayEvents
+                                    .map(_buildTodayEventItem)
+                                    .toList(),
                               ),
                             const SizedBox(height: 12),
                             Center(
@@ -602,7 +578,8 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                 onTap: () async {
                                   await Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const CalendarPage()),
+                                    MaterialPageRoute(
+                                        builder: (_) => const CalendarPage()),
                                   );
                                   // Refresh today's events after returning
                                   _fetchTodayEvents();
@@ -619,8 +596,10 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                     ),
                                     const SizedBox(width: 6),
                                     ShaderMask(
-                                      shaderCallback: (bounds) => _greenGradient.createShader(
-                                        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                                      shaderCallback: (bounds) => _greenGradient
+                                          .createShader(
+                                        Rect.fromLTWH(
+                                            0, 0, bounds.width, bounds.height),
                                       ),
                                       child: const Icon(
                                         Icons.arrow_forward,
@@ -648,7 +627,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
                       ),
                     ],
                   ),
-
                   // Recommended Friends
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -681,7 +659,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   // Upcoming Events
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
