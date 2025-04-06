@@ -74,19 +74,6 @@ class UserProfilePopup extends StatelessWidget {
                 style: TextStyle(color: Colors.grey[700]),
               ),
               SizedBox(height: 15),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: () async {
-                      await removeFriendFromUsers(ccid, appUser.ccid!);
-                      await AppUser.instance.refreshUserData();
-                      Navigator.pop(context);
-                    },
-                    child: Text("Remove Friend"),
-                  ),
-                ],
-              ),
             ],
           ),
         );
