@@ -45,11 +45,16 @@ class _MapsBottomSheetState extends State<MapsBottomSheet> {
   }
 
   Future<void> _initializeAndSubscribe() async {
-    await initializeLastSeen(widget.friends, widget.lastUpdatedNotifier);
-    List<String> friendIds =
-        widget.friends.map<String>((friend) => friend.ccid as String).toList();
-    _friendLocationSubscription =
-        subscribeToFriendLocations(friendIds, widget.lastUpdatedNotifier);
+    if (widget.friends.isEmpty) {
+      return;
+    } else {
+      await initializeLastSeen(widget.friends, widget.lastUpdatedNotifier);
+      List<String> friendIds = widget.friends
+          .map<String>((friend) => friend.ccid as String)
+          .toList();
+      _friendLocationSubscription =
+          subscribeToFriendLocations(friendIds, widget.lastUpdatedNotifier);
+    }
   }
 
   @override
@@ -321,8 +326,8 @@ class _CachedProfileImageState extends State<CachedProfileImage> {
           return SizedBox(
             width: widget.size,
             height: widget.size,
-            child: const Center(
-                child: CircularProgressIndicator(strokeWidth: 2)),
+            child:
+                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
           );
         }
         if (snapshot.hasData && snapshot.data != null) {
