@@ -730,162 +730,24 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
             height: MediaQuery.of(context).size.height * 0.25,
             width: MediaQuery.of(context).size.width * 0.7,
             offset: 50.0,
-          ),
-          MapsBottomSheet(
-            draggableController: _draggableController,
-            friends: AppUser.instance.friends,
-            circleMemoryImages: _circleMemoryImages,
-            lastUpdatedNotifier: _lastUpdatedNotifier,
-            events: _events,
-            onFriendTap: (friend) {
-              _customInfoWindowController.hideInfoWindow!();
-              _resetAllMarkersToCircle();
-              final lat = friend.currentLocation?['lat'];
-              final lng = friend.currentLocation?['lng'];
-              if (lat != null && lng != null) {
-                _controller?.animateCamera(
-                  CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
-                );
-              }
-            },
-            onEventTap: (event) {
-              _customInfoWindowController.hideInfoWindow!();
-              final coords = event['coordinates'] as Map<String, dynamic>?;
-              if (coords == null) return;
-              final lat = coords['lat'] as double?;
-              final lng = coords['lng'] as double?;
-              if (lat != null && lng != null) {
-                final eventLatLng = LatLng(lat, lng);
-                _controller?.animateCamera(
-                    CameraUpdate.newLatLngZoom(eventLatLng, 18));
-                _customInfoWindowController.addInfoWindow!(
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF396548),
-                          Color(0xFF6B803D),
-                          Color(0xFF909533),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              event['title'] ?? 'Event Title',
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            RichText(
-                              text: TextSpan(
-                                style: const TextStyle(
-                                    fontSize: 12, color: Colors.black87),
-                                children: [
-                                  const TextSpan(
-                                    text: "Location: ",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  TextSpan(
-                                    text: event['location'] ?? 'Unknown',
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Builder(
-                              builder: (context) {
-                                final dynamic dateValue = event['date'];
-                                DateTime eventDate;
-                                try {
-                                  eventDate = dateValue is Timestamp
-                                      ? dateValue.toDate()
-                                      : DateTime.parse(dateValue.toString());
-                                } catch (e) {
-                                  debugPrint('Error parsing event date: $e');
-                                  eventDate = DateTime.now();
-                                }
-                                final String formattedDate =
-                                    DateFormat('MMMM dd, yyyy')
-                                        .format(eventDate);
+          ), MapsBottomSheet(
+  draggableController: _draggableController,
+  friends: AppUser.instance.friends,
+  lastUpdatedNotifier: _lastUpdatedNotifier,
+  onFriendTap: (friend) {
+    _customInfoWindowController.hideInfoWindow!();
+    _resetAllMarkersToCircle();
+    final lat = friend.currentLocation?['lat'];
+    final lng = friend.currentLocation?['lng'];
+    if (lat != null && lng != null) {
+      _controller?.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
+      );
+    }
+  },
+),
 
-                                final startTimeStr =
-                                    event['start_time'] ?? '00:00:00';
-                                final endTimeStr =
-                                    event['end_time'] ?? '00:00:00';
-                                DateTime parsedStart;
-                                DateTime parsedEnd;
-                                try {
-                                  parsedStart = DateFormat('HH:mm:ss')
-                                      .parse(startTimeStr);
-                                  parsedEnd =
-                                      DateFormat('HH:mm:ss').parse(endTimeStr);
-                                } catch (e) {
-                                  debugPrint('Error parsing event times: $e');
-                                  parsedStart = DateTime(0);
-                                  parsedEnd = DateTime(0);
-                                }
-                                if (parsedEnd.isBefore(parsedStart)) {
-                                  parsedEnd = parsedEnd.add(const Duration(days: 1));
-                                }
-                                final formattedStart = DateFormat('h:mma')
-                                    .format(parsedStart)
-                                    .toLowerCase();
-                                final formattedEnd = DateFormat('h:mma')
-                                    .format(parsedEnd)
-                                    .toLowerCase();
 
-                                final timeText =
-                                    "$formattedDate  $formattedStart - $formattedEnd";
-
-                                return RichText(
-                                  text: TextSpan(
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.black87),
-                                    children: [
-                                      const TextSpan(
-                                        text: "Date & Time: ",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      TextSpan(
-                                        text: timeText,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  LatLng(lat, lng),
-                );
-              }
-              _draggableController.animateTo(
-                0.08,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            },
-          ),
         ],
       ),
     );

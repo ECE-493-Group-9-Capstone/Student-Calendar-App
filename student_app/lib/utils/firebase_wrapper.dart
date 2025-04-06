@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import './user.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:typed_data';
+import 'dart:async';
+
 
 final FirebaseFirestore db = FirebaseFirestore.instance;
 
@@ -402,4 +406,70 @@ Future<void> uploadPhoneNumber(String userId, String phoneNumber) async {
   } catch (e) {
     debugPrint("Error uploading phone number for user $userId: $e");
   }
+}
+
+Future<Uint8List?> downloadImageBytes(String photoURL) async {
+  try {
+    final response = await http.get(Uri.parse(photoURL));
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      debugPrint("Failed to download image, status code: ${response.statusCode}");
+    }
+  } catch (e) {
+    debugPrint("Error downloading image: $e");
+  }
+  return null;
+}
+
+
+
+Future<void> initializeLastSeen(List<dynamic> friends, ValueNotifier<Map<String, DateTime?>> notifier) async {
+  List<String> friendIds = friends.map<String>((friend) => friend.ccid as String).toList();
+  Map<String, DateTime?> initialData = {};
+
+  for (final id in friendIds) {
+    try {
+      DocumentSnapshot doc = await db.collection('users').doc(id).get();
+      if (doc.exists) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        if (data.containsKey('currentLocation') &&
+            data['currentLocation'] is Map &&
+            data['currentLocation']['timestamp'] != null) {
+          Timestamp ts = data['currentLocation']['timestamp'];
+          initialData[id] = ts.toDate();
+        } else {
+          initialData[id] = null;
+        }
+      } else {
+        initialData[id] = null;
+      }
+    } catch (e) {
+      debugPrint("Error fetching last seen for friend $id: $e");
+      initialData[id] = null;
+    }
+  }
+  notifier.value = initialData;
+}
+
+
+StreamSubscription subscribeToFriendLocations(List<String> friendIds, ValueNotifier<Map<String, DateTime?>> notifier) {
+  return db.collection('users')
+      .where(FieldPath.documentId, whereIn: friendIds)
+      .snapshots()
+      .listen((QuerySnapshot snapshot) {
+    Map<String, DateTime?> updatedMap = {};
+    for (var doc in snapshot.docs) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      if (data.containsKey('currentLocation') &&
+          data['currentLocation'] is Map &&
+          data['currentLocation']['timestamp'] != null) {
+        Timestamp ts = data['currentLocation']['timestamp'];
+        updatedMap[doc.id] = ts.toDate();
+      } else {
+        updatedMap[doc.id] = null;
+      }
+    }
+    notifier.value = updatedMap;
+  });
 }
