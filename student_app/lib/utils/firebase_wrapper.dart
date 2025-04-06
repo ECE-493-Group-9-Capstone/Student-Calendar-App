@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'dart:async';
 
-
 final FirebaseFirestore db = FirebaseFirestore.instance;
 
 void readDocument(String id) async {
@@ -131,6 +130,7 @@ Future<List<UserModel>> getAllUsers() async {
         users[i]["currentLocation"], // currentLocation (Map or null)
         users[i]["phone_number"],
         users[i]["insagram"],
+        users[i]["location_hidden_from"],
       );
       allUsers.add(user);
     }
@@ -290,7 +290,6 @@ Future<void> removeFriendFromUsers(String userId1, String userId2) async {
   }
 }
 
-
 Future<void> addUserSchedule(String userId, String scheduleContent) async {
   try {
     DocumentReference documentRef =
@@ -414,7 +413,6 @@ Future<void> uploadPhoneNumber(String userId, String phoneNumber) async {
   }
 }
 
-
 Future<void> uploadInstagramLink(String userId, String instagramUrl) async {
   try {
     DocumentReference docRef =
@@ -425,14 +423,14 @@ Future<void> uploadInstagramLink(String userId, String instagramUrl) async {
   }
 }
 
-
 Future<Uint8List?> downloadImageBytes(String photoURL) async {
   try {
     final response = await http.get(Uri.parse(photoURL));
     if (response.statusCode == 200) {
       return response.bodyBytes;
     } else {
-      debugPrint("Failed to download image, status code: ${response.statusCode}");
+      debugPrint(
+          "Failed to download image, status code: ${response.statusCode}");
     }
   } catch (e) {
     debugPrint("Error downloading image: $e");
@@ -440,10 +438,10 @@ Future<Uint8List?> downloadImageBytes(String photoURL) async {
   return null;
 }
 
-
-
-Future<void> initializeLastSeen(List<dynamic> friends, ValueNotifier<Map<String, DateTime?>> notifier) async {
-  List<String> friendIds = friends.map<String>((friend) => friend.ccid as String).toList();
+Future<void> initializeLastSeen(List<dynamic> friends,
+    ValueNotifier<Map<String, DateTime?>> notifier) async {
+  List<String> friendIds =
+      friends.map<String>((friend) => friend.ccid as String).toList();
   Map<String, DateTime?> initialData = {};
 
   for (final id in friendIds) {
@@ -470,9 +468,10 @@ Future<void> initializeLastSeen(List<dynamic> friends, ValueNotifier<Map<String,
   notifier.value = initialData;
 }
 
-
-StreamSubscription subscribeToFriendLocations(List<String> friendIds, ValueNotifier<Map<String, DateTime?>> notifier) {
-  return db.collection('users')
+StreamSubscription subscribeToFriendLocations(
+    List<String> friendIds, ValueNotifier<Map<String, DateTime?>> notifier) {
+  return db
+      .collection('users')
       .where(FieldPath.documentId, whereIn: friendIds)
       .snapshots()
       .listen((QuerySnapshot snapshot) {
@@ -490,4 +489,31 @@ StreamSubscription subscribeToFriendLocations(List<String> friendIds, ValueNotif
     }
     notifier.value = updatedMap;
   });
+}
+
+Future<void> toggleHideLocation(
+    String currentUserId, String targetUserId, bool shouldHide) async {
+  try {
+    final DocumentReference docRef =
+        FirebaseFirestore.instance.collection('users').doc(currentUserId);
+
+    final docSnapshot = await docRef.get();
+    Map<String, dynamic> data =
+        docSnapshot.data() as Map<String, dynamic>? ?? {};
+
+    List<String> hiddenList =
+        List<String>.from(data['location_hidden_from'] ?? []);
+
+    if (shouldHide && !hiddenList.contains(targetUserId)) {
+      hiddenList.add(targetUserId);
+    } else if (!shouldHide && hiddenList.contains(targetUserId)) {
+      hiddenList.remove(targetUserId);
+    }
+
+    await docRef.update({
+      'location_hidden_from': hiddenList,
+    });
+  } catch (e) {
+    debugPrint("Error toggling hide location: $e");
+  }
 }

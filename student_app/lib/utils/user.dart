@@ -10,7 +10,8 @@ class UserModel {
   final String? _photoURL;
   final String? _phoneNumber;
   final String? _instagram;
-  final Map<String, dynamic>? _currentLocation; 
+  List? _locationHiddenFrom;
+  final Map<String, dynamic>? _currentLocation;
 
   UserModel(
     this._ccid,
@@ -22,9 +23,10 @@ class UserModel {
     this._degree,
     this._locationTracking,
     this._photoURL,
-    this._currentLocation, 
+    this._currentLocation,
     this._phoneNumber,
     this._instagram,
+    this._locationHiddenFrom,
   );
 
   // Getters
@@ -39,5 +41,10 @@ class UserModel {
   String? get phoneNumber => _phoneNumber;
   String? get photoURL => _photoURL;
   String? get insagram => _instagram;
-  Map<String, dynamic>? get currentLocation => _currentLocation; 
+  List<String>? get locationHiddenFrom => _locationHiddenFrom?.cast<String>();
+  Map<String, dynamic>? get currentLocation => _currentLocation;
+
+  set locationHiddenFrom(List<String>? value) {
+    _locationHiddenFrom = value;
+  }
 }

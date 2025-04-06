@@ -14,19 +14,21 @@ class AppUser {
   String? _discipline;
   String? _educationLvl;
   String? _degree;
-  String? _schedule; 
+  String? _schedule;
   String? _phoneNumber;
   String? _instagram;
+  List<String>? _locationHiddenFrom;
   bool _isActive = false;
   List<UserModel> _friends = [];
   final ValueNotifier<List<UserModel>> friendsNotifier = ValueNotifier([]);
   List<Map<String, dynamic>> _friendRequests = [];
   List<String> _requestedFriends = [];
-  final ValueNotifier<List<Map<String, dynamic>>> friendRequestsNotifier = ValueNotifier([]);
+  final ValueNotifier<List<Map<String, dynamic>>> friendRequestsNotifier =
+      ValueNotifier([]);
 
   bool _isLoaded = false;
   String? _locationTracking;
-  Map<String, dynamic>? _currentLocation; 
+  Map<String, dynamic>? _currentLocation;
   String? _photoURL;
 
   StreamSubscription<DocumentSnapshot>? _userSubscription;
@@ -43,7 +45,7 @@ class AppUser {
 
   // Initialize AppUser with a Firebase User object
   Future<void> initialize(User firebaseUser) async {
-    if (_isLoaded) return; 
+    if (_isLoaded) return;
 
     _email = firebaseUser.email;
     _ccid = _email?.split('@')[0] ?? '';
@@ -68,11 +70,14 @@ class AppUser {
       _degree = userData['degree'];
       _schedule = userData['schedule'];
       _locationTracking = userData['location_tracking'];
-      _currentLocation = userData['currentLocation']; // current location
+      _currentLocation = userData['currentLocation'];
       _isActive = userData["isActive"] ?? false;
       _phoneNumber = userData["phone_number"];
       _instagram = userData["instagram"];
-      List<String> processedFriends = List<String>.from(userData['friends'] ?? []);
+      _locationHiddenFrom =
+          List<String>.from(userData["location_hidden_from"] ?? []);
+      List<String> processedFriends =
+          List<String>.from(userData['friends'] ?? []);
       _friends = await _friendProcessor(processedFriends);
       friendsNotifier.value = List.from(_friends);
       _friendRequests = await getFriendRequests(_ccid!);
@@ -87,7 +92,11 @@ class AppUser {
   // Listen for real-time Firestore updates
   void _listenForUserUpdates() async {
     if (_ccid == null) return;
-    _userSubscription = _firestore.collection('users').doc(_ccid).snapshots().listen((userDoc) async {
+    _userSubscription = _firestore
+        .collection('users')
+        .doc(_ccid)
+        .snapshots()
+        .listen((userDoc) async {
       if (userDoc.exists) {
         Map<String, dynamic>? data = userDoc.data();
         if (data != null) {
@@ -102,7 +111,10 @@ class AppUser {
           _isActive = data["isActive"] ?? false;
           _phoneNumber = data["phone_number"];
           _instagram = data["instagram"];
-          List<String> processedFriends = List<String>.from(data['friends'] ?? []);
+          _locationHiddenFrom =
+              List<String>.from(data["location_hidden_from"] ?? []);
+          List<String> processedFriends =
+              List<String>.from(data['friends'] ?? []);
           _friends = await _friendProcessor(processedFriends);
           friendsNotifier.value = List.from(_friends);
 
@@ -111,7 +123,8 @@ class AppUser {
 
           _requestedFriends = await getRequestedFriends(_ccid!);
         }
-        debugPrint("User data updated in real-time: $_name, $_discipline, Friends: $_friends");
+        debugPrint(
+            "User data updated in real-time: $_name, $_discipline, Friends: $_friends");
       }
     });
   }
@@ -123,19 +136,19 @@ class AppUser {
       Map<String, dynamic>? userData = await fetchUserData(friends[i]);
       if (userData != null) {
         UserModel userModel = UserModel(
-          friends[i],                                      // ccid
-          userData['name'] ?? "Unknown",                   // username
-          userData["email"] ?? "No email",                 // email
-          userData['discipline'] ?? "No discipline",       // discipline
-          userData['schedule'] ?? "",                      // schedule
-          userData['education_lvl'] ?? "No education",     // educationLvl
-          userData['degree'] ?? "No degree",               // degree
-          userData['location_tracking'] ?? "No tracking",  // locationTracking
-          userData['photoURL'] ?? "",                      // photoURL
-          userData['currentLocation'],                     // currentLocation
-          userData['phone_number'],
-          userData['instagram'],   
-        );
+            friends[i],
+            userData['name'] ?? "Unknown",
+            userData["email"] ?? "No email",
+            userData['discipline'] ?? "No discipline",
+            userData['schedule'] ?? "",
+            userData['education_lvl'] ?? "No education",
+            userData['degree'] ?? "No degree",
+            userData['location_tracking'] ?? "No tracking",
+            userData['photoURL'] ?? "",
+            userData['currentLocation'],
+            userData['phone_number'],
+            userData['instagram'],
+            userData['location_hidden_from']);
         userFriends.add(userModel);
       } else {
         debugPrint("No user data found in Firestore!");
@@ -156,6 +169,7 @@ class AppUser {
     _friends = [];
     _instagram = null;
     _friendRequests = [];
+    _locationHiddenFrom = [];
     _isLoaded = false;
     _requestedFriends = [];
     _userSubscription?.cancel();
@@ -179,18 +193,22 @@ class AppUser {
   String? get locationTracking => _locationTracking;
   String? get phoneNumber => _phoneNumber;
   String? get instagram => _instagram;
+  List<String>? get locationHiddenFrom => _locationHiddenFrom?.cast<String>();
   Map<String, dynamic>? get currentLocation => _currentLocation;
   List<UserModel> get friends => _friends;
   List<Map<String, dynamic>> get friendRequests => _friendRequests;
   List<String> get requestedFriends => _requestedFriends;
   String? get photoURL => _photoURL;
 
+  set locationHiddenFrom(List<String>? value) {
+    _locationHiddenFrom = value;
+  }
+
   // Refresh user data from Firestore
   Future<void> refreshUserData() async {
     await _fetchAndUpdateUserData();
   }
 
-  // Add a friend
   Future<void> addFriend(String friendId) async {
     if (_ccid == null) return;
     await acceptFriendRequest(_ccid!, friendId);
@@ -205,12 +223,13 @@ class AppUser {
 
   bool get isActive => _isActive;
 
-  // Send a friend request or accept if one exists
   Future<void> sendFriendRequest(String receiverID) async {
     if (_ccid == null) return;
-    bool requestExists = _friendRequests.any((request) => request['id'] == receiverID);
+    bool requestExists =
+        _friendRequests.any((request) => request['id'] == receiverID);
     if (requestExists) {
-      debugPrint("Friend request from $receiverID already exists. Accepting request...");
+      debugPrint(
+          "Friend request from $receiverID already exists. Accepting request...");
       await addFriend(receiverID);
     } else {
       debugPrint("Sending friend request to $receiverID...");
@@ -219,14 +238,12 @@ class AppUser {
     await refreshUserData();
   }
 
-  // Decline a friend request
   Future<void> declineFriend(String requesterId) async {
     if (_ccid == null) return;
     await declineFriendRequest(requesterId, _ccid!);
     await refreshUserData();
   }
 
-  // Logout user & reset singleton data
   void logout() {
     FirebaseAuth.instance.signOut();
     _resetUserData();
@@ -236,12 +253,12 @@ class AppUser {
   @override
   String toString() {
     return 'AppUser('
-           'ccid: $_ccid, email: $_email, name: $_name, '
-           'discipline: $_discipline, educationLvl: $_educationLvl, '
-           'degree: $_degree, schedule: $_schedule, friends: $_friends, '
-           'friendRequests: $_friendRequests, requestedFriends: $_requestedFriends, '
-           'locationTracking: $_locationTracking, currentLocation: $_currentLocation, '
-           'photoURL: $_photoURL'
-           ')';
+        'ccid: $_ccid, email: $_email, name: $_name, '
+        'discipline: $_discipline, educationLvl: $_educationLvl, '
+        'degree: $_degree, schedule: $_schedule, friends: $_friends, '
+        'friendRequests: $_friendRequests, requestedFriends: $_requestedFriends, '
+        'locationTracking: $_locationTracking, currentLocation: $_currentLocation, '
+        'photoURL: $_photoURL'
+        ')';
   }
 }

@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:student_app/utils/firebase_wrapper.dart';
 import 'package:student_app/utils/cache_helper.dart';
+import 'package:student_app/user_singleton.dart';
 
 class MapsBottomSheet extends StatefulWidget {
   final DraggableScrollableController draggableController;
@@ -225,22 +226,41 @@ class _FriendTileState extends State<FriendTile> {
         valueListenable: widget.lastUpdatedNotifier,
         builder: (_, lastUpdatedMap, __) {
           final updated = lastUpdatedMap[widget.friend.ccid];
+          final hiddenList = widget.friend.locationHiddenFrom ?? [];
+
+          debugPrint(
+              "FriendTile for ${widget.friend.ccid}: hiding from ${hiddenList}, my ID: ${AppUser.instance.ccid}");
+
+          if (hiddenList.contains(AppUser.instance.ccid)) {
+            debugPrint("Location is hidden by ${widget.friend.ccid}");
+            return const Text(
+              'Location hidden',
+              style: TextStyle(color: Colors.grey),
+            );
+          }
+
+          if (updated == null) {
+            debugPrint("No timestamp for ${widget.friend.ccid}");
+            return const Text(
+              'Last seen: not found',
+              style: TextStyle(color: Colors.grey),
+            );
+          }
+
+          final minutes = DateTime.now().difference(updated).inMinutes;
+          debugPrint(
+              "Last seen for ${widget.friend.ccid}: $minutes minutes ago");
+
           return Row(
             children: [
               const Text(
                 'Last seen: ',
                 style: TextStyle(color: Color(0xFF757575)),
               ),
-              if (updated == null)
-                const Text(
-                  'not found',
-                  style: TextStyle(color: Colors.grey),
-                )
-              else
-                Text(
-                  '${DateTime.now().difference(updated).inMinutes} min ago',
-                  style: const TextStyle(color: Colors.grey),
-                ),
+              Text(
+                '$minutes min ago',
+                style: const TextStyle(color: Colors.grey),
+              ),
             ],
           );
         },
@@ -321,8 +341,8 @@ class _CachedProfileImageState extends State<CachedProfileImage> {
           return SizedBox(
             width: widget.size,
             height: widget.size,
-            child: const Center(
-                child: CircularProgressIndicator(strokeWidth: 2)),
+            child:
+                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
           );
         }
         if (snapshot.hasData && snapshot.data != null) {

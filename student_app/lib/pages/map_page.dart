@@ -35,6 +35,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   GoogleMapController? _controller;
   final CustomInfoWindowController _customInfoWindowController =
       CustomInfoWindowController();
+  StreamSubscription<DocumentSnapshot>? _myUserListener;
 
   late CameraPosition _initialCameraPosition;
   late CameraPosition _currentCameraPosition;
@@ -181,6 +182,26 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   @override
   void initState() {
     super.initState();
+    _myUserListener = FirebaseFirestore.instance
+        .collection('users')
+        .doc(AppUser.instance.ccid)
+        .snapshots()
+        .listen((doc) async {
+      if (!doc.exists) return;
+
+      final data = doc.data();
+      if (data == null) return;
+
+      AppUser.instance.locationHiddenFrom =
+          List<String>.from(data['location_hidden_from'] ?? []);
+
+      debugPrint(
+        "Detected update to my locationHiddenFrom list: ${AppUser.instance.locationHiddenFrom}",
+      );
+
+      await _addFriendMarkers(); // Rebuild markers
+      setState(() {}); // Refresh UI like bottom sheet
+    });
 
     if (AppUser.instance.currentLocation != null) {
       final lat = AppUser.instance.currentLocation!['lat'];
@@ -222,6 +243,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
   @override
   void dispose() {
+    _myUserListener?.cancel();
     _refreshTimer?.cancel();
     for (var sub in _friendSubscriptions.values) {
       sub.cancel();
@@ -295,10 +317,31 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
   Future<void> _addFriendMarkers() async {
     final friends = AppUser.instance.friends;
+    final myId = AppUser.instance.ccid;
+
+    debugPrint("Adding friend markers. My ID: $myId");
+
     for (var friend in friends) {
+      final List<String> hiddenFromList =
+          (friend.locationHiddenFrom ?? []).cast<String>();
+
+      debugPrint("Checking friend: ${friend.ccid}");
+      debugPrint("They are hiding from: $hiddenFromList");
+
+      if (hiddenFromList.contains(myId)) {
+        debugPrint("Skipping ${friend.ccid} because they are hiding from me.");
+        continue;
+      }
+
       final lat = friend.currentLocation?['lat'];
       final lng = friend.currentLocation?['lng'];
-      if (lat == null || lng == null) continue;
+
+      if (lat == null || lng == null) {
+        debugPrint("Skipping ${friend.ccid} due to missing location.");
+        continue;
+      }
+
+      debugPrint("Adding marker for ${friend.ccid} at ($lat, $lng)");
 
       final markerId = MarkerId(friend.ccid);
       final circleIcon =
@@ -310,13 +353,14 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         icon: circleIcon,
         onTap: () {
           _switchToPinIcon(markerId, friend);
-          _controller?.animateCamera(
-              CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
+          _controller
+              ?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
         },
       );
 
       _markers[markerId] = marker;
     }
+
     setState(() {});
   }
 
@@ -367,7 +411,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         icon: _eventMarkerIcon!,
         onTap: () {
           final eventLatLng = LatLng(lat, lng);
-          _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
+          _controller
+              ?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
           _customInfoWindowController.addInfoWindow!(
             Container(
               padding: const EdgeInsets.all(2),
@@ -543,6 +588,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   void _updateFriendSubscriptions() {
     final friendIds = AppUser.instance.friends.map((f) => f.ccid).toSet();
 
+    // Unsubscribe from friends no longer in the list
     _friendSubscriptions.keys
         .where((id) => !friendIds.contains(id))
         .toList()
@@ -565,15 +611,35 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         final data = doc.data()!;
         final loc = data['currentLocation'] as Map<String, dynamic>?;
 
+        // 👀 Detect changes in friend's hidden list
+        final newHiddenList =
+            List<String>.from(data['location_hidden_from'] ?? []);
+        final currentHiddenList = friend.locationHiddenFrom ?? [];
+
+        if (Set.from(newHiddenList)
+                .difference(Set.from(currentHiddenList))
+                .isNotEmpty ||
+            Set.from(currentHiddenList)
+                .difference(Set.from(newHiddenList))
+                .isNotEmpty) {
+          friend.locationHiddenFrom = newHiddenList;
+          debugPrint(
+              "Detected location_hidden_from update for ${friend.ccid}: $newHiddenList");
+          _addFriendMarkers(); // 🔄 Refresh markers
+          setState(() {}); // 🔄 Refresh bottom sheet
+        }
+
+        // Update last seen timestamp
         final timestamp =
             loc != null ? (loc['timestamp'] as Timestamp?)?.toDate() : null;
-
         _lastUpdatedNotifier.value = {
           ..._lastUpdatedNotifier.value,
           friend.ccid: timestamp,
         };
 
+        // Skip if location invalid
         if (loc == null || loc['lat'] == null || loc['lng'] == null) return;
+
         final newPos = LatLng(loc['lat'], loc['lng']);
         final markerId = MarkerId(friend.ccid);
         final existing = _friendMarkers[friend.ccid];
@@ -600,7 +666,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
               _resetAllMarkersToCircle();
             },
           );
-
           _friendMarkers[friend.ccid] =
               _FriendMarker(newMarker, lastUpdated: timestamp);
           _markers[markerId] = newMarker;
@@ -730,24 +795,38 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
             height: MediaQuery.of(context).size.height * 0.25,
             width: MediaQuery.of(context).size.width * 0.7,
             offset: 50.0,
-          ), MapsBottomSheet(
-  draggableController: _draggableController,
-  friends: AppUser.instance.friends,
-  lastUpdatedNotifier: _lastUpdatedNotifier,
-  onFriendTap: (friend) {
-    _customInfoWindowController.hideInfoWindow!();
-    _resetAllMarkersToCircle();
-    final lat = friend.currentLocation?['lat'];
-    final lng = friend.currentLocation?['lng'];
-    if (lat != null && lng != null) {
-      _controller?.animateCamera(
-        CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
-      );
-    }
-  },
-),
+          ),
+          MapsBottomSheet(
+            key: ValueKey(AppUser.instance.locationHiddenFrom.toString()),
+            draggableController: _draggableController,
+            friends: AppUser.instance.friends,
+            lastUpdatedNotifier: _lastUpdatedNotifier,
+            onFriendTap: (friend) {
+              _customInfoWindowController.hideInfoWindow!();
+              _resetAllMarkersToCircle();
 
+              final friendHiddenList =
+                  (friend.locationHiddenFrom ?? []).cast<String>();
 
+              if (friendHiddenList.contains(AppUser.instance.ccid)) {
+                debugPrint(
+                    "Not moving map — ${friend.ccid} is hiding from me.");
+                return;
+              }
+
+              final lat = friend.currentLocation?['lat'];
+              final lng = friend.currentLocation?['lng'];
+
+              if (lat != null && lng != null) {
+                debugPrint("Moving to ${friend.ccid} location at $lat, $lng");
+                _controller?.animateCamera(
+                  CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
+                );
+              } else {
+                debugPrint("No location data for ${friend.ccid}");
+              }
+            },
+          ),
         ],
       ),
     );
