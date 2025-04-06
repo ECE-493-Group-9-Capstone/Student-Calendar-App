@@ -127,6 +127,9 @@ class _FriendsPageState extends State<FriendsPage> {
 
   Future<void> _removeFriend(String ccid) async {
     await AppUser.instance.removeFriend(ccid);
+    await AppUser.instance.refreshUserData();
+    await _loadUsers();
+    await _loadRequestedFriends(); 
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('Friend removed')));
   }
@@ -409,7 +412,6 @@ class _FriendsPageState extends State<FriendsPage> {
               color: Colors.white, borderRadius: BorderRadius.circular(30)),
           child: InkWell(
             borderRadius: BorderRadius.circular(30),
-          
             onTap: () {
               if (_requestedFriends.contains(user.ccid)) {
                 _cancelFriendRequest(user.ccid);

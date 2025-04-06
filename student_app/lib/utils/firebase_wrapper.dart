@@ -266,20 +266,25 @@ Future<void> removeFriendFromUsers(String userId1, String userId2) async {
     DocumentReference userRef1 = db.collection('users').doc(userId1);
     DocumentReference userRef2 = db.collection('users').doc(userId2);
 
-    // Remove each other from their friends lists
+    // Remove each other from friends lists
     await userRef1.update({
       'friends': FieldValue.arrayRemove([userId2]),
+      'requested_friends': FieldValue.arrayRemove([userId2]),
+      'friend_requests': FieldValue.arrayRemove([userId2]),
     });
 
     await userRef2.update({
       'friends': FieldValue.arrayRemove([userId1]),
+      'requested_friends': FieldValue.arrayRemove([userId1]),
+      'friend_requests': FieldValue.arrayRemove([userId1]),
     });
 
-    debugPrint("Users $userId1 and $userId2 are no longer friends.");
+    debugPrint("Users $userId1 and $userId2 are fully disconnected.");
   } catch (e) {
     debugPrint("Error removing friend: $e");
   }
 }
+
 
 Future<void> addUserSchedule(String userId, String scheduleContent) async {
   try {

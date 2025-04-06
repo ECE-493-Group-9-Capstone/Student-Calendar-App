@@ -165,7 +165,12 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
               GestureDetector(
                 onTap: () async {
                   await AppUser.instance.addFriend(id);
-                  setState(() {});
+                  await AppUser.instance
+                      .refreshUserData(); 
+                  setState(() {
+                    recommendedFriends =
+                        loadRecommendedFriends();
+                  });
                 },
                 child: Container(
                   width: 40,

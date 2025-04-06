@@ -34,8 +34,8 @@ class UserProfilePopup extends StatelessWidget {
         String email = userData["email"] ?? "Unknown";
         String phoneNumber = userData["phone_number"] ?? "No phone number";
         String ccid = userId;
-        String profilePic = userData["profilePic"] ??
-            "https://via.placeholder.com/150";
+        String profilePic =
+            userData["profilePic"] ?? "https://via.placeholder.com/150";
 
         return Container(
           width: 300,
@@ -78,12 +78,11 @@ class UserProfilePopup extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text("Close"),
-                  ),
-                  ElevatedButton(
-                    onPressed: () =>
-                        removeFriendFromUsers(ccid, appUser.ccid!),
+                    onPressed: () async {
+                      await removeFriendFromUsers(ccid, appUser.ccid!);
+                      await AppUser.instance.refreshUserData();
+                      Navigator.pop(context);
+                    },
                     child: Text("Remove Friend"),
                   ),
                 ],
