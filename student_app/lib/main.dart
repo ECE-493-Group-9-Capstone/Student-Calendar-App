@@ -30,7 +30,7 @@ Future<void> main() async {
 
   const InitializationSettings initializationSettings = InitializationSettings(
     android: androidInit,
-    iOS: iosInit, // <-- THIS is what fixes the crash
+    iOS: iosInit,
   );
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
