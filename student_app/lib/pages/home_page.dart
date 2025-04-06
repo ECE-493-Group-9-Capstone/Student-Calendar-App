@@ -319,19 +319,17 @@ class _HomePageState extends State<HomePage> {
           }
         }
       } catch (e) {
-        // If parsing fails, just skip this event
+        // Ignore bad date formats
       }
     }
     return upcoming;
   }
 
-  /// THIS METHOD NOW HANDLES TIMESTAMP/STRING DATES AND DISPLAYS ONLY THE DATE
   Widget _buildUpcomingEventCard(Map<String, dynamic> event) {
     final imageUrl = event['imageUrl'] as String? ?? '';
     final title = event['title'] as String? ?? 'Untitled Event';
     final location = event['location'] as String? ?? '';
 
-    // Safely parse the 'date' field to a DateTime, then format
     String formattedDate = '';
     final dateVal = event['date'];
     if (dateVal != null) {
@@ -342,15 +340,12 @@ class _HomePageState extends State<HomePage> {
         } else {
           dt = DateTime.parse(dateVal.toString());
         }
-        // Format as "MMM d, yyyy" (e.g., "Apr 3, 2025")
         formattedDate = DateFormat('MMM d, yyyy').format(dt);
       } catch (_) {
-        // Fallback if there's some parsing error
         formattedDate = dateVal.toString();
       }
     }
 
-    // You can keep times as they are if they're already strings (e.g., "14:00")
     final startTime = event['start_time']?.toString() ?? '';
     final endTime = event['end_time']?.toString() ?? '';
 
@@ -502,6 +497,7 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Greeting
                   Padding(
                     padding: const EdgeInsets.only(top: 40, left: 20),
                     child: Text(
@@ -521,81 +517,102 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(16, 36, 16, 16),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color.fromARGB(255, 190, 190, 190),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GradientText(
-                          "Today's Events",
-                          gradient: _greenGradient,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        if (_isLoadingEvents)
-                          const Center(child: CircularProgressIndicator())
-                        else if (_todayEvents.isEmpty)
-                          const Text(
-                            "No events for today.",
-                            style: TextStyle(fontSize: 16),
-                          )
-                        else
-                          Column(
-                            children: _todayEvents.map(_buildTodayEventItem).toList(),
-                          ),
-                        const SizedBox(height: 12),
-                        Center(
-                          child: InkWell(
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const CalendarPage()),
-                              );
-                              _fetchTodayEvents();
-                            },
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  "View Full Calendar",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                ShaderMask(
-                                  shaderCallback: (bounds) => _greenGradient.createShader(
-                                    Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-                                  ),
-                                  child: const Icon(
-                                    Icons.arrow_forward,
-                                    size: 20,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
+
+                  // "Today's Events" box with the bear "peeking" over
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.fromLTRB(16, 36, 10, 16),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color.fromARGB(255, 190, 190, 190),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GradientText(
+                              "Today's Events",
+                              gradient: _greenGradient,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            if (_isLoadingEvents)
+                              const Center(child: CircularProgressIndicator())
+                            else if (_todayEvents.isEmpty)
+                              const Text(
+                                "No events for today.",
+                                style: TextStyle(fontSize: 16),
+                              )
+                            else
+                              Column(
+                                children: _todayEvents.map(_buildTodayEventItem).toList(),
+                              ),
+                            const SizedBox(height: 12),
+                            Center(
+                              child: InkWell(
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const CalendarPage()),
+                                  );
+                                  // Refresh today's events after returning
+                                  _fetchTodayEvents();
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      "View Full Calendar",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    ShaderMask(
+                                      shaderCallback: (bounds) => _greenGradient.createShader(
+                                        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                                      ),
+                                      child: const Icon(
+                                        Icons.arrow_forward,
+                                        size: 20,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Positioned bear image now wrapped in IgnorePointer
+                      Positioned(
+                        top: -50,
+                        right: -52,
+                        child: IgnorePointer(
+                          child: Image.asset(
+                            'assets/peaking.png',
+                            width: 400, // Adjust size as needed
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+
+                  // Recommended Friends
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     padding: const EdgeInsets.all(20),
@@ -627,6 +644,8 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 20),
+
+                  // Upcoming Events
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     padding: const EdgeInsets.all(20),
@@ -667,6 +686,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+//----- GradientText -----//
 class GradientText extends StatelessWidget {
   final String text;
   final TextStyle? style;
@@ -693,6 +713,7 @@ class GradientText extends StatelessWidget {
   }
 }
 
+//----- Custom Clipper -----//
 class _TopWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

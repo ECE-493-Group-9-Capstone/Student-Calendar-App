@@ -22,11 +22,11 @@ class AuthService {
       return null;
     }
 
-    if (!googleUser.email.endsWith("@ualberta.ca")) {
-      await _googleSignIn.signOut();
-      log("Non-UAlberta email used: ${googleUser.email}");
-      return null;
-    }
+    // if (!googleUser.email.endsWith("@gmail.com")) {
+    //   await _googleSignIn.signOut();
+    //   log("Non-UAlberta email used: ${googleUser.email}");
+    //   return null;
+    // }
 
     final GoogleSignInAuthentication googleAuth =
         await googleUser.authentication;
