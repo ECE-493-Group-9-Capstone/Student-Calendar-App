@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:student_app/user_singleton.dart';
 import 'package:student_app/utils/firebase_wrapper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ScheduleView extends StatefulWidget {
   const ScheduleView({super.key});
@@ -13,9 +14,11 @@ class ScheduleView extends StatefulWidget {
 class ScheduleViewState extends State<ScheduleView> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
+  final _instagramController = TextEditingController();
   final FocusNode _phoneFocusNode = FocusNode();
 
   String? _submittedPhoneNumber;
+  String? _submittedInstagram;
   bool _isSubmitted = false;
 
   final _phoneFormatter = MaskTextInputFormatter(
@@ -39,7 +42,6 @@ class ScheduleViewState extends State<ScheduleView> {
   }
 
   Future<bool> submitPhoneNumber() async {
-
     if (!_formKey.currentState!.validate()) {
       return false;
     }
@@ -50,14 +52,29 @@ class ScheduleViewState extends State<ScheduleView> {
     }
 
     final formattedPhone = formatPrettyPhone(_phoneController.text);
+    final rawInstagramInput = _instagramController.text.trim();
+    String? fullInstagramLink;
 
+    if (rawInstagramInput.isNotEmpty) {
+      fullInstagramLink = rawInstagramInput.startsWith('http')
+          ? rawInstagramInput
+          : 'https://instagram.com/$rawInstagramInput';
+    }
 
     try {
       await uploadPhoneNumber(ccid, formattedPhone);
+
+      if (fullInstagramLink != null) {
+        await uploadInstagramLink(ccid, fullInstagramLink);
+      }
+
       setState(() {
         _submittedPhoneNumber = formattedPhone;
+        _submittedInstagram =
+            fullInstagramLink != null ? fullInstagramLink : null;
         _isSubmitted = true;
       });
+
       return true;
     } catch (e) {
       return false;
@@ -71,6 +88,7 @@ class ScheduleViewState extends State<ScheduleView> {
   @override
   void dispose() {
     _phoneController.dispose();
+    _instagramController.dispose();
     _phoneFocusNode.dispose();
     super.dispose();
   }
@@ -122,12 +140,31 @@ class ScheduleViewState extends State<ScheduleView> {
                 return null;
               },
             ),
+            const SizedBox(height: 24),
+            TextFormField(
+              controller: _instagramController,
+              keyboardType: TextInputType.text,
+              decoration: const InputDecoration(
+                labelText: 'Instagram (optional)',
+                hintText: 'your_username',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.link),
+              ),
+            ),
             const SizedBox(height: 12),
             if (_submittedPhoneNumber != null)
               Text(
                 "Submitted: $_submittedPhoneNumber",
                 style: const TextStyle(
                   color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            if (_submittedInstagram != null)
+              Text(
+                "Instagram saved!",
+                style: const TextStyle(
+                  color: Colors.deepPurple,
                   fontWeight: FontWeight.bold,
                 ),
               ),

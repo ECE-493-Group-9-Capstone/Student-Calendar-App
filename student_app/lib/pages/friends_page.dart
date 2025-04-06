@@ -86,7 +86,7 @@ class _FriendsPageState extends State<FriendsPage> {
     final users = await getAllUsers();
     final friendsCcids = AppUser.instance.friends.map((f) => f.ccid).toSet();
     setState(() {
-      // Only include users who are not the current user and not already friends.
+      // Include users who are not the current user and not already friends.
       allUsers = users
           .where((u) =>
               u.ccid != AppUser.instance.ccid && !friendsCcids.contains(u.ccid))
@@ -97,8 +97,6 @@ class _FriendsPageState extends State<FriendsPage> {
   Future<void> _loadRequestedFriends() async {
     final requested = await getRequestedFriends(AppUser.instance.ccid!);
 
-    // If your firebase utility returns a list of friend IDs, you can directly use it.
-    // Otherwise, you might need to map the returned list to a list of IDs.
     setState(() {
       _requestedFriends = List<String>.from(requested);
     });
@@ -409,7 +407,6 @@ class _FriendsPageState extends State<FriendsPage> {
               color: Colors.white, borderRadius: BorderRadius.circular(30)),
           child: InkWell(
             borderRadius: BorderRadius.circular(30),
-          
             onTap: () {
               if (_requestedFriends.contains(user.ccid)) {
                 _cancelFriendRequest(user.ccid);

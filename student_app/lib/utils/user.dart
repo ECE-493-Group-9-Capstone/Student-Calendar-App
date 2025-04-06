@@ -9,6 +9,7 @@ class UserModel {
   final String _locationTracking;
   final String? _photoURL;
   final String? _phoneNumber;
+  final String? _instagram;
   final Map<String, dynamic>? _currentLocation; 
 
   UserModel(
@@ -23,6 +24,7 @@ class UserModel {
     this._photoURL,
     this._currentLocation, 
     this._phoneNumber,
+    this._instagram,
   );
 
   // Getters
@@ -36,5 +38,6 @@ class UserModel {
   String get locationTracking => _locationTracking;
   String? get phoneNumber => _phoneNumber;
   String? get photoURL => _photoURL;
+  String? get insagram => _instagram;
   Map<String, dynamic>? get currentLocation => _currentLocation; 
 }
