@@ -70,37 +70,6 @@ class _MapsBottomSheetState extends State<MapsBottomSheet> {
     super.dispose();
   }
 
-  void _showFilterOptions() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Select Map Options'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: mapFilters.keys.map((filter) {
-              return CheckboxListTile(
-                title: Text(filter),
-                value: mapFilters[filter],
-                onChanged: (bool? value) {
-                  setState(() {
-                    mapFilters[filter] = value ?? false;
-                  });
-                },
-              );
-            }).toList(),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Done'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
@@ -108,7 +77,7 @@ class _MapsBottomSheetState extends State<MapsBottomSheet> {
         controller: widget.draggableController,
         initialChildSize: 0.4,
         minChildSize: 0.1,
-        maxChildSize: 0.5,
+        maxChildSize: 0.6,
         builder: (_, scrollController) {
           return Container(
             decoration: BoxDecoration(
@@ -133,19 +102,14 @@ class _MapsBottomSheetState extends State<MapsBottomSheet> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
+                    children: const [
+                      Text(
                         'Friends',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.remove_red_eye),
-                        onPressed: _showFilterOptions,
                       ),
                     ],
                   ),
@@ -204,7 +168,7 @@ class _FriendsList extends StatelessWidget {
   }
 }
 
-class FriendTile extends StatelessWidget {
+class FriendTile extends StatefulWidget {
   final dynamic friend;
   final ValueNotifier<Map<String, DateTime?>> lastUpdatedNotifier;
   final VoidCallback onTap;
@@ -217,8 +181,29 @@ class FriendTile extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  _FriendTileState createState() => _FriendTileState();
+}
+
+class _FriendTileState extends State<FriendTile> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final fallbackInitials = (friend.username?.toString() ?? '')
+    final fallbackInitials = (widget.friend.username?.toString() ?? '')
         .split(" ")
         .where((p) => p.isNotEmpty)
         .map((e) => e[0])
@@ -227,19 +212,19 @@ class FriendTile extends StatelessWidget {
         .toUpperCase();
     return ListTile(
       leading: CachedProfileImage(
-        photoURL: friend.photoURL?.toString() ?? '',
+        photoURL: widget.friend.photoURL?.toString() ?? '',
         size: 50,
         fallbackText: fallbackInitials,
         fallbackBackgroundColor: const Color(0xFF909533),
       ),
       title: Text(
-        friend.username.toString(),
+        widget.friend.username.toString(),
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       subtitle: ValueListenableBuilder<Map<String, DateTime?>>(
-        valueListenable: lastUpdatedNotifier,
+        valueListenable: widget.lastUpdatedNotifier,
         builder: (_, lastUpdatedMap, __) {
-          final updated = lastUpdatedMap[friend.ccid];
+          final updated = lastUpdatedMap[widget.friend.ccid];
           return Row(
             children: [
               const Text(
@@ -247,11 +232,9 @@ class FriendTile extends StatelessWidget {
                 style: TextStyle(color: Color(0xFF757575)),
               ),
               if (updated == null)
-                const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child:
-                      CupertinoActivityIndicator(radius: 8, color: Colors.grey),
+                const Text(
+                  'not found',
+                  style: TextStyle(color: Colors.grey),
                 )
               else
                 Text(
@@ -262,7 +245,7 @@ class FriendTile extends StatelessWidget {
           );
         },
       ),
-      onTap: onTap,
+      onTap: widget.onTap,
     );
   }
 }

@@ -501,10 +501,19 @@ class _FriendsPageState extends State<FriendsPage> {
     );
   }
 
-  Widget _buildSearchResultTile(UserModel user) {
-  final isFriend = AppUser.instance.friends
-      .any((friend) => friend.ccid == user.ccid);
+Widget _buildSearchResultTile(UserModel user) {
+  final isFriend =
+      AppUser.instance.friends.any((friend) => friend.ccid == user.ccid);
   final isLocallyRequested = _requestedFriends.contains(user.ccid);
+  final fallbackInitials = (user.photoURL == null || user.photoURL!.isEmpty)
+      ? user.username
+          .split(" ")
+          .where((p) => p.isNotEmpty)
+          .map((e) => e[0])
+          .take(2)
+          .join()
+          .toUpperCase()
+      : null;
 
   return FutureBuilder<DocumentSnapshot>(
     future: isLocallyRequested
@@ -532,11 +541,13 @@ class _FriendsPageState extends State<FriendsPage> {
           height: 100,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(33),
-            gradient: const LinearGradient(colors: [
-              Color(0xFF396548),
-              Color(0xFF6B803D),
-              Color(0xFF909533)
-            ]),
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF396548),
+                Color(0xFF6B803D),
+                Color(0xFF909533)
+              ],
+            ),
           ),
           child: Container(
             margin: const EdgeInsets.all(3),
@@ -553,7 +564,6 @@ class _FriendsPageState extends State<FriendsPage> {
                   );
                   return;
                 }
-
                 if (isRequested) {
                   _cancelFriendRequest(user.ccid);
                 } else {
@@ -563,34 +573,12 @@ class _FriendsPageState extends State<FriendsPage> {
               child: Row(
                 children: [
                   const SizedBox(width: 20),
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: Colors.transparent,
-                    child: FutureBuilder<Uint8List?>(
-                      future: loadCachedImageBytes(
-                          'circle_${user.photoURL.hashCode}_80.0'),
-                      builder: (ctx, snap) {
-                        if (snap.connectionState != ConnectionState.done) {
-                          return const CircularProgressIndicator(strokeWidth: 2);
-                        }
-                        final bytes = snap.data;
-                        if (bytes != null && bytes.isNotEmpty) {
-                          return ClipOval(
-                            child: Image.memory(
-                              bytes,
-                              width: 64,
-                              height: 64,
-                              fit: BoxFit.cover,
-                            ),
-                          );
-                        }
-                        return const CircleAvatar(
-                          radius: 32,
-                          backgroundImage:
-                              AssetImage('assets/default_avatar.png'),
-                        );
-                      },
-                    ),
+                  // Use CachedProfileImage instead of building image manually.
+                  CachedProfileImage(
+                    photoURL: user.photoURL,
+                    size: 64,
+                    fallbackText: fallbackInitials,
+                    fallbackBackgroundColor: const Color(0xFF909533),
                   ),
                   const SizedBox(width: 20),
                   Expanded(

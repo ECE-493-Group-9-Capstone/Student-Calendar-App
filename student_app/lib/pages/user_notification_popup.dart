@@ -341,117 +341,91 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
     );
   }
 
-  /// Builds a recommended friend tile with profile image and add button.
-  Widget buildRecommendedFriendTile(UserModel user) {
-    String initials = user.username
-        .split(" ")
-        .map((e) => e.isNotEmpty ? e[0] : "")
-        .take(2)
-        .join()
-        .toUpperCase();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8).add(const EdgeInsets.only(bottom: 20)),
+Widget buildRecommendedFriendTile(UserModel user) {
+  String initials = user.username
+      .split(" ")
+      .map((e) => e.isNotEmpty ? e[0] : "")
+      .take(2)
+      .join()
+      .toUpperCase();
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8)
+        .add(const EdgeInsets.only(bottom: 20)),
+    child: Container(
+      height: 100,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(33),
+        gradient: _tileGradient,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Container(
-        height: 100,
+        margin: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(33),
-          gradient: _tileGradient,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 20),
+            // Use CachedProfileImage for consistent fallback behavior.
+            CachedProfileImage(
+              photoURL: user.photoURL,
+              size: 64,
+              fallbackText: initials,
+              fallbackBackgroundColor: const Color(0xFF909533),
             ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.username,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    user.ccid,
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black.withOpacity(0.5)),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: () async {
+                await AppUser.instance.sendFriendRequest(user.ccid);
+                setState(() {
+                  recommendedFriends = loadRecommendedFriends();
+                });
+              },
+              icon: ShaderMask(
+                shaderCallback: (bounds) => _tileGradient.createShader(bounds),
+                child: const Icon(
+                  Icons.add,
+                  size: 30,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
           ],
         ),
-        child: Container(
-          margin: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Row(
-            children: [
-              const SizedBox(width: 20),
-              // Custom Profile Picture for Friend Recommendation:
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: Colors.transparent,
-                child: FutureBuilder<Uint8List?>(
-                  future: (user.photoURL?.isNotEmpty ?? false)
-                      ? loadCachedImageBytes('circle_${user.photoURL!.hashCode}_80.0')
-                      : Future.value(null),
-                  builder: (ctx, snap) {
-                    if (snap.connectionState != ConnectionState.done) {
-                      return const CircularProgressIndicator(strokeWidth: 2);
-                    }
-                    final bytes = snap.data;
-                    if (bytes != null && bytes.isNotEmpty) {
-                      return ClipOval(
-                        child: Image.memory(
-                          bytes,
-                          width: 64,
-                          height: 64,
-                          fit: BoxFit.cover,
-                        ),
-                      );
-                    }
-                    return CircleAvatar(
-                      radius: 32,
-                      backgroundColor: Colors.deepPurple,
-                      child: Text(
-                        initials,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.username,
-                      style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      user.ccid,
-                      style: TextStyle(
-                          fontSize: 14, color: Colors.black.withOpacity(0.5)),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () async {
-                  await AppUser.instance.sendFriendRequest(user.ccid);
-                  setState(() {
-                    recommendedFriends = loadRecommendedFriends();
-                  });
-                },
-                icon: ShaderMask(
-                  shaderCallback: (bounds) => _tileGradient.createShader(bounds),
-                  child: const Icon(
-                    Icons.add,
-                    size: 30,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-            ],
-          ),
-        ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// Main build method for the notification popup showing friend requests and recommendations.
   @override
