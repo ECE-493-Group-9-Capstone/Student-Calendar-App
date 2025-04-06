@@ -94,6 +94,8 @@ flutter:
     - assets/Google_Maps_icon_(2015-2020).png
     - assets/event_marker.png
     - assets/study_spot.png
+    - assets/peaking.png
+    
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
