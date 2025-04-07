@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/widgets.dart';
-import 'package:intl/intl.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
@@ -148,7 +145,6 @@ class _FriendsList extends StatelessWidget {
   final Set<String> hiddenFromMe;
 
   const _FriendsList({
-    super.key,
     required this.friends,
     required this.lastUpdatedNotifier,
     required this.onFriendTap,

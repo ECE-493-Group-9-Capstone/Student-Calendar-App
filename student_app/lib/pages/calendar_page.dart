@@ -5,8 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:student_app/pages/google_signin.dart';
 import 'package:student_app/utils/google_calendar_service.dart';
-import 'package:student_app/main.dart';
-import 'package:student_app/user_singleton.dart';
 import 'package:intl/intl.dart';
 
 class CalendarPage extends StatefulWidget {
@@ -318,23 +316,6 @@ class _CalendarPageState extends State<CalendarPage> {
     TimeOfDay selectedStartTime = const TimeOfDay(hour: 9, minute: 0);
     TimeOfDay selectedEndTime = const TimeOfDay(hour: 10, minute: 0);
 
-    Future<void> pickTime({
-      required BuildContext context,
-      required bool isStart,
-    }) async {
-      final picked = await showTimePicker(
-        context: context,
-        initialTime: isStart ? selectedStartTime : selectedEndTime,
-      );
-      if (picked != null) {
-        if (isStart) {
-          selectedStartTime = picked;
-        } else {
-          selectedEndTime = picked;
-        }
-      }
-    }
-
     showDialog(
       context: context,
       builder: (context) {
@@ -459,23 +440,6 @@ class _CalendarPageState extends State<CalendarPage> {
     TimeOfDay selectedEndTime = TimeOfDay(
         hour: (defaultStart.hour + 1) % 24, minute: defaultStart.minute);
 
-    Future<void> pickTime({
-      required BuildContext context,
-      required bool isStart,
-    }) async {
-      final picked = await showTimePicker(
-        context: context,
-        initialTime: isStart ? selectedStartTime : selectedEndTime,
-      );
-      if (picked != null) {
-        if (isStart) {
-          selectedStartTime = picked;
-        } else {
-          selectedEndTime = picked;
-        }
-      }
-    }
-
     showDialog(
       context: context,
       builder: (context) {
@@ -501,7 +465,8 @@ class _CalendarPageState extends State<CalendarPage> {
                       _buildPlainTextField(emailsController,
                           "Invitees (comma-separated emails)"),
                       const SizedBox(height: 25),
-                      Text("Date: ${DateFormat('MMMM d, y').format(defaultStart)}",
+                      Text(
+                          "Date: ${DateFormat('MMMM d, y').format(defaultStart)}",
                           style: const TextStyle(fontSize: 16)),
                       const SizedBox(height: 20),
                       ElevatedButton(
