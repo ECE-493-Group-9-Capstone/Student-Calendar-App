@@ -26,7 +26,7 @@ class EventPopup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Parse the event date.
-    final dynamic dateValue = event['date'];
+    final dynamic dateValue = event['startDate'];
     DateTime eventDate;
     try {
       eventDate = dateValue is Timestamp
@@ -54,7 +54,8 @@ class EventPopup extends StatelessWidget {
     if (parsedEnd.isBefore(parsedStart)) {
       parsedEnd = parsedEnd.add(const Duration(days: 1));
     }
-    final formattedStart = DateFormat('h:mma').format(parsedStart).toLowerCase();
+    final formattedStart =
+        DateFormat('h:mma').format(parsedStart).toLowerCase();
     final formattedEnd = DateFormat('h:mma').format(parsedEnd).toLowerCase();
 
     // Prepare the image URL.
@@ -96,7 +97,7 @@ class EventPopup extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // If we have a valid image URL, display it — but hide on error.
-                if (imageUrl != null) 
+                if (imageUrl != null)
                   Image.network(
                     imageUrl,
                     width: double.infinity,
@@ -119,7 +120,7 @@ class EventPopup extends StatelessWidget {
                         event['title'] ?? 'Event Title',
                         style: const TextStyle(
                           color: Colors.black,
-                          fontSize: 18, 
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
