@@ -76,7 +76,6 @@ class _CalendarPageState extends State<CalendarPage> {
       final end = (event.end?.dateTime ?? event.end?.date)?.toLocal();
       final title = event.summary ?? "No Title";
       final location = event.location ?? "No Location";
-
       if (start != null && end != null) {
         freshAppointments.add(
           Appointment(
@@ -88,7 +87,6 @@ class _CalendarPageState extends State<CalendarPage> {
         );
       }
     }
-
     setState(() {
       _appointments = freshAppointments;
       _cachedAppointments = freshAppointments;
@@ -181,7 +179,6 @@ class _CalendarPageState extends State<CalendarPage> {
     while (searchCursor.isBefore(endLimit)) {
       final proposedStart = searchCursor;
       final proposedEnd = proposedStart.add(duration);
-
       if (proposedStart.hour < 8 || proposedStart.hour > 19) {
         searchCursor = DateTime(
           proposedStart.year,
@@ -191,11 +188,9 @@ class _CalendarPageState extends State<CalendarPage> {
         );
         continue;
       }
-
       final overlaps = busyBlocks.any((b) =>
           !(proposedEnd.isBefore(b['start']!) ||
               proposedStart.isAfter(b['end']!)));
-
       if (!overlaps) {
         _showSuggestedTimeDialog(
           title: title,
@@ -309,46 +304,156 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  void _showCreateEventDialogWithTimeSelector(
-      BuildContext context, DateTime date) {
-    final titleController = TextEditingController();
-    final emailsController = TextEditingController();
-    TimeOfDay selectedStartTime = const TimeOfDay(hour: 9, minute: 0);
-    TimeOfDay selectedEndTime = const TimeOfDay(hour: 10, minute: 0);
+  Widget _wrapInGradientBox({required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: _gradient,
+        borderRadius: BorderRadius.circular(25),
+      ),
+      padding: const EdgeInsets.all(2),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(23),
+        ),
+        child: child,
+      ),
+    );
+  }
 
-    showDialog(
+  // A helper to open the Time Picker with a white, gray-bordered style.
+  // We override the theme in the builder to achieve the custom look.
+  Future<TimeOfDay?> _showWhiteTimePicker(
+    BuildContext context,
+    TimeOfDay initialTime,
+  ) async {
+    return showTimePicker(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
+      initialTime: initialTime,
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData(
+            colorScheme: ColorScheme.light(
+              primary: Colors.grey.shade700, // Title and selection color
+              onPrimary: Colors.white,       // Text on the selection color
+              onSurface: Colors.black,       // Text color on default surface
+            ),
+            timePickerTheme: TimePickerThemeData(
+              backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text("Create Event",
-                          style: TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black)),
-                      const SizedBox(height: 25),
-                      _buildPlainTextField(titleController, "Event Title"),
-                      const SizedBox(height: 25),
-                      _buildPlainTextField(emailsController,
-                          "Invitees (comma-separated emails)"),
-                      const SizedBox(height: 25),
-                      Text("Date: ${DateFormat('MMMM d, y').format(date)}",
-                          style: const TextStyle(fontSize: 16)),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.shade300, width: 1.0),
+              ),
+              hourMinuteShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: Colors.grey.shade400, width: 1.0),
+              ),
+              dayPeriodShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: Colors.grey.shade400, width: 1.0),
+              ),
+              hourMinuteColor: MaterialStateColor.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return Colors.grey.shade700;
+                }
+                return Colors.white;
+              }),
+              hourMinuteTextColor: MaterialStateColor.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return Colors.white;
+                }
+                return Colors.black;
+              }),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+  }
+void _showCreateEventDialogWithTimeSelector(BuildContext context, DateTime date) {
+  final titleController = TextEditingController();
+  final emailsController = TextEditingController();
+  TimeOfDay selectedStartTime = const TimeOfDay(hour: 9, minute: 0);
+  TimeOfDay selectedEndTime = const TimeOfDay(hour: 10, minute: 0);
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: _gradient,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(2),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Create Event",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 98, 98, 98),
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    _wrapInGradientBox(
+                      child: _buildPlainTextField(
+                        titleController,
+                        "Event Title",
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    _wrapInGradientBox(
+                      child: _buildPlainTextField(
+                        emailsController,
+                        "Invitees (comma-separated emails)",
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    Text(
+                      "Date: ${DateFormat('MMMM d, y').format(date)}",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // START TIME BUTTON with GRADIENT BORDER + WHITE BACKGROUND + GREY TEXT
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: _gradient,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      padding: const EdgeInsets.all(2),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 20,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
                         onPressed: () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: selectedStartTime,
+                          final picked = await _showWhiteTimePicker(
+                            context,
+                            selectedStartTime,
                           );
                           if (picked != null) {
                             setState(() {
@@ -357,14 +462,37 @@ class _CalendarPageState extends State<CalendarPage> {
                           }
                         },
                         child: Text(
-                            "Start Time: ${selectedStartTime.format(context)}"),
+                          "Start Time: ${selectedStartTime.format(context)}",
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
+                    ),
+                    
+                    const SizedBox(height: 10),
+                    
+                    // END TIME BUTTON with GRADIENT BORDER + WHITE BACKGROUND + GREY TEXT
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: _gradient,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      padding: const EdgeInsets.all(2),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 20,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
                         onPressed: () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: selectedEndTime,
+                          final picked = await _showWhiteTimePicker(
+                            context,
+                            selectedEndTime,
                           );
                           if (picked != null) {
                             setState(() {
@@ -373,10 +501,21 @@ class _CalendarPageState extends State<CalendarPage> {
                           }
                         },
                         child: Text(
-                            "End Time: ${selectedEndTime.format(context)}"),
+                          "End Time: ${selectedEndTime.format(context)}",
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                       ),
-                      const SizedBox(height: 25),
-                      ElevatedButton(
+                    ),
+
+                    const SizedBox(height: 25),
+                    
+                    // CREATE BUTTON WITH GRADIENT
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: _gradient,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: ElevatedButton(
                         onPressed: () async {
                           Navigator.pop(context);
                           final title = titleController.text;
@@ -386,7 +525,6 @@ class _CalendarPageState extends State<CalendarPage> {
                               .where((e) => e.isNotEmpty)
                               .toList();
                           if (title.isEmpty || emails.isEmpty) return;
-
                           final startDateTime = DateTime(
                             date.year,
                             date.month,
@@ -401,79 +539,129 @@ class _CalendarPageState extends State<CalendarPage> {
                             selectedEndTime.hour,
                             selectedEndTime.minute,
                           );
-
                           if (endDateTime.isAfter(startDateTime)) {
                             await _findBestTimeAndCreateEvent(
-                                title, emails, startDateTime, endDateTime);
+                              title,
+                              emails,
+                              startDateTime,
+                              endDateTime,
+                            );
                           } else {
                             _showSnack("End time must be after start time.");
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
                           padding: const EdgeInsets.symmetric(
                               vertical: 12, horizontal: 20),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25)),
-                          elevation: 0,
+                            borderRadius: BorderRadius.circular(25),
+                          ),
                         ),
-                        child: const Text("Create",
-                            style: TextStyle(fontSize: 16)),
+                        child: const Text(
+                          "Create",
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
 
-  void _showCreateEventDialog(BuildContext context, DateTime defaultStart) {
-    final titleController = TextEditingController();
-    final emailsController = TextEditingController();
-    TimeOfDay selectedStartTime =
-        TimeOfDay(hour: defaultStart.hour, minute: defaultStart.minute);
-    TimeOfDay selectedEndTime = TimeOfDay(
-        hour: (defaultStart.hour + 1) % 24, minute: defaultStart.minute);
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text("Create Event",
-                          style: TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black)),
-                      const SizedBox(height: 25),
-                      _buildPlainTextField(titleController, "Event Title"),
-                      const SizedBox(height: 25),
-                      _buildPlainTextField(emailsController,
-                          "Invitees (comma-separated emails)"),
-                      const SizedBox(height: 25),
-                      Text(
-                          "Date: ${DateFormat('MMMM d, y').format(defaultStart)}",
-                          style: const TextStyle(fontSize: 16)),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
+void _showCreateEventDialog(BuildContext context, DateTime defaultStart) {
+  final titleController = TextEditingController();
+  final emailsController = TextEditingController();
+  TimeOfDay selectedStartTime =
+      TimeOfDay(hour: defaultStart.hour, minute: defaultStart.minute);
+  TimeOfDay selectedEndTime =
+      TimeOfDay(hour: (defaultStart.hour + 1) % 24, minute: defaultStart.minute);
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: _gradient,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(2),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Create Event",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 98, 98, 98),
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    _wrapInGradientBox(
+                      child: _buildPlainTextField(
+                        titleController,
+                        "Event Title",
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    _wrapInGradientBox(
+                      child: _buildPlainTextField(
+                        emailsController,
+                        "Invitees (comma-separated emails)",
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    Text(
+                      "Date: ${DateFormat('MMMM d, y').format(defaultStart)}",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // START TIME BUTTON with GRADIENT BORDER + WHITE BACKGROUND + GREY TEXT
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: _gradient,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      padding: const EdgeInsets.all(2),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 20,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
                         onPressed: () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: selectedStartTime,
+                          final picked = await _showWhiteTimePicker(
+                            context,
+                            selectedStartTime,
                           );
                           if (picked != null) {
                             setState(() {
@@ -482,14 +670,37 @@ class _CalendarPageState extends State<CalendarPage> {
                           }
                         },
                         child: Text(
-                            "Start Time: ${selectedStartTime.format(context)}"),
+                          "Start Time: ${selectedStartTime.format(context)}",
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
+                    ),
+                    
+                    const SizedBox(height: 10),
+                    
+                    // END TIME BUTTON with GRADIENT BORDER + WHITE BACKGROUND + GREY TEXT
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: _gradient,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      padding: const EdgeInsets.all(2),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 20,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
                         onPressed: () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: selectedEndTime,
+                          final picked = await _showWhiteTimePicker(
+                            context,
+                            selectedEndTime,
                           );
                           if (picked != null) {
                             setState(() {
@@ -498,10 +709,21 @@ class _CalendarPageState extends State<CalendarPage> {
                           }
                         },
                         child: Text(
-                            "End Time: ${selectedEndTime.format(context)}"),
+                          "End Time: ${selectedEndTime.format(context)}",
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                       ),
-                      const SizedBox(height: 25),
-                      ElevatedButton(
+                    ),
+                    
+                    const SizedBox(height: 25),
+                    
+                    // CREATE BUTTON WITH GRADIENT
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: _gradient,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: ElevatedButton(
                         onPressed: () async {
                           Navigator.pop(context);
                           final title = titleController.text;
@@ -511,7 +733,6 @@ class _CalendarPageState extends State<CalendarPage> {
                               .where((e) => e.isNotEmpty)
                               .toList();
                           if (title.isEmpty || emails.isEmpty) return;
-
                           final startDateTime = DateTime(
                             defaultStart.year,
                             defaultStart.month,
@@ -526,36 +747,42 @@ class _CalendarPageState extends State<CalendarPage> {
                             selectedEndTime.hour,
                             selectedEndTime.minute,
                           );
-
                           if (endDateTime.isAfter(startDateTime)) {
                             await _findBestTimeAndCreateEvent(
-                                title, emails, startDateTime, endDateTime);
+                              title,
+                              emails,
+                              startDateTime,
+                              endDateTime,
+                            );
                           } else {
                             _showSnack("End time must be after start time.");
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
                           padding: const EdgeInsets.symmetric(
                               vertical: 12, horizontal: 20),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25)),
-                          elevation: 0,
+                            borderRadius: BorderRadius.circular(25),
+                          ),
                         ),
-                        child: const Text("Create",
-                            style: TextStyle(fontSize: 16)),
+                        child: const Text(
+                          "Create",
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildMonthCalendar({Key? key}) {
     return Container(
@@ -611,7 +838,6 @@ class _CalendarPageState extends State<CalendarPage> {
                   _selectedDate!.year == details.date.year &&
                   _selectedDate!.month == details.date.month &&
                   _selectedDate!.day == details.date.day;
-
               if (isToday) {
                 return Center(
                   child: Container(
@@ -758,7 +984,6 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Widget _buildBottomEventsSection() {
     final filtered = _getFilteredAppointments();
-
     return Stack(
       children: [
         Container(
@@ -904,9 +1129,9 @@ class _CalendarPageState extends State<CalendarPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    const Text(
                       "Select Calendar View",
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Color.fromARGB(255, 98, 98, 98),
