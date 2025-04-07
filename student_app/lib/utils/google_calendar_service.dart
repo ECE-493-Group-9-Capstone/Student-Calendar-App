@@ -54,7 +54,6 @@ class GoogleCalendarService {
 
       final calendarApi = calendar.CalendarApi(authenticatedClient);
 
-      // Calculate today's start and end boundaries in UTC.
       final now = DateTime.now();
       final startOfToday = DateTime(now.year, now.month, now.day);
       final endOfToday = startOfToday.add(const Duration(days: 1));

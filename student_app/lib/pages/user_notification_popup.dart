@@ -114,7 +114,6 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
     return unique;
   }
 
-  /// Builds a friend request tile with profile image and action buttons.
   Widget buildFriendRequestTile(Map<String, dynamic> request) {
     String name = request["name"] ?? "Unknown";
     String id = request["id"];
@@ -326,7 +325,6 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
     );
   }
 
-  /// Main build method for the notification popup showing friend requests and recommendations.
   @override
   Widget build(BuildContext context) {
     final double sectionHeight = MediaQuery.of(context).size.height / 3;
