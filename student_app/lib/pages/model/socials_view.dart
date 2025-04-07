@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:student_app/user_singleton.dart';
 import 'package:student_app/utils/firebase_wrapper.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ScheduleView extends StatefulWidget {
-  const ScheduleView({super.key});
+class SocialsView extends StatefulWidget {
+  const SocialsView({super.key});
 
   @override
-  ScheduleViewState createState() => ScheduleViewState();
+  SocialsViewState createState() => SocialsViewState();
 }
 
-class ScheduleViewState extends State<ScheduleView> {
+class SocialsViewState extends State<SocialsView> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   final _instagramController = TextEditingController();
@@ -70,8 +69,7 @@ class ScheduleViewState extends State<ScheduleView> {
 
       setState(() {
         _submittedPhoneNumber = formattedPhone;
-        _submittedInstagram =
-            fullInstagramLink != null ? fullInstagramLink : null;
+        _submittedInstagram = fullInstagramLink;
         _isSubmitted = true;
       });
 
@@ -104,7 +102,11 @@ class ScheduleViewState extends State<ScheduleView> {
           children: [
             ShaderMask(
               shaderCallback: (bounds) => const LinearGradient(
-                colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)],
+                colors: [
+                  Color(0xFF396548),
+                  Color(0xFF6B803D),
+                  Color(0xFF909533)
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
