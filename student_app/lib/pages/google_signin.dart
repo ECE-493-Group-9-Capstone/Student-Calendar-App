@@ -14,51 +14,50 @@ class AuthService {
   );
 
   Future<Map<String, String>?> loginWithGoogle() async {
-  try {
-    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
-    if (googleUser == null) {
-      log("Google sign-in canceled by the user.");
+      if (googleUser == null) {
+        log("Google sign-in canceled by the user.");
+        return null;
+      }
+
+      // if (!googleUser.email.endsWith("@gmail.com")) {
+      //   await _googleSignIn.signOut();
+      //   log("Non-UAlberta email used: ${googleUser.email}");
+      //   return null;
+      // }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+        accessToken: googleAuth.accessToken,
+      );
+
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+      log("User signed in: ${userCredential.user?.displayName}");
+
+      final String? profilePicUrl =
+          googleUser.photoUrl; // or userCredential.user?.photoURL
+      log("Profile picture URL: $profilePicUrl");
+
+      // Process ccid only once.
+      final String ccid =
+          userCredential.user?.email?.split('@')[0] ?? userCredential.user!.uid;
+
+      return {
+        'displayName': userCredential.user?.displayName ?? "New User",
+        'ccid': ccid,
+        'photoURL': profilePicUrl ?? "",
+      };
+    } catch (e) {
+      log("Error during Google sign-in: $e");
       return null;
     }
-
-    // if (!googleUser.email.endsWith("@gmail.com")) {
-    //   await _googleSignIn.signOut();
-    //   log("Non-UAlberta email used: ${googleUser.email}");
-    //   return null;
-    // }
-
-    final GoogleSignInAuthentication googleAuth =
-        await googleUser.authentication;
-
-    final AuthCredential credential = GoogleAuthProvider.credential(
-      idToken: googleAuth.idToken,
-      accessToken: googleAuth.accessToken,
-    );
-
-    final UserCredential userCredential =
-        await _auth.signInWithCredential(credential);
-    log("User signed in: ${userCredential.user?.displayName}");
-
-    final String? profilePicUrl = googleUser.photoUrl; // or userCredential.user?.photoURL
-    log("Profile picture URL: $profilePicUrl");
-
-    // Process ccid only once.
-    final String ccid = userCredential.user?.email?.split('@')[0] ??
-        userCredential.user!.uid;
-
-    return {
-      'displayName': userCredential.user?.displayName ?? "New User",
-      'ccid': ccid,
-      'photoURL': profilePicUrl ?? "",
-    };
-  } catch (e) {
-    log("Error during Google sign-in: $e");
-    return null;
   }
-}
-
-
 
   Future<void> logout() async {
     try {
@@ -71,9 +70,10 @@ class AuthService {
   }
 
   Future<String?> getAccessToken() async {
-    final account = _googleSignIn.currentUser ?? await _googleSignIn.signIn();
+    GoogleSignInAccount? account = _googleSignIn.currentUser;
+    account ??= await _googleSignIn.signInSilently();
+    account ??= await _googleSignIn.signIn();
     final auth = await account?.authentication;
-
     return auth?.accessToken;
   }
 }

@@ -15,6 +15,7 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:student_app/pages/study_spots_page.dart';
+import './pages/google_signin.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
@@ -24,6 +25,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   const AndroidInitializationSettings androidInit =
       AndroidInitializationSettings('@mipmap/ic_launcher');
   const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
@@ -36,6 +38,10 @@ Future<void> main() async {
       .resolvePlatformSpecificImplementation<
           IOSFlutterLocalNotificationsPlugin>()
       ?.requestPermissions(alert: true, badge: true, sound: true);
+
+  final authService = AuthService();
+  await authService.getAccessToken();
+
   runApp(const MyApp());
 }
 
