@@ -11,16 +11,18 @@ import 'package:student_app/utils/cache_helper.dart';
 class MapsBottomSheet extends StatefulWidget {
   final DraggableScrollableController draggableController;
   final List<dynamic> friends;
+  final Set<String> hiddenFromMe;
   final ValueNotifier<Map<String, DateTime?>> lastUpdatedNotifier;
   final void Function(dynamic friend) onFriendTap;
 
-  const MapsBottomSheet({
-    Key? key,
-    required this.draggableController,
-    required this.friends,
-    required this.lastUpdatedNotifier,
-    required this.onFriendTap,
-  }) : super(key: key);
+  const MapsBottomSheet(
+      {Key? key,
+      required this.draggableController,
+      required this.friends,
+      required this.lastUpdatedNotifier,
+      required this.onFriendTap,
+      required this.hiddenFromMe})
+      : super(key: key);
 
   @override
   _MapsBottomSheetState createState() => _MapsBottomSheetState();
@@ -126,6 +128,7 @@ class _MapsBottomSheetState extends State<MapsBottomSheet> {
                     lastUpdatedNotifier: widget.lastUpdatedNotifier,
                     onFriendTap: widget.onFriendTap,
                     controller: scrollController,
+                    hiddenFromMe: widget.hiddenFromMe,
                   ),
                 ),
               ],
@@ -142,6 +145,7 @@ class _FriendsList extends StatelessWidget {
   final ValueNotifier<Map<String, DateTime?>> lastUpdatedNotifier;
   final void Function(dynamic) onFriendTap;
   final ScrollController controller;
+  final Set<String> hiddenFromMe;
 
   const _FriendsList({
     super.key,
@@ -149,6 +153,7 @@ class _FriendsList extends StatelessWidget {
     required this.lastUpdatedNotifier,
     required this.onFriendTap,
     required this.controller,
+    required this.hiddenFromMe,
   });
 
   @override
@@ -167,6 +172,7 @@ class _FriendsList extends StatelessWidget {
           friend: friend,
           lastUpdatedNotifier: lastUpdatedNotifier,
           onTap: () => onFriendTap(friend),
+          isHiddenFromMe: hiddenFromMe.contains(friend.ccid),
         );
       },
     );
@@ -177,12 +183,14 @@ class FriendTile extends StatefulWidget {
   final dynamic friend;
   final ValueNotifier<Map<String, DateTime?>> lastUpdatedNotifier;
   final VoidCallback onTap;
+  final bool isHiddenFromMe;
 
   const FriendTile({
     Key? key,
     required this.friend,
     required this.lastUpdatedNotifier,
     required this.onTap,
+    required this.isHiddenFromMe,
   }) : super(key: key);
 
   @override
@@ -226,31 +234,36 @@ class _FriendTileState extends State<FriendTile> {
         widget.friend.username.toString(),
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
-      subtitle: ValueListenableBuilder<Map<String, DateTime?>>(
-        valueListenable: widget.lastUpdatedNotifier,
-        builder: (_, lastUpdatedMap, __) {
-          final updated = lastUpdatedMap[widget.friend.ccid];
-          return Row(
-            children: [
-              const Text(
-                'Last seen: ',
-                style: TextStyle(color: Color(0xFF757575)),
-              ),
-              if (updated == null)
-                const Text(
-                  'not found',
-                  style: TextStyle(color: Colors.grey),
-                )
-              else
-                Text(
-                  '${DateTime.now().difference(updated).inMinutes} min ago',
-                  style: const TextStyle(color: Colors.grey),
-                ),
-            ],
-          );
-        },
-      ),
-      onTap: widget.onTap,
+      subtitle: widget.isHiddenFromMe
+          ? const Text(
+              'Location hidden',
+              style: TextStyle(color: Colors.grey),
+            )
+          : ValueListenableBuilder<Map<String, DateTime?>>(
+              valueListenable: widget.lastUpdatedNotifier,
+              builder: (_, lastUpdatedMap, __) {
+                final updated = lastUpdatedMap[widget.friend.ccid];
+                return Row(
+                  children: [
+                    const Text(
+                      'Last seen: ',
+                      style: TextStyle(color: Color(0xFF757575)),
+                    ),
+                    if (updated == null)
+                      const Text(
+                        'not found',
+                        style: TextStyle(color: Colors.grey),
+                      )
+                    else
+                      Text(
+                        '${DateTime.now().difference(updated).inMinutes} min ago',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                  ],
+                );
+              },
+            ),
+      onTap: widget.isHiddenFromMe ? null : widget.onTap,
     );
   }
 }

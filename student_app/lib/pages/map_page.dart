@@ -13,6 +13,7 @@ import 'maps_bottom_sheet.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
 import 'package:student_app/utils/study_spot_service.dart';
+import 'package:student_app/utils/firebase_wrapper.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -38,13 +39,13 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
   late CameraPosition _initialCameraPosition;
   late CameraPosition _currentCameraPosition;
-
+  Set<String> _hiddenFromMe = {};
   final Map<MarkerId, Marker> _markers = {};
 
   final Map<String, BitmapDescriptor> _circleIcons = {};
   final Map<String, BitmapDescriptor> _pinIcons = {};
   final Map<String, MemoryImage> _circleMemoryImages = {};
-
+  StreamSubscription<DocumentSnapshot>? _hiddenListSub;
   final Map<String, StreamSubscription<DocumentSnapshot>> _friendSubscriptions =
       {};
   final ValueNotifier<Map<String, DateTime?>> _lastUpdatedNotifier =
@@ -211,6 +212,26 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         if (_showHeatmap) _generateStudySpotHeatmap();
       });
     });
+    final ccid = AppUser.instance.ccid;
+    if (ccid != null) {
+      _hiddenListSub = FirebaseFirestore.instance
+          .collection('users')
+          .doc(ccid)
+          .snapshots()
+          .listen((docSnapshot) {
+        if (docSnapshot.exists) {
+          final data = docSnapshot.data();
+          if (data != null && data.containsKey('hidden_from_me')) {
+            final List<dynamic> hiddenList = data['hidden_from_me'] ?? [];
+            setState(() {
+              _hiddenFromMe = hiddenList.cast<String>().toSet();
+            });
+            _addFriendMarkers(); 
+            _updateFriendSubscriptions(); 
+          }
+        }
+      });
+    }
   }
 
   CameraPosition _fallbackPosition() {
@@ -222,6 +243,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
   @override
   void dispose() {
+    _hiddenListSub?.cancel();
     _refreshTimer?.cancel();
     for (var sub in _friendSubscriptions.values) {
       sub.cancel();
@@ -296,6 +318,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   Future<void> _addFriendMarkers() async {
     final friends = AppUser.instance.friends;
     for (var friend in friends) {
+      if (_hiddenFromMe.contains(friend.ccid)) continue;
       final lat = friend.currentLocation?['lat'];
       final lng = friend.currentLocation?['lng'];
       if (lat == null || lng == null) continue;
@@ -310,8 +333,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         icon: circleIcon,
         onTap: () {
           _switchToPinIcon(markerId, friend);
-          _controller?.animateCamera(
-              CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
+          _controller
+              ?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
         },
       );
 
@@ -367,7 +390,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         icon: _eventMarkerIcon!,
         onTap: () {
           final eventLatLng = LatLng(lat, lng);
-          _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
+          _controller
+              ?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
           _customInfoWindowController.addInfoWindow!(
             Container(
               padding: const EdgeInsets.all(2),
@@ -544,7 +568,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     final friendIds = AppUser.instance.friends.map((f) => f.ccid).toSet();
 
     _friendSubscriptions.keys
-        .where((id) => !friendIds.contains(id))
+        .where((id) => !friendIds.contains(id) || _hiddenFromMe.contains(id))
         .toList()
         .forEach((id) {
       _friendSubscriptions.remove(id)?.cancel();
@@ -554,6 +578,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     });
 
     for (final friend in AppUser.instance.friends) {
+      if (_hiddenFromMe.contains(friend.ccid)) continue;
       if (_friendSubscriptions.containsKey(friend.ccid)) continue;
 
       final sub = FirebaseFirestore.instance
@@ -730,24 +755,24 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
             height: MediaQuery.of(context).size.height * 0.25,
             width: MediaQuery.of(context).size.width * 0.7,
             offset: 50.0,
-          ), MapsBottomSheet(
-  draggableController: _draggableController,
-  friends: AppUser.instance.friends,
-  lastUpdatedNotifier: _lastUpdatedNotifier,
-  onFriendTap: (friend) {
-    _customInfoWindowController.hideInfoWindow!();
-    _resetAllMarkersToCircle();
-    final lat = friend.currentLocation?['lat'];
-    final lng = friend.currentLocation?['lng'];
-    if (lat != null && lng != null) {
-      _controller?.animateCamera(
-        CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
-      );
-    }
-  },
-),
-
-
+          ),
+          MapsBottomSheet(
+            draggableController: _draggableController,
+            friends: AppUser.instance.friends,
+            lastUpdatedNotifier: _lastUpdatedNotifier,
+            onFriendTap: (friend) {
+              _customInfoWindowController.hideInfoWindow!();
+              _resetAllMarkersToCircle();
+              final lat = friend.currentLocation?['lat'];
+              final lng = friend.currentLocation?['lng'];
+              if (lat != null && lng != null) {
+                _controller?.animateCamera(
+                  CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
+                );
+              }
+            },
+            hiddenFromMe: _hiddenFromMe,
+          ),
         ],
       ),
     );
