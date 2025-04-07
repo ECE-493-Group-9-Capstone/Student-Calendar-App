@@ -3,10 +3,42 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:student_app/utils/user.dart';
 import 'package:student_app/utils/profile_picture.dart';
+import 'package:student_app/utils/firebase_wrapper.dart';
+import 'package:student_app/user_singleton.dart';
 
-class FriendProfilePopup extends StatelessWidget {
+class FriendProfilePopup extends StatefulWidget {
   final UserModel user;
   const FriendProfilePopup({Key? key, required this.user}) : super(key: key);
+
+  @override
+  State<FriendProfilePopup> createState() => _FriendProfilePopupState();
+}
+
+class _FriendProfilePopupState extends State<FriendProfilePopup> {
+  bool isHidden = false;
+  bool isLoading = false;
+
+  // Loads the current hidden state from the current user's data.
+  Future<void> _loadHiddenState() async {
+    final currentUserId = AppUser.instance.ccid!;
+    final myData = await fetchUserData(currentUserId);
+    if (myData != null) {
+      final hiddenList = List<String>.from(myData['location_hidden_from'] ?? []);
+      setState(() {
+        isHidden = hiddenList.contains(widget.user.ccid);
+      });
+    }
+  }
+
+  // Toggle location visibility for this friend.
+  Future<void> _toggleLocationVisibility() async {
+    final currentUserId = AppUser.instance.ccid!;
+    setState(() => isLoading = true);
+    // toggleHideLocation is assumed to update the hidden status in Firestore.
+    await toggleHideLocation(currentUserId, widget.user.ccid, !isHidden);
+    await _loadHiddenState(); // Refresh hidden state.
+    setState(() => isLoading = false);
+  }
 
   Future<void> _launchUrl(Uri url) async {
     if (await canLaunchUrl(url)) {
@@ -47,15 +79,21 @@ class FriendProfilePopup extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadHiddenState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Prepare the URIs.
-    final Uri? emailUri = (user.email != null && user.email!.isNotEmpty)
-        ? Uri(scheme: 'mailto', path: user.email)
+    final Uri? emailUri = (widget.user.email != null && widget.user.email!.isNotEmpty)
+        ? Uri(scheme: 'mailto', path: widget.user.email)
         : null;
-    final Uri? phoneUri = (user.phoneNumber != null && user.phoneNumber!.isNotEmpty)
-        ? Uri(scheme: 'tel', path: user.phoneNumber)
+    final Uri? phoneUri = (widget.user.phoneNumber != null && widget.user.phoneNumber!.isNotEmpty)
+        ? Uri(scheme: 'tel', path: widget.user.phoneNumber)
         : null;
-    String? instagramHandle = user.instagram;
+    String? instagramHandle = widget.user.instagram;
     if (instagramHandle != null && instagramHandle.isNotEmpty) {
       instagramHandle = instagramHandle.replaceAll('@', '');
     }
@@ -68,6 +106,7 @@ class FriendProfilePopup extends StatelessWidget {
       insetPadding: const EdgeInsets.all(16),
       child: Stack(
         children: [
+          // Green gradient background.
           Container(
             height: 360,
             decoration: const BoxDecoration(
@@ -83,6 +122,7 @@ class FriendProfilePopup extends StatelessWidget {
               borderRadius: BorderRadius.all(Radius.circular(24)),
             ),
           ),
+          // White overlay container with rounded edges.
           Positioned(
             top: 130,
             left: 0,
@@ -98,7 +138,7 @@ class FriendProfilePopup extends StatelessWidget {
                 children: [
                   // Friend's name.
                   Text(
-                    user.username,
+                    widget.user.username,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -106,11 +146,11 @@ class FriendProfilePopup extends StatelessWidget {
                     ),
                   ),
                   // Discipline (if available).
-                  if (user.discipline != null && user.discipline!.isNotEmpty)
+                  if (widget.user.discipline != null && widget.user.discipline!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        user.discipline!,
+                        widget.user.discipline!,
                         style: const TextStyle(
                           fontSize: 16,
                           color: Colors.grey,
@@ -135,23 +175,48 @@ class FriendProfilePopup extends StatelessWidget {
               ),
             ),
           ),
-          // Overlapping avatar positioned near the top.
+          // Overlapping avatar with eye icon overlay.
           Positioned(
             top: 80,
             left: 0,
             right: 0,
             child: Center(
-              child: CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.white,
-                child: CachedProfileImage(
-                  photoURL: user.photoURL,
-                  size: 72,
-                  fallbackText: user.username.isNotEmpty
-                      ? user.username.substring(0, 1).toUpperCase()
-                      : "",
-                  fallbackBackgroundColor: const Color(0xFF909533),
-                ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.white,
+                    child: CachedProfileImage(
+                      photoURL: widget.user.photoURL,
+                      size: 72,
+                      fallbackText: widget.user.username.isNotEmpty
+                          ? widget.user.username.substring(0, 1).toUpperCase()
+                          : "",
+                      fallbackBackgroundColor: const Color(0xFF909533),
+                    ),
+                  ),
+                  // Eye icon for toggling location visibility.
+                  Positioned(
+                    top: -10,
+                    right: -10,
+                    child: IconButton(
+                      iconSize: 20,
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              isHidden ? Icons.visibility_off : Icons.visibility,
+                              color: isHidden ? Colors.red : Colors.green,
+                            ),
+                      tooltip: isHidden ? 'Unhide Location' : 'Hide Location',
+                      onPressed: _toggleLocationVisibility,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
