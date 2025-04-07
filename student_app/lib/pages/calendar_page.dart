@@ -578,7 +578,7 @@ class _CalendarPageState extends State<CalendarPage> {
                               borderRadius: BorderRadius.circular(25)),
                           elevation: 0,
                         ),
-                        child: const Text("Find Best Time",
+                        child: const Text("Create",
                             style: TextStyle(fontSize: 16)),
                       ),
                     ],
