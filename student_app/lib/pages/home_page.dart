@@ -10,7 +10,7 @@ import 'package:student_app/pages/google_signin.dart';
 import 'package:student_app/pages/calendar_page.dart';
 import 'package:student_app/utils/social_graph.dart';
 import 'package:student_app/utils/user.dart';
-import 'package:student_app/utils/cache_helper.dart';
+import 'package:student_app/utils/profile_picture.dart';
 import 'package:student_app/utils/event_service.dart';
 
 class HomePage extends StatefulWidget {
@@ -160,109 +160,83 @@ class _HomePageState extends State<HomePage> {
     return unique;
   }
 
-  Widget _buildRecommendedFriendTile(UserModel user) {
-    String initials = user.username
-        .split(" ")
-        .where((p) => p.isNotEmpty)
-        .map((e) => e[0])
-        .take(2)
-        .join()
-        .toUpperCase();
-    return Container(
-      width: 115,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color.fromARGB(255, 190, 190, 190),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 8),
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.transparent,
-            child: FutureBuilder<Uint8List?>(
-              future: (user.photoURL?.isNotEmpty ?? false)
-                  ? loadCachedImageBytes(
-                      'circle_${user.photoURL!.hashCode}_80.0')
-                  : Future.value(null),
-              builder: (ctx, snap) {
-                if (snap.connectionState != ConnectionState.done) {
-                  return const CircularProgressIndicator(strokeWidth: 2);
-                }
-                final bytes = snap.data;
-                if (bytes != null && bytes.isNotEmpty) {
-                  return ClipOval(
-                    child: Image.memory(
-                      bytes,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                    ),
-                  );
-                }
-                return CircleAvatar(
-                  radius: 30,
-                  backgroundColor: const Color(0xFF909533),
-                  child: Text(
-                    initials,
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                );
-              },
+
+// Replace _buildRecommendedFriendTile with this updated version
+Widget _buildRecommendedFriendTile(UserModel user) {
+  String initials = user.username
+      .split(" ")
+      .where((p) => p.isNotEmpty)
+      .map((e) => e[0])
+      .take(2)
+      .join()
+      .toUpperCase();
+
+  return Container(
+    width: 115,
+    margin: const EdgeInsets.only(right: 12),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: const Color.fromARGB(255, 190, 190, 190),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(height: 8),
+        CachedProfileImage(
+          photoURL: user.photoURL,
+          size: 60,
+          fallbackText: initials,
+          fallbackBackgroundColor: const Color(0xFF909533),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          user.username,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+        Text(
+          user.ccid,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
+        ),
+        const SizedBox(height: 6),
+        InkWell(
+          onTap: () async {
+            await AppUser.instance.sendFriendRequest(user.ccid);
+            setState(() {
+              _recommendedFriendsFuture = _loadRecommendedFriends();
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: _greenGradient,
+              borderRadius: BorderRadius.circular(20),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            user.username,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          Text(
-            user.ccid,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style:
-                TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
-          ),
-          const SizedBox(height: 6),
-          InkWell(
-            onTap: () async {
-              await AppUser.instance.sendFriendRequest(user.ccid);
-              setState(() {
-                _recommendedFriendsFuture = _loadRecommendedFriends();
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                gradient: _greenGradient,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                "Add",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
+            child: const Text(
+              "Add",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 8),
+      ],
+    ),
+  );
+}
 
   // The recommendations area always reserves a fixed height
   Widget _buildRecommendedFriendsHorizontal() {
@@ -453,180 +427,178 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final firstName = AppUser.instance.name?.split(' ').first ?? '';
-    final size = MediaQuery.of(context).size;
+@override
+Widget build(BuildContext context) {
+  final firstName = AppUser.instance.name?.split(' ').first ?? '';
+  final size = MediaQuery.of(context).size;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                gradient: _greenGradient,
-              ),
-              child: const Text('Menu',
-                  style: TextStyle(color: Colors.white, fontSize: 24)),
-            ),
-            const ListTile(
-              leading: Icon(Icons.home),
-              title: Text('Home'),
-            ),
-            const ListTile(
-              leading: Icon(Icons.calendar_today),
-              title: Text('Calendar'),
-            ),
-            const ListTile(
-              leading: Icon(Icons.settings),
-              title: Text('Settings'),
-            ),
-            // Logout button moved to the sidebar
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () async {
-                await AuthService().logout();
-                AppUser.instance.logout();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AuthWrapper()),
-                  (route) => false,
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-      body: Stack(
-        children: [
-          _buildWavyHeader(size),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Greeting
-                  Padding(
-                    padding: const EdgeInsets.only(top: 40, left: 20),
-                    child: Text(
-                      'Hello $firstName,',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(0, 1),
-                            blurRadius: 2,
-                            color: Colors.black26,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // "Today's Events" box with the bear "peeking" over
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.fromLTRB(16, 36, 10, 16),
-                        padding: const EdgeInsets.all(20),
+  return Scaffold(
+    backgroundColor: Colors.white,
+    body: Stack(
+      children: [
+        _buildWavyHeader(size),
+        SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Logout Button in Top-right corner
+                Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10, right: 20),
+                    child: InkWell(
+                      onTap: () async {
+                        await AuthService().logout();
+                        AppUser.instance.logout();
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AuthWrapper()),
+                          (route) => false,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color.fromARGB(255, 190, 190, 190),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            GradientText(
-                              "Today's Events",
-                              gradient: _greenGradient,
-                              style: const TextStyle(
-                                fontSize: 20,
+                            Icon(Icons.logout, size: 18, color: Colors.black87),
+                            SizedBox(width: 6),
+                            Text(
+                              'Logout',
+                              style: TextStyle(
+                                color: Colors.black87,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            if (_isLoadingEvents)
-                              const Center(child: CircularProgressIndicator())
-                            else if (_todayEvents.isEmpty)
-                              const Text(
-                                "No events for today.",
-                                style: TextStyle(fontSize: 16),
-                              )
-                            else
-                              Column(
-                                children: _todayEvents
-                                    .map(_buildTodayEventItem)
-                                    .toList(),
-                              ),
-                            const SizedBox(height: 12),
-                            Center(
-                              child: InkWell(
-                                onTap: () async {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => const CalendarPage()),
-                                  );
-                                  // Refresh today's events after returning
-                                  _fetchTodayEvents();
-                                },
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Text(
-                                      "View Full Calendar",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    ShaderMask(
-                                      shaderCallback: (bounds) => _greenGradient
-                                          .createShader(
-                                        Rect.fromLTWH(
-                                            0, 0, bounds.width, bounds.height),
-                                      ),
-                                      child: const Icon(
-                                        Icons.arrow_forward,
-                                        size: 20,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ),
-                      // Positioned bear image now wrapped in IgnorePointer
-                      Positioned(
-                        top: -50,
-                        right: -52,
-                        child: IgnorePointer(
-                          child: Image.asset(
-                            'assets/peaking.png',
-                            width: 400, // Adjust size as needed
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
+                ),
+                // Greeting
+                Padding(
+                  padding: const EdgeInsets.only(top: 7, left: 20),
+                  child: Text(
+                    'Hello $firstName,',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 2,
+                          color: Colors.black26,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // "Today's Events" and other sections
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(16, 36, 10, 16),
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color.fromARGB(255, 190, 190, 190),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          GradientText(
+                            "Today's Events",
+                            gradient: _greenGradient,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _isLoadingEvents
+                              ? const Center(child: CircularProgressIndicator())
+                              : _todayEvents.isEmpty
+                                  ? const Text(
+                                      "No events for today.",
+                                      style: TextStyle(fontSize: 16),
+                                    )
+                                  : SizedBox(
+                                      height: 185,
+                                      child: SingleChildScrollView(
+                                        child: Column(
+                                          children: _todayEvents.map(_buildTodayEventItem).toList(),
+                                        ),
+                                      ),
+                                    ),
+                          const SizedBox(height: 12),
+                          Center(
+                            child: InkWell(
+                              onTap: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const CalendarPage()),
+                                );
+                                _fetchTodayEvents();
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    "View Full Calendar",
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ShaderMask(
+                                    shaderCallback: (bounds) => _greenGradient.createShader(
+                                      Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                                    ),
+                                    child: const Icon(
+                                      Icons.arrow_forward,
+                                      size: 20,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      top: -50,
+                      right: -52,
+                      child: IgnorePointer(
+                        child: Image.asset('assets/peaking.png', width: 400),
+                      ),
+                    ),
+                  ],
+                ),
+
                   // Recommended Friends
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
