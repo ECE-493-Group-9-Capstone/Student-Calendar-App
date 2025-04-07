@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'dart:async';
 
-
 final FirebaseFirestore db = FirebaseFirestore.instance;
 
 void readDocument(String id) async {
@@ -290,7 +289,6 @@ Future<void> removeFriendFromUsers(String userId1, String userId2) async {
   }
 }
 
-
 Future<void> addUserSchedule(String userId, String scheduleContent) async {
   try {
     DocumentReference documentRef =
@@ -414,7 +412,6 @@ Future<void> uploadPhoneNumber(String userId, String phoneNumber) async {
   }
 }
 
-
 Future<void> uploadInstagramLink(String userId, String instagramUrl) async {
   try {
     DocumentReference docRef =
@@ -425,14 +422,14 @@ Future<void> uploadInstagramLink(String userId, String instagramUrl) async {
   }
 }
 
-
 Future<Uint8List?> downloadImageBytes(String photoURL) async {
   try {
     final response = await http.get(Uri.parse(photoURL));
     if (response.statusCode == 200) {
       return response.bodyBytes;
     } else {
-      debugPrint("Failed to download image, status code: ${response.statusCode}");
+      debugPrint(
+          "Failed to download image, status code: ${response.statusCode}");
     }
   } catch (e) {
     debugPrint("Error downloading image: $e");
@@ -440,10 +437,10 @@ Future<Uint8List?> downloadImageBytes(String photoURL) async {
   return null;
 }
 
-
-
-Future<void> initializeLastSeen(List<dynamic> friends, ValueNotifier<Map<String, DateTime?>> notifier) async {
-  List<String> friendIds = friends.map<String>((friend) => friend.ccid as String).toList();
+Future<void> initializeLastSeen(List<dynamic> friends,
+    ValueNotifier<Map<String, DateTime?>> notifier) async {
+  List<String> friendIds =
+      friends.map<String>((friend) => friend.ccid as String).toList();
   Map<String, DateTime?> initialData = {};
 
   for (final id in friendIds) {
@@ -470,9 +467,10 @@ Future<void> initializeLastSeen(List<dynamic> friends, ValueNotifier<Map<String,
   notifier.value = initialData;
 }
 
-
-StreamSubscription subscribeToFriendLocations(List<String> friendIds, ValueNotifier<Map<String, DateTime?>> notifier) {
-  return db.collection('users')
+StreamSubscription subscribeToFriendLocations(
+    List<String> friendIds, ValueNotifier<Map<String, DateTime?>> notifier) {
+  return db
+      .collection('users')
       .where(FieldPath.documentId, whereIn: friendIds)
       .snapshots()
       .listen((QuerySnapshot snapshot) {
@@ -490,4 +488,62 @@ StreamSubscription subscribeToFriendLocations(List<String> friendIds, ValueNotif
     }
     notifier.value = updatedMap;
   });
+}
+
+Future<void> toggleHideLocation(
+    String currentUserId, String targetUserId, bool shouldHide) async {
+  try {
+    final currentUserRef =
+        FirebaseFirestore.instance.collection('users').doc(currentUserId);
+    final targetUserRef =
+        FirebaseFirestore.instance.collection('users').doc(targetUserId);
+
+    final currentUserSnapshot = await currentUserRef.get();
+    final targetUserSnapshot = await targetUserRef.get();
+
+    Map<String, dynamic> currentUserData = currentUserSnapshot.data() ?? {};
+    Map<String, dynamic> targetUserData = targetUserSnapshot.data() ?? {};
+
+    List<String> locationHiddenFrom =
+        List<String>.from(currentUserData['location_hidden_from'] ?? []);
+    List<String> hiddenFromMe =
+        List<String>.from(targetUserData['hidden_from_me'] ?? []);
+
+    if (shouldHide) {
+      if (!locationHiddenFrom.contains(targetUserId)) {
+        locationHiddenFrom.add(targetUserId);
+      }
+      if (!hiddenFromMe.contains(currentUserId)) {
+        hiddenFromMe.add(currentUserId);
+      }
+    } else {
+      locationHiddenFrom.remove(targetUserId);
+      hiddenFromMe.remove(currentUserId);
+    }
+
+    await Future.wait([
+      currentUserRef.update({'location_hidden_from': locationHiddenFrom}),
+      targetUserRef.update({'hidden_from_me': hiddenFromMe}),
+    ]);
+
+    debugPrint(
+        "Location visibility updated between $currentUserId and $targetUserId");
+  } catch (e) {
+    debugPrint("Error toggling hide location: $e");
+  }
+}
+
+Future<Set<String>> getHiddenFromMeList(String userId) async {
+  try {
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final data = doc.data();
+    if (data != null && data.containsKey('hidden_from_me')) {
+      final list = List<String>.from(data['hidden_from_me']);
+      return list.toSet();
+    }
+  } catch (e) {
+    debugPrint("Error fetching hidden_from_me list: $e");
+  }
+  return {};
 }

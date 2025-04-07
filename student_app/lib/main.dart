@@ -40,13 +40,8 @@ Future<void> main() async {
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
   await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>()
-      ?.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+      ?.requestPermissions(alert: true, badge: true, sound: true);
 
   runApp(const MyApp());
 }
@@ -84,8 +79,9 @@ class AuthWrapper extends StatelessWidget {
                       name: 'AuthWrapper');
                   AppUser.instance.initialize(user);
                   developer.log(
-                      'AppUser instance: ${AppUser.instance.toString()}',
-                      name: 'AuthWrapper');
+                    'AppUser instance: ${AppUser.instance.toString()}',
+                    name: 'AuthWrapper',
+                  );
                   return const MainPage();
                 }
                 FirebaseAuth.instance.signOut();
@@ -104,14 +100,11 @@ Future<bool> _ensureUserExists(User user) async {
       name: '_ensureUserExists');
   final firestoreData = await fetchUserData(ccid);
   if (firestoreData == null) {
-    await addUser(user.displayName ?? 'New User', ccid,
-        photoURL: user.photoURL);
+    await addUser(user.displayName ?? 'New User', ccid, photoURL: user.photoURL);
     developer.log('🆕 Created new Firestore user', name: '_ensureUserExists');
-  } else if (user.photoURL != null &&
-      firestoreData['photoURL'] != user.photoURL) {
+  } else if (user.photoURL != null && firestoreData['photoURL'] != user.photoURL) {
     await updateUserPhoto(ccid, user.photoURL!);
-    developer.log('🔄 Updated photoURL in Firestore',
-        name: '_ensureUserExists');
+    developer.log('🔄 Updated photoURL in Firestore', name: '_ensureUserExists');
   }
   return true;
 }
@@ -167,66 +160,105 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Minimal change: wrap this in an async so we can fetch hasSeenBottomPopup
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
       if (_lastState == state) return;
       _lastState = state;
 
       final pref = AppUser.instance.locationTracking;
       final ccid = AppUser.instance.ccid;
+
       developer.log('MAJOR Lifecycle → $state | pref=$pref', name: 'MainPage');
 
       if (ccid != null) {
+        // Mark user as active or inactive
         updateUserActiveStatus(ccid, state == AppLifecycleState.resumed);
-      }
-      // Stop current tracking first.
-      LocationTrackingService().stopTracking();
 
-      if (state == AppLifecycleState.resumed) {
-        developer.log('➡️ Starting FOREGROUND tracking', name: 'MainPage');
+        // Stop current tracking first.
+        LocationTrackingService().stopTracking();
+
+        // Check if user has seen the popup
+        final userData = await fetchUserData(ccid);
+        final hasSeen = userData?['hasSeenBottomPopup'] ?? false;
+
+        // If they've seen the popup, proceed with your existing logic
+        if (hasSeen) {
+          if (state == AppLifecycleState.resumed) {
+            developer.log('➡️ Starting FOREGROUND tracking', name: 'MainPage');
+            LocationTrackingService().startForegroundTracking();
+          } else if ((state == AppLifecycleState.paused ||
+                  state == AppLifecycleState.detached) &&
+              pref == 'Live Tracking') {
+            developer.log('➡️ Starting BACKGROUND tracking', name: 'MainPage');
+            LocationTrackingService().startLiveTracking();
+          } else {
+            developer.log('➡️ Tracking stopped', name: 'MainPage');
+          }
+        } else {
+          developer.log(
+            'User has not seen popup yet → No tracking started',
+            name: 'MainPage',
+          );
+        }
+      }
+    });
+  }
+
+Future<void> _initializeApp() async {
+  final ccid = AppUser.instance.ccid;
+  developer.log('AppUser CCID = $ccid', name: 'MainPage');
+  if (ccid == null) return;
+
+  // Run the bottom popup check after a short delay.
+  Future.delayed(const Duration(seconds: 2), () async {
+    final userData = await fetchUserData(ccid);
+    bool hasSeen = userData?['hasSeenBottomPopup'] ?? false;
+
+    // The bottom popup is only shown if hasSeenBottomPopup is false
+    if (!hasSeen) {
+      final firstName = (AppUser.instance.name ?? 'Guest').split(' ').first;
+
+      // 1) Show the bottom sheet
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: true,
+        enableDrag: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => BottomPopup(userName: firstName),
+      );
+
+      // 2) Mark that they've seen the popup in Firestore
+      await markPopupAsSeen(ccid);
+
+      // 3) Now re-fetch userData or check AppUser to see if they set a location pref
+      final updatedData = await fetchUserData(ccid);
+      final updatedPref = updatedData?['location_tracking'];
+      developer.log('User’s updated location_tracking = $updatedPref', name: 'MainPage');
+
+      // 4) If the user selected "Live Tracking" or "Only When Using App" in the popup,
+      //    start foreground tracking right away
+      if (updatedPref == 'Live Tracking' || updatedPref == 'Only When Using App') {
+        developer.log('➡️ Starting FOREGROUND tracking (after popup)', name: 'MainPage');
         LocationTrackingService().startForegroundTracking();
-      } else if ((state == AppLifecycleState.paused ||
-              state == AppLifecycleState.detached) &&
-          pref == 'Live Tracking') {
-        developer.log('➡️ Starting BACKGROUND tracking', name: 'MainPage');
-        LocationTrackingService().startLiveTracking();
+      }
+
+    } else {
+      // If the user had already seen the popup from before,
+      // just read their existing preference
+      final pref = AppUser.instance.locationTracking; 
+      if (pref == 'Live Tracking' || pref == 'Only When Using App') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          developer.log('➡️ Starting FOREGROUND tracking (deferred)', name: 'MainPage');
+          LocationTrackingService().startForegroundTracking();
+        });
       } else {
-        developer.log('➡️ Tracking stopped', name: 'MainPage');
+        developer.log('➡️ Not starting tracking yet (existing user but no pref)', name: 'MainPage');
       }
-    });
-  }
-
-  Future<void> _initializeApp() async {
-    final ccid = AppUser.instance.ccid;
-    developer.log('AppUser CCID = $ccid', name: 'MainPage');
-    if (ccid == null) return;
-
-    // Run the bottom popup check after a short delay.
-    // The popup will only appear if the user hasn't seen it already.
-    Future.delayed(const Duration(seconds: 2), () async {
-      final userData = await fetchUserData(ccid);
-      // The bottom popup check will be skipped if hasSeenBottomPopup is true.
-      if (!(userData?['hasSeenBottomPopup'] ?? false)) {
-        final firstName = (AppUser.instance.name ?? 'Guest').split(' ').first;
-        await showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          isDismissible: true, // Allow dismissal for smoother UX.
-          enableDrag: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => BottomPopup(userName: firstName),
-        );
-        await markPopupAsSeen(ccid);
-      }
-    });
-
-    // Defer location tracking until after the UI is rendered.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      developer.log('➡️ Starting FOREGROUND tracking (deferred)',
-          name: 'MainPage');
-      LocationTrackingService().startForegroundTracking();
-    });
-  }
+    }
+  });
+}
 
   void _onTabTapped(int index) {
     setState(() {
@@ -245,9 +277,10 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 8,
-                  offset: const Offset(0, 4))
+                color: Colors.black26,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              )
             ],
           ),
           child: Icon(icon, size: 30, color: const Color(0xFF396548)),
@@ -278,7 +311,7 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
                 colors: [
                   const Color(0xFF396548),
                   const Color(0xFF6B803D),
-                  const Color(0xFF909533)
+                  const Color(0xFF909533),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

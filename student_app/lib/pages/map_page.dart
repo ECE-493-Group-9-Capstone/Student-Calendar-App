@@ -13,6 +13,8 @@ import 'maps_bottom_sheet.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
 import 'package:student_app/utils/study_spot_service.dart';
+import 'event_popup.dart';
+import 'package:student_app/utils/firebase_wrapper.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -38,13 +40,13 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
   late CameraPosition _initialCameraPosition;
   late CameraPosition _currentCameraPosition;
-
+  Set<String> _hiddenFromMe = {};
   final Map<MarkerId, Marker> _markers = {};
 
   final Map<String, BitmapDescriptor> _circleIcons = {};
   final Map<String, BitmapDescriptor> _pinIcons = {};
   final Map<String, MemoryImage> _circleMemoryImages = {};
-
+  StreamSubscription<DocumentSnapshot>? _hiddenListSub;
   final Map<String, StreamSubscription<DocumentSnapshot>> _friendSubscriptions =
       {};
   final ValueNotifier<Map<String, DateTime?>> _lastUpdatedNotifier =
@@ -54,8 +56,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
   BitmapDescriptor? _eventMarkerIcon;
   BitmapDescriptor? _studySpotIcon;
-
-  List<dynamic> _events = [];
 
   final DraggableScrollableController _draggableController =
       DraggableScrollableController();
@@ -211,6 +211,26 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         if (_showHeatmap) _generateStudySpotHeatmap();
       });
     });
+    final ccid = AppUser.instance.ccid;
+    if (ccid != null) {
+      _hiddenListSub = FirebaseFirestore.instance
+          .collection('users')
+          .doc(ccid)
+          .snapshots()
+          .listen((docSnapshot) {
+        if (docSnapshot.exists) {
+          final data = docSnapshot.data();
+          if (data != null && data.containsKey('hidden_from_me')) {
+            final List<dynamic> hiddenList = data['hidden_from_me'] ?? [];
+            setState(() {
+              _hiddenFromMe = hiddenList.cast<String>().toSet();
+            });
+            _addFriendMarkers();
+            _updateFriendSubscriptions();
+          }
+        }
+      });
+    }
   }
 
   CameraPosition _fallbackPosition() {
@@ -222,6 +242,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
   @override
   void dispose() {
+    _hiddenListSub?.cancel();
     _refreshTimer?.cancel();
     for (var sub in _friendSubscriptions.values) {
       sub.cancel();
@@ -296,6 +317,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   Future<void> _addFriendMarkers() async {
     final friends = AppUser.instance.friends;
     for (var friend in friends) {
+      if (_hiddenFromMe.contains(friend.ccid)) continue;
       final lat = friend.currentLocation?['lat'];
       final lng = friend.currentLocation?['lng'];
       if (lat == null || lng == null) continue;
@@ -310,8 +332,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         icon: circleIcon,
         onTap: () {
           _switchToPinIcon(markerId, friend);
-          _controller?.animateCamera(
-              CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
+          _controller
+              ?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16));
         },
       );
 
@@ -350,8 +372,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     final eventService = EventService(firestore: FirebaseFirestore.instance);
     final allEvents = await eventService.getAllEvents();
 
-    _events = allEvents;
-
     for (var event in allEvents) {
       final coords = event['coordinates'] as Map<String, dynamic>?;
       if (coords == null) continue;
@@ -366,141 +386,24 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         position: LatLng(lat, lng),
         icon: _eventMarkerIcon!,
         onTap: () {
-          final eventLatLng = LatLng(lat, lng);
-          _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
-          _customInfoWindowController.addInfoWindow!(
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF396548),
-                    Color(0xFF6B803D),
-                    Color(0xFF909533),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event['title'] ?? 'Event Title',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                              fontSize: 14, color: Colors.black87),
-                          children: [
-                            const TextSpan(
-                              text: "Location: ",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            TextSpan(
-                              text: event['location'] ?? 'Unknown',
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Builder(
-                        builder: (context) {
-                          final dynamic dateValue = event['date'];
-                          DateTime eventDate;
-                          try {
-                            eventDate = dateValue is Timestamp
-                                ? dateValue.toDate()
-                                : DateTime.parse(dateValue.toString());
-                          } catch (e) {
-                            debugPrint('Error parsing event date: $e');
-                            eventDate = DateTime.now();
-                          }
-                          final String formattedDate =
-                              DateFormat('MMMM dd, yyyy').format(eventDate);
-
-                          final startTimeStr =
-                              event['start_time'] ?? '00:00:00';
-                          final endTimeStr = event['end_time'] ?? '00:00:00';
-                          DateTime parsedStart;
-                          DateTime parsedEnd;
-                          try {
-                            parsedStart =
-                                DateFormat('HH:mm:ss').parse(startTimeStr);
-                            parsedEnd =
-                                DateFormat('HH:mm:ss').parse(endTimeStr);
-                          } catch (e) {
-                            debugPrint('Error parsing event times: $e');
-                            parsedStart = DateTime(0);
-                            parsedEnd = DateTime(0);
-                          }
-                          if (parsedEnd.isBefore(parsedStart)) {
-                            parsedEnd = parsedEnd.add(const Duration(days: 1));
-                          }
-                          final formattedStart = DateFormat('h:mma')
-                              .format(parsedStart)
-                              .toLowerCase();
-                          final formattedEnd = DateFormat('h:mma')
-                              .format(parsedEnd)
-                              .toLowerCase();
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              RichText(
-                                text: TextSpan(
-                                  style: const TextStyle(
-                                      fontSize: 14, color: Colors.black87),
-                                  children: [
-                                    const TextSpan(
-                                        text: "Date: ",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                    TextSpan(text: formattedDate),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              RichText(
-                                text: TextSpan(
-                                  style: const TextStyle(
-                                      fontSize: 14, color: Colors.black87),
-                                  children: [
-                                    const TextSpan(
-                                        text: "Time: ",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                    TextSpan(
-                                        text:
-                                            "$formattedStart - $formattedEnd"),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            eventLatLng,
-          );
-        },
+  final eventLatLng = LatLng(lat, lng);
+  _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
+  _customInfoWindowController.addInfoWindow!(
+  EventPopup(
+    event: event,
+    onMoreInfo: () {
+      // Redirect to your detailed event page, for example:
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EventPopup(event: event),
+        ),
+      );
+    },
+  ),
+  eventLatLng,
+);
+},
       );
       _markers[markerId] = marker;
     }
@@ -544,7 +447,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     final friendIds = AppUser.instance.friends.map((f) => f.ccid).toSet();
 
     _friendSubscriptions.keys
-        .where((id) => !friendIds.contains(id))
+        .where((id) => !friendIds.contains(id) || _hiddenFromMe.contains(id))
         .toList()
         .forEach((id) {
       _friendSubscriptions.remove(id)?.cancel();
@@ -554,6 +457,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     });
 
     for (final friend in AppUser.instance.friends) {
+      if (_hiddenFromMe.contains(friend.ccid)) continue;
       if (_friendSubscriptions.containsKey(friend.ccid)) continue;
 
       final sub = FirebaseFirestore.instance
@@ -727,27 +631,27 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
           ),
           CustomInfoWindow(
             controller: _customInfoWindowController,
-            height: MediaQuery.of(context).size.height * 0.25,
-            width: MediaQuery.of(context).size.width * 0.7,
+            height: MediaQuery.of(context).size.height * 0.3,
+            width: MediaQuery.of(context).size.width * 0.8,
             offset: 50.0,
-          ), MapsBottomSheet(
-  draggableController: _draggableController,
-  friends: AppUser.instance.friends,
-  lastUpdatedNotifier: _lastUpdatedNotifier,
-  onFriendTap: (friend) {
-    _customInfoWindowController.hideInfoWindow!();
-    _resetAllMarkersToCircle();
-    final lat = friend.currentLocation?['lat'];
-    final lng = friend.currentLocation?['lng'];
-    if (lat != null && lng != null) {
-      _controller?.animateCamera(
-        CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
-      );
-    }
-  },
-),
-
-
+          ),
+          MapsBottomSheet(
+            draggableController: _draggableController,
+            friends: AppUser.instance.friends,
+            lastUpdatedNotifier: _lastUpdatedNotifier,
+            onFriendTap: (friend) {
+              _customInfoWindowController.hideInfoWindow!();
+              _resetAllMarkersToCircle();
+              final lat = friend.currentLocation?['lat'];
+              final lng = friend.currentLocation?['lng'];
+              if (lat != null && lng != null) {
+                _controller?.animateCamera(
+                  CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
+                );
+              }
+            },
+            hiddenFromMe: _hiddenFromMe,
+          ),
         ],
       ),
     );

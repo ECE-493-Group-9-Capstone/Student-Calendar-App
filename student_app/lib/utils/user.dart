@@ -38,6 +38,6 @@ class UserModel {
   String get locationTracking => _locationTracking;
   String? get phoneNumber => _phoneNumber;
   String? get photoURL => _photoURL;
-  String? get insagram => _instagram;
+  String? get instagram => _instagram;
   Map<String, dynamic>? get currentLocation => _currentLocation; 
 }
