@@ -130,7 +130,6 @@ Future<List<UserModel>> getAllUsers() async {
         users[i]["currentLocation"], // currentLocation (Map or null)
         users[i]["phone_number"],
         users[i]["insagram"],
-        users[i]["location_hidden_from"],
       );
       allUsers.add(user);
     }
@@ -494,26 +493,57 @@ StreamSubscription subscribeToFriendLocations(
 Future<void> toggleHideLocation(
     String currentUserId, String targetUserId, bool shouldHide) async {
   try {
-    final DocumentReference docRef =
+    final currentUserRef =
         FirebaseFirestore.instance.collection('users').doc(currentUserId);
+    final targetUserRef =
+        FirebaseFirestore.instance.collection('users').doc(targetUserId);
 
-    final docSnapshot = await docRef.get();
-    Map<String, dynamic> data =
-        docSnapshot.data() as Map<String, dynamic>? ?? {};
+    final currentUserSnapshot = await currentUserRef.get();
+    final targetUserSnapshot = await targetUserRef.get();
 
-    List<String> hiddenList =
-        List<String>.from(data['location_hidden_from'] ?? []);
+    Map<String, dynamic> currentUserData = currentUserSnapshot.data() ?? {};
+    Map<String, dynamic> targetUserData = targetUserSnapshot.data() ?? {};
 
-    if (shouldHide && !hiddenList.contains(targetUserId)) {
-      hiddenList.add(targetUserId);
-    } else if (!shouldHide && hiddenList.contains(targetUserId)) {
-      hiddenList.remove(targetUserId);
+    List<String> locationHiddenFrom =
+        List<String>.from(currentUserData['location_hidden_from'] ?? []);
+    List<String> hiddenFromMe =
+        List<String>.from(targetUserData['hidden_from_me'] ?? []);
+
+    if (shouldHide) {
+      if (!locationHiddenFrom.contains(targetUserId)) {
+        locationHiddenFrom.add(targetUserId);
+      }
+      if (!hiddenFromMe.contains(currentUserId)) {
+        hiddenFromMe.add(currentUserId);
+      }
+    } else {
+      locationHiddenFrom.remove(targetUserId);
+      hiddenFromMe.remove(currentUserId);
     }
 
-    await docRef.update({
-      'location_hidden_from': hiddenList,
-    });
+    await Future.wait([
+      currentUserRef.update({'location_hidden_from': locationHiddenFrom}),
+      targetUserRef.update({'hidden_from_me': hiddenFromMe}),
+    ]);
+
+    debugPrint(
+        "Location visibility updated between $currentUserId and $targetUserId");
   } catch (e) {
     debugPrint("Error toggling hide location: $e");
   }
+}
+
+Future<Set<String>> getHiddenFromMeList(String userId) async {
+  try {
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final data = doc.data();
+    if (data != null && data.containsKey('hidden_from_me')) {
+      final list = List<String>.from(data['hidden_from_me']);
+      return list.toSet();
+    }
+  } catch (e) {
+    debugPrint("Error fetching hidden_from_me list: $e");
+  }
+  return {};
 }
