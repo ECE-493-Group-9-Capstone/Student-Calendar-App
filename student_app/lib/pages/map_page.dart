@@ -57,8 +57,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   BitmapDescriptor? _eventMarkerIcon;
   BitmapDescriptor? _studySpotIcon;
 
-  List<dynamic> _events = [];
-
   final DraggableScrollableController _draggableController =
       DraggableScrollableController();
 
@@ -227,8 +225,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
             setState(() {
               _hiddenFromMe = hiddenList.cast<String>().toSet();
             });
-            _addFriendMarkers(); 
-            _updateFriendSubscriptions(); 
+            _addFriendMarkers();
+            _updateFriendSubscriptions();
           }
         }
       });
@@ -373,8 +371,6 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
     final eventService = EventService(firestore: FirebaseFirestore.instance);
     final allEvents = await eventService.getAllEvents();
-
-    _events = allEvents;
 
     for (var event in allEvents) {
       final coords = event['coordinates'] as Map<String, dynamic>?;

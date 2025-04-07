@@ -143,7 +143,6 @@ class _FriendsList extends StatelessWidget {
   final Set<String> hiddenFromMe;
 
   const _FriendsList({
-    super.key,
     required this.friends,
     required this.lastUpdatedNotifier,
     required this.onFriendTap,

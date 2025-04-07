@@ -2,7 +2,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'welcome_view.dart';
 import 'discipline_view.dart';
-import 'schedule_view.dart';
+import 'socials_view.dart';
 import 'location_permission.dart';
 import 'package:student_app/user_singleton.dart';
 import 'package:student_app/utils/firebase_wrapper.dart';
@@ -21,8 +21,8 @@ class BottomPopupState extends State<BottomPopup> {
   static int _savedStep = 0;
   int _currentStep = 0;
 
-  final GlobalKey<ScheduleViewState> _scheduleKey =
-      GlobalKey<ScheduleViewState>();
+  final GlobalKey<SocialsViewState> _scheduleKey =
+      GlobalKey<SocialsViewState>();
 
   String? _selectedEducationLevel;
   String? _selectedDegree;
@@ -88,7 +88,7 @@ class BottomPopupState extends State<BottomPopup> {
           majorOptions: _majorOptions,
         );
       case 2:
-        return ScheduleView(key: _scheduleKey);
+        return SocialsView(key: _scheduleKey);
       case 3:
         return LocationView(
           onPreferenceUpdated: _updateLocationPreference,
