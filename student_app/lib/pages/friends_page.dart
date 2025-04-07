@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'package:student_app/utils/user.dart';
 import '../user_singleton.dart';
@@ -9,108 +8,7 @@ import 'package:student_app/utils/cache_helper.dart';
 import 'friend_request_page.dart';
 import 'package:student_app/utils/firebase_wrapper.dart';
 import 'package:student_app/pages/user_profile_page.dart';
-
-Future<Uint8List?> downloadImageBytes(String photoURL) async {
-  try {
-    final response = await http.get(Uri.parse(photoURL));
-    if (response.statusCode == 200) return response.bodyBytes;
-  } catch (e) {
-    debugPrint("Error downloading image: $e");
-  }
-  return null;
-}
-
-class CachedProfileImage extends StatefulWidget {
-  final String? photoURL;
-  final double size;
-  final String? fallbackText;
-  final Color? fallbackBackgroundColor;
-  const CachedProfileImage({
-    Key? key,
-    required this.photoURL,
-    this.size = 64,
-    this.fallbackText,
-    this.fallbackBackgroundColor,
-  }) : super(key: key);
-
-  @override
-  _CachedProfileImageState createState() => _CachedProfileImageState();
-}
-
-class _CachedProfileImageState extends State<CachedProfileImage> {
-  Future<Uint8List?>? _imageFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.photoURL != null && widget.photoURL!.isNotEmpty) {
-      _imageFuture = _getProfileImage(widget.photoURL!);
-    }
-  }
-
-  Future<Uint8List?> _getProfileImage(String photoURL) async {
-    final key = 'circle_${photoURL.hashCode}_${widget.size}';
-    Uint8List? bytes = await loadCachedImageBytes(key);
-    if (bytes != null) return bytes;
-    bytes = await downloadImageBytes(photoURL);
-    if (bytes != null) await cacheImageBytes(key, bytes);
-    return bytes;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.photoURL == null || widget.photoURL!.isEmpty) {
-      return CircleAvatar(
-        radius: widget.size / 2,
-        backgroundColor: widget.fallbackBackgroundColor ?? Colors.grey,
-        child: widget.fallbackText != null
-            ? Text(
-                widget.fallbackText!,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: widget.size / 2.5,
-                ),
-              )
-            : null,
-      );
-    }
-    return FutureBuilder<Uint8List?>(
-      future: _imageFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return SizedBox(
-            width: widget.size,
-            height: widget.size,
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          );
-        }
-        if (snapshot.hasData && snapshot.data != null) {
-          return ClipOval(
-            child: Image.memory(
-              snapshot.data!,
-              width: widget.size,
-              height: widget.size,
-              fit: BoxFit.cover,
-            ),
-          );
-        }
-        return CircleAvatar(
-          radius: widget.size / 2,
-          backgroundColor: widget.fallbackBackgroundColor ?? Colors.grey,
-          child: widget.fallbackText != null
-              ? Text(
-                  widget.fallbackText!,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: widget.size / 2.5,
-                  ),
-                )
-              : null,
-        );
-      },
-    );
-  }
-}
+import 'package:student_app/utils/profile_picture.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -134,7 +32,6 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     if (!_hasLoaded) {
       _loadUsers();
       _loadRequestedFriends();
@@ -204,13 +101,11 @@ class _FriendsPageState extends State<FriendsPage> {
     await AppUser.instance.refreshUserData();
     final users = await getAllUsers();
     final friendsCcids = AppUser.instance.friends.map((f) => f.ccid).toSet();
-
     setState(() {
       allUsers = users
           .where((u) =>
               u.ccid != AppUser.instance.ccid && !friendsCcids.contains(u.ccid))
           .toList();
-
       // Remove anyone from _requestedFriends if they are now friends
       _requestedFriends.removeWhere((ccid) => friendsCcids.contains(ccid));
     });
@@ -227,7 +122,6 @@ class _FriendsPageState extends State<FriendsPage> {
     final lc = query.toLowerCase();
     final friendCcids =
         AppUser.instance.friends.map((friend) => friend.ccid).toSet();
-
     setState(() {
       isSearching = query.isNotEmpty;
       filteredUsers = allUsers.where((u) {
@@ -238,15 +132,13 @@ class _FriendsPageState extends State<FriendsPage> {
     });
   }
 
-  void _openProfile(String ccid) {
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: UserProfilePopup(userId: ccid), // ✅ Uses correct version now
-      ),
-    );
-  }
+ void _openProfile(UserModel user) {
+  showDialog(
+    context: context,
+    builder: (_) => FriendProfilePopup(user: user),
+  );
+}
+
 
   Future<void> _removeFriend(String ccid) async {
     await AppUser.instance.removeFriend(ccid);
@@ -441,70 +333,7 @@ class _FriendsPageState extends State<FriendsPage> {
     );
   }
 
-  Widget _buildFriendTile(UserModel user) {
-    final fallbackInitials = (user.photoURL == null || user.photoURL!.isEmpty)
-        ? user.username
-            .split(" ")
-            .where((p) => p.isNotEmpty)
-            .map((e) => e[0])
-            .take(2)
-            .join()
-            .toUpperCase()
-        : null;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Container(
-        height: 100,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(33),
-          gradient: const LinearGradient(
-              colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)]),
-        ),
-        child: Container(
-          margin: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(30)),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(30),
-            onTap: () => _openProfile(user.ccid),
-            child: Row(
-              children: [
-                const SizedBox(width: 20),
-                CachedProfileImage(
-                  photoURL: user.photoURL,
-                  size: 64,
-                  fallbackText: fallbackInitials,
-                  fallbackBackgroundColor: const Color(0xFF909533),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(user.username,
-                          style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 5),
-                      const Text("Tap to view profile",
-                          style:
-                              TextStyle(fontSize: 14, color: Colors.black54)),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 20),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-Widget _buildSearchResultTile(UserModel user) {
-  final isFriend =
-      AppUser.instance.friends.any((friend) => friend.ccid == user.ccid);
-  final isLocallyRequested = _requestedFriends.contains(user.ccid);
+ Widget _buildFriendTile(UserModel user) {
   final fallbackInitials = (user.photoURL == null || user.photoURL!.isEmpty)
       ? user.username
           .split(" ")
@@ -514,114 +343,174 @@ Widget _buildSearchResultTile(UserModel user) {
           .join()
           .toUpperCase()
       : null;
-
-  return FutureBuilder<DocumentSnapshot>(
-    future: isLocallyRequested
-        ? null
-        : FirebaseFirestore.instance
-            .collection('users')
-            .doc(AppUser.instance.ccid)
-            .get(),
-    builder: (context, snapshot) {
-      bool isRequested = isLocallyRequested;
-
-      if (!isLocallyRequested &&
-          snapshot.connectionState == ConnectionState.done &&
-          snapshot.hasData &&
-          snapshot.data!.exists) {
-        final data = snapshot.data!.data() as Map<String, dynamic>;
-        final firebaseRequested =
-            List<String>.from(data['requested_friends'] ?? []);
-        isRequested = firebaseRequested.contains(user.ccid);
-      }
-
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 20),
-        child: Container(
-          height: 100,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(33),
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF396548),
-                Color(0xFF6B803D),
-                Color(0xFF909533)
-              ],
-            ),
-          ),
-          child: Container(
-            margin: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(30),
-              onTap: () {
-                if (isFriend) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Already a friend')),
-                  );
-                  return;
-                }
-                if (isRequested) {
-                  _cancelFriendRequest(user.ccid);
-                } else {
-                  _sendFriendRequest(user.ccid);
-                }
-              },
-              child: Row(
-                children: [
-                  const SizedBox(width: 20),
-                  // Use CachedProfileImage instead of building image manually.
-                  CachedProfileImage(
-                    photoURL: user.photoURL,
-                    size: 64,
-                    fallbackText: fallbackInitials,
-                    fallbackBackgroundColor: const Color(0xFF909533),
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(user.username,
-                            style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 5),
-                        Text(
-                          isFriend
-                              ? "Already a friend"
-                              : (isRequested
-                                  ? "Request Pending..."
-                                  : "Tap to add friend"),
-                          style: const TextStyle(
-                              fontSize: 14, color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                  isFriend
-                      ? const Icon(Icons.check, color: Colors.green)
-                      : isRequested
-                          ? IconButton(
-                              icon: const Icon(Icons.hourglass_empty),
-                              onPressed: () => _cancelFriendRequest(user.ccid),
-                            )
-                          : IconButton(
-                              icon: const Icon(Icons.person_add),
-                              onPressed: () => _sendFriendRequest(user.ccid),
-                            ),
-                  const SizedBox(width: 20),
-                ],
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 20),
+    child: Container(
+      height: 100,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(33),
+        gradient: const LinearGradient(
+            colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)]),
+      ),
+      child: Container(
+        margin: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+            color: Colors.white, borderRadius: BorderRadius.circular(30)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(30),
+          onTap: () => _openProfile(user), // Pass the full user here
+          child: Row(
+            children: [
+              const SizedBox(width: 20),
+              CachedProfileImage(
+                photoURL: user.photoURL,
+                size: 64,
+                fallbackText: fallbackInitials,
+                fallbackBackgroundColor: const Color(0xFF909533),
               ),
-            ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(user.username,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 5),
+                    const Text("Tap to view profile",
+                        style: TextStyle(fontSize: 14, color: Colors.black54)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 20),
+            ],
           ),
         ),
-      );
-    },
+      ),
+    ),
   );
 }
 
+  Widget _buildSearchResultTile(UserModel user) {
+    final isFriend =
+        AppUser.instance.friends.any((friend) => friend.ccid == user.ccid);
+    final isLocallyRequested = _requestedFriends.contains(user.ccid);
+    final fallbackInitials = (user.photoURL == null || user.photoURL!.isEmpty)
+        ? user.username
+            .split(" ")
+            .where((p) => p.isNotEmpty)
+            .map((e) => e[0])
+            .take(2)
+            .join()
+            .toUpperCase()
+        : null;
+
+    return FutureBuilder<DocumentSnapshot>(
+      future: isLocallyRequested
+          ? null
+          : FirebaseFirestore.instance
+              .collection('users')
+              .doc(AppUser.instance.ccid)
+              .get(),
+      builder: (context, snapshot) {
+        bool isRequested = isLocallyRequested;
+
+        if (!isLocallyRequested &&
+            snapshot.connectionState == ConnectionState.done &&
+            snapshot.hasData &&
+            snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final firebaseRequested =
+              List<String>.from(data['requested_friends'] ?? []);
+          isRequested = firebaseRequested.contains(user.ccid);
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: Container(
+            height: 100,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(33),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF396548),
+                  Color(0xFF6B803D),
+                  Color(0xFF909533)
+                ],
+              ),
+            ),
+            child: Container(
+              margin: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(30),
+                onTap: () {
+                  if (isFriend) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Already a friend')),
+                    );
+                    return;
+                  }
+                  if (isRequested) {
+                    _cancelFriendRequest(user.ccid);
+                  } else {
+                    _sendFriendRequest(user.ccid);
+                  }
+                },
+                child: Row(
+                  children: [
+                    const SizedBox(width: 20),
+                    CachedProfileImage(
+                      photoURL: user.photoURL,
+                      size: 64,
+                      fallbackText: fallbackInitials,
+                      fallbackBackgroundColor: const Color(0xFF909533),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(user.username,
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 5),
+                          Text(
+                            isFriend
+                                ? "Already a friend"
+                                : (isRequested
+                                    ? "Request Pending..."
+                                    : "Tap to add friend"),
+                            style: const TextStyle(
+                                fontSize: 14, color: Colors.black54),
+                          ),
+                        ],
+                      ),
+                    ),
+                    isFriend
+                        ? const Icon(Icons.check, color: Colors.green)
+                        : isRequested
+                            ? IconButton(
+                                icon: const Icon(Icons.hourglass_empty),
+                                onPressed: () => _cancelFriendRequest(user.ccid),
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.person_add),
+                                onPressed: () => _sendFriendRequest(user.ccid),
+                              ),
+                    const SizedBox(width: 20),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

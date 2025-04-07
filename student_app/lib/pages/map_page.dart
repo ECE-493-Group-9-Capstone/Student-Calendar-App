@@ -13,6 +13,7 @@ import 'maps_bottom_sheet.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
 import 'package:student_app/utils/study_spot_service.dart';
+import 'event_popup.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -366,141 +367,24 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         position: LatLng(lat, lng),
         icon: _eventMarkerIcon!,
         onTap: () {
-          final eventLatLng = LatLng(lat, lng);
-          _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
-          _customInfoWindowController.addInfoWindow!(
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF396548),
-                    Color(0xFF6B803D),
-                    Color(0xFF909533),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event['title'] ?? 'Event Title',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                              fontSize: 14, color: Colors.black87),
-                          children: [
-                            const TextSpan(
-                              text: "Location: ",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            TextSpan(
-                              text: event['location'] ?? 'Unknown',
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Builder(
-                        builder: (context) {
-                          final dynamic dateValue = event['date'];
-                          DateTime eventDate;
-                          try {
-                            eventDate = dateValue is Timestamp
-                                ? dateValue.toDate()
-                                : DateTime.parse(dateValue.toString());
-                          } catch (e) {
-                            debugPrint('Error parsing event date: $e');
-                            eventDate = DateTime.now();
-                          }
-                          final String formattedDate =
-                              DateFormat('MMMM dd, yyyy').format(eventDate);
-
-                          final startTimeStr =
-                              event['start_time'] ?? '00:00:00';
-                          final endTimeStr = event['end_time'] ?? '00:00:00';
-                          DateTime parsedStart;
-                          DateTime parsedEnd;
-                          try {
-                            parsedStart =
-                                DateFormat('HH:mm:ss').parse(startTimeStr);
-                            parsedEnd =
-                                DateFormat('HH:mm:ss').parse(endTimeStr);
-                          } catch (e) {
-                            debugPrint('Error parsing event times: $e');
-                            parsedStart = DateTime(0);
-                            parsedEnd = DateTime(0);
-                          }
-                          if (parsedEnd.isBefore(parsedStart)) {
-                            parsedEnd = parsedEnd.add(const Duration(days: 1));
-                          }
-                          final formattedStart = DateFormat('h:mma')
-                              .format(parsedStart)
-                              .toLowerCase();
-                          final formattedEnd = DateFormat('h:mma')
-                              .format(parsedEnd)
-                              .toLowerCase();
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              RichText(
-                                text: TextSpan(
-                                  style: const TextStyle(
-                                      fontSize: 14, color: Colors.black87),
-                                  children: [
-                                    const TextSpan(
-                                        text: "Date: ",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                    TextSpan(text: formattedDate),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              RichText(
-                                text: TextSpan(
-                                  style: const TextStyle(
-                                      fontSize: 14, color: Colors.black87),
-                                  children: [
-                                    const TextSpan(
-                                        text: "Time: ",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                    TextSpan(
-                                        text:
-                                            "$formattedStart - $formattedEnd"),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            eventLatLng,
-          );
-        },
+  final eventLatLng = LatLng(lat, lng);
+  _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
+  _customInfoWindowController.addInfoWindow!(
+  EventPopup(
+    event: event,
+    onMoreInfo: () {
+      // Redirect to your detailed event page, for example:
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EventPopup(event: event),
+        ),
+      );
+    },
+  ),
+  eventLatLng,
+);
+},
       );
       _markers[markerId] = marker;
     }
@@ -727,8 +611,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
           ),
           CustomInfoWindow(
             controller: _customInfoWindowController,
-            height: MediaQuery.of(context).size.height * 0.25,
-            width: MediaQuery.of(context).size.width * 0.7,
+            height: MediaQuery.of(context).size.height * 0.3,
+            width: MediaQuery.of(context).size.width * 0.8,
             offset: 50.0,
           ), MapsBottomSheet(
   draggableController: _draggableController,

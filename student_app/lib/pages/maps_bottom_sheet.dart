@@ -1,12 +1,8 @@
+// maps_bottom_sheet.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/widgets.dart';
-import 'package:intl/intl.dart';
 import 'dart:async';
-import 'dart:typed_data';
-import 'package:http/http.dart' as http;
 import 'package:student_app/utils/firebase_wrapper.dart';
-import 'package:student_app/utils/cache_helper.dart';
+import 'package:student_app/utils/profile_picture.dart';
 
 class MapsBottomSheet extends StatefulWidget {
   final DraggableScrollableController draggableController;
@@ -98,11 +94,10 @@ class _MapsBottomSheetState extends State<MapsBottomSheet> {
                     ),
                   ),
                 ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Row(
-                    children: const [
+                    children: [
                       Text(
                         'Friends',
                         style: TextStyle(
@@ -210,6 +205,7 @@ class _FriendTileState extends State<FriendTile> {
         .take(2)
         .join()
         .toUpperCase();
+
     return ListTile(
       leading: CachedProfileImage(
         photoURL: widget.friend.photoURL?.toString() ?? '',
@@ -246,109 +242,6 @@ class _FriendTileState extends State<FriendTile> {
         },
       ),
       onTap: widget.onTap,
-    );
-  }
-}
-
-Future<Uint8List?> downloadImageBytes(String photoURL) async {
-  try {
-    final response = await http.get(Uri.parse(photoURL));
-    if (response.statusCode == 200) return response.bodyBytes;
-  } catch (e) {
-    debugPrint("Error downloading image: $e");
-  }
-  return null;
-}
-
-class CachedProfileImage extends StatefulWidget {
-  final String? photoURL;
-  final double size;
-  final String? fallbackText;
-  final Color? fallbackBackgroundColor;
-  const CachedProfileImage({
-    Key? key,
-    required this.photoURL,
-    this.size = 64,
-    this.fallbackText,
-    this.fallbackBackgroundColor,
-  }) : super(key: key);
-
-  @override
-  _CachedProfileImageState createState() => _CachedProfileImageState();
-}
-
-class _CachedProfileImageState extends State<CachedProfileImage> {
-  Future<Uint8List?>? _imageFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.photoURL != null && widget.photoURL!.isNotEmpty) {
-      _imageFuture = _getProfileImage(widget.photoURL!);
-    }
-  }
-
-  Future<Uint8List?> _getProfileImage(String photoURL) async {
-    final key = 'circle_${photoURL.hashCode}_${widget.size}';
-    Uint8List? bytes = await loadCachedImageBytes(key);
-    if (bytes != null) return bytes;
-    bytes = await downloadImageBytes(photoURL);
-    if (bytes != null) await cacheImageBytes(key, bytes);
-    return bytes;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.photoURL == null || widget.photoURL!.isEmpty) {
-      return CircleAvatar(
-        radius: widget.size / 2,
-        backgroundColor: widget.fallbackBackgroundColor ?? Colors.grey,
-        child: widget.fallbackText != null
-            ? Text(
-                widget.fallbackText!,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: widget.size / 2.5,
-                ),
-              )
-            : null,
-      );
-    }
-    return FutureBuilder<Uint8List?>(
-      future: _imageFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return SizedBox(
-            width: widget.size,
-            height: widget.size,
-            child: const Center(
-                child: CircularProgressIndicator(strokeWidth: 2)),
-          );
-        }
-        if (snapshot.hasData && snapshot.data != null) {
-          return ClipOval(
-            child: Image.memory(
-              snapshot.data!,
-              width: widget.size,
-              height: widget.size,
-              fit: BoxFit.cover,
-            ),
-          );
-        }
-        return CircleAvatar(
-          radius: widget.size / 2,
-          backgroundColor: widget.fallbackBackgroundColor ?? Colors.grey,
-          child: widget.fallbackText != null
-              ? Text(
-                  widget.fallbackText!,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: widget.size / 2.5,
-                  ),
-                )
-              : null,
-        );
-      },
     );
   }
 }
