@@ -270,10 +270,7 @@ class _CalendarPageState extends State<CalendarPage> {
         "dateTime": startTime.toUtc().toIso8601String(),
         "timeZone": "UTC"
       },
-      "end": {
-        "dateTime": endTime.toUtc().toIso8601String(),
-        "timeZone": "UTC"
-      },
+      "end": {"dateTime": endTime.toUtc().toIso8601String(), "timeZone": "UTC"},
       "attendees": attendees.map((email) => {"email": email}).toList(),
       "reminders": {"useDefault": true}
     };
@@ -314,68 +311,141 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  void _showCreateEventDialogWithTimeSelector(BuildContext context, DateTime date) {
+  void _showCreateEventDialogWithTimeSelector(
+      BuildContext context, DateTime date) {
     final titleController = TextEditingController();
     final emailsController = TextEditingController();
-    TimeOfDay selectedTime = const TimeOfDay(hour: 9, minute: 0);
+    TimeOfDay selectedStartTime = const TimeOfDay(hour: 9, minute: 0);
+    TimeOfDay selectedEndTime = const TimeOfDay(hour: 10, minute: 0);
+
+    Future<void> pickTime({
+      required BuildContext context,
+      required bool isStart,
+    }) async {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: isStart ? selectedStartTime : selectedEndTime,
+      );
+      if (picked != null) {
+        if (isStart) {
+          selectedStartTime = picked;
+        } else {
+          selectedEndTime = picked;
+        }
+      }
+    }
 
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text("Create Event",
-                      style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black)),
-                  const SizedBox(height: 25),
-                  _buildPlainTextField(titleController, "Event Title"),
-                  const SizedBox(height: 25),
-                  _buildPlainTextField(emailsController, "Invitees (comma-separated emails)"),
-                  const SizedBox(height: 25),
-                  Text("Date: ${DateFormat('MMMM d, y').format(date)}", style: const TextStyle(fontSize: 16)),
-                  const SizedBox(height: 10),
-                  SimpleTimeSelector(
-                    initialTime: selectedTime,
-                    onTimeSelected: (time) {
-                      selectedTime = time;
-                    },
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("Create Event",
+                          style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black)),
+                      const SizedBox(height: 25),
+                      _buildPlainTextField(titleController, "Event Title"),
+                      const SizedBox(height: 25),
+                      _buildPlainTextField(emailsController,
+                          "Invitees (comma-separated emails)"),
+                      const SizedBox(height: 25),
+                      Text("Date: ${DateFormat('MMMM d, y').format(date)}",
+                          style: const TextStyle(fontSize: 16)),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: selectedStartTime,
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              selectedStartTime = picked;
+                            });
+                          }
+                        },
+                        child: Text(
+                            "Start Time: ${selectedStartTime.format(context)}"),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: selectedEndTime,
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              selectedEndTime = picked;
+                            });
+                          }
+                        },
+                        child: Text(
+                            "End Time: ${selectedEndTime.format(context)}"),
+                      ),
+                      const SizedBox(height: 25),
+                      ElevatedButton(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          final title = titleController.text;
+                          final emails = emailsController.text
+                              .split(',')
+                              .map((e) => e.trim())
+                              .where((e) => e.isNotEmpty)
+                              .toList();
+                          if (title.isEmpty || emails.isEmpty) return;
+
+                          final startDateTime = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            selectedStartTime.hour,
+                            selectedStartTime.minute,
+                          );
+                          final endDateTime = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            selectedEndTime.hour,
+                            selectedEndTime.minute,
+                          );
+
+                          if (endDateTime.isAfter(startDateTime)) {
+                            await _findBestTimeAndCreateEvent(
+                                title, emails, startDateTime, endDateTime);
+                          } else {
+                            _showSnack("End time must be after start time.");
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 20),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25)),
+                          elevation: 0,
+                        ),
+                        child: const Text("Create",
+                            style: TextStyle(fontSize: 16)),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 25),
-                  ElevatedButton(
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      final title = titleController.text;
-                      final emails = emailsController.text
-                          .split(',')
-                          .map((e) => e.trim())
-                          .where((e) => e.isNotEmpty)
-                          .toList();
-                      if (title.isEmpty || emails.isEmpty) return;
-                      final startDateTime = DateTime(date.year, date.month, date.day, selectedTime.hour, selectedTime.minute);
-                      final endDateTime = startDateTime.add(const Duration(hours: 1));
-                      await _findBestTimeAndCreateEvent(title, emails, startDateTime, endDateTime);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                      elevation: 0,
-                    ),
-                    child: const Text("Find Best Time", style: TextStyle(fontSize: 16)),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -384,65 +454,139 @@ class _CalendarPageState extends State<CalendarPage> {
   void _showCreateEventDialog(BuildContext context, DateTime defaultStart) {
     final titleController = TextEditingController();
     final emailsController = TextEditingController();
-    TimeOfDay selectedTime = TimeOfDay(hour: defaultStart.hour, minute: defaultStart.minute);
+    TimeOfDay selectedStartTime =
+        TimeOfDay(hour: defaultStart.hour, minute: defaultStart.minute);
+    TimeOfDay selectedEndTime = TimeOfDay(
+        hour: (defaultStart.hour + 1) % 24, minute: defaultStart.minute);
+
+    Future<void> pickTime({
+      required BuildContext context,
+      required bool isStart,
+    }) async {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: isStart ? selectedStartTime : selectedEndTime,
+      );
+      if (picked != null) {
+        if (isStart) {
+          selectedStartTime = picked;
+        } else {
+          selectedEndTime = picked;
+        }
+      }
+    }
 
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text("Create Event",
-                      style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black)),
-                  const SizedBox(height: 25),
-                  _buildPlainTextField(titleController, "Event Title"),
-                  const SizedBox(height: 25),
-                  _buildPlainTextField(emailsController, "Invitees (comma-separated emails)"),
-                  const SizedBox(height: 25),
-                  Text("Date: ${DateFormat('MMMM d, y – h:mm a').format(defaultStart)}", style: const TextStyle(fontSize: 16)),
-                  const SizedBox(height: 10),
-                  SimpleTimeSelector(
-                    initialTime: selectedTime,
-                    onTimeSelected: (time) {
-                      selectedTime = time;
-                    },
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("Create Event",
+                          style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black)),
+                      const SizedBox(height: 25),
+                      _buildPlainTextField(titleController, "Event Title"),
+                      const SizedBox(height: 25),
+                      _buildPlainTextField(emailsController,
+                          "Invitees (comma-separated emails)"),
+                      const SizedBox(height: 25),
+                      Text("Date: ${DateFormat('MMMM d, y').format(defaultStart)}",
+                          style: const TextStyle(fontSize: 16)),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: selectedStartTime,
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              selectedStartTime = picked;
+                            });
+                          }
+                        },
+                        child: Text(
+                            "Start Time: ${selectedStartTime.format(context)}"),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: selectedEndTime,
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              selectedEndTime = picked;
+                            });
+                          }
+                        },
+                        child: Text(
+                            "End Time: ${selectedEndTime.format(context)}"),
+                      ),
+                      const SizedBox(height: 25),
+                      ElevatedButton(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          final title = titleController.text;
+                          final emails = emailsController.text
+                              .split(',')
+                              .map((e) => e.trim())
+                              .where((e) => e.isNotEmpty)
+                              .toList();
+                          if (title.isEmpty || emails.isEmpty) return;
+
+                          final startDateTime = DateTime(
+                            defaultStart.year,
+                            defaultStart.month,
+                            defaultStart.day,
+                            selectedStartTime.hour,
+                            selectedStartTime.minute,
+                          );
+                          final endDateTime = DateTime(
+                            defaultStart.year,
+                            defaultStart.month,
+                            defaultStart.day,
+                            selectedEndTime.hour,
+                            selectedEndTime.minute,
+                          );
+
+                          if (endDateTime.isAfter(startDateTime)) {
+                            await _findBestTimeAndCreateEvent(
+                                title, emails, startDateTime, endDateTime);
+                          } else {
+                            _showSnack("End time must be after start time.");
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 20),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25)),
+                          elevation: 0,
+                        ),
+                        child: const Text("Find Best Time",
+                            style: TextStyle(fontSize: 16)),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 25),
-                  ElevatedButton(
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      final title = titleController.text;
-                      final emails = emailsController.text
-                          .split(',')
-                          .map((e) => e.trim())
-                          .where((e) => e.isNotEmpty)
-                          .toList();
-                      if (title.isEmpty || emails.isEmpty) return;
-                      final startDateTime = DateTime(defaultStart.year, defaultStart.month, defaultStart.day, selectedTime.hour, selectedTime.minute);
-                      final endDateTime = startDateTime.add(const Duration(hours: 1));
-                      await _findBestTimeAndCreateEvent(title, emails, startDateTime, endDateTime);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                      elevation: 0,
-                    ),
-                    child: const Text("Find Best Time", style: TextStyle(fontSize: 16)),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -474,9 +618,9 @@ class _CalendarPageState extends State<CalendarPage> {
               textAlign: TextAlign.center,
               backgroundColor: Colors.transparent,
               textStyle: TextStyle(
-                fontSize: 18, 
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey, 
+                color: Colors.grey,
               ),
             ),
             monthViewSettings: MonthViewSettings(
@@ -932,12 +1076,15 @@ class _SimpleTimeSelectorState extends State<SimpleTimeSelector> {
                 setState(() {
                   selectedHour = index;
                 });
-                widget.onTimeSelected(TimeOfDay(hour: selectedHour, minute: selectedMinute));
+                widget.onTimeSelected(
+                    TimeOfDay(hour: selectedHour, minute: selectedMinute));
               },
               childDelegate: ListWheelChildBuilderDelegate(
                 builder: (context, index) {
                   if (index < 0 || index > 23) return null;
-                  return Center(child: Text(index.toString().padLeft(2, '0'), style: const TextStyle(fontSize: 18)));
+                  return Center(
+                      child: Text(index.toString().padLeft(2, '0'),
+                          style: const TextStyle(fontSize: 18)));
                 },
               ),
             ),
@@ -957,13 +1104,16 @@ class _SimpleTimeSelectorState extends State<SimpleTimeSelector> {
                 setState(() {
                   selectedMinute = index * 5;
                 });
-                widget.onTimeSelected(TimeOfDay(hour: selectedHour, minute: selectedMinute));
+                widget.onTimeSelected(
+                    TimeOfDay(hour: selectedHour, minute: selectedMinute));
               },
               childDelegate: ListWheelChildBuilderDelegate(
                 builder: (context, index) {
                   if (index < 0 || index > 11) return null;
                   int minute = index * 5;
-                  return Center(child: Text(minute.toString().padLeft(2, '0'), style: const TextStyle(fontSize: 18)));
+                  return Center(
+                      child: Text(minute.toString().padLeft(2, '0'),
+                          style: const TextStyle(fontSize: 18)));
                 },
               ),
             ),
