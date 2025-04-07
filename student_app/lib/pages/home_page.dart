@@ -52,7 +52,8 @@ class _HomePageState extends State<HomePage> {
       return;
     }
     final calendarService = GoogleCalendarService();
-    final eventsToday = await calendarService.fetchTodayCalendarEvents(accessToken);
+    final eventsToday =
+        await calendarService.fetchTodayCalendarEvents(accessToken);
     setState(() {
       _todayEvents = eventsToday;
       _isLoadingEvents = false;
@@ -160,90 +161,91 @@ class _HomePageState extends State<HomePage> {
     return unique;
   }
 
-
 // Replace _buildRecommendedFriendTile with this updated version
-Widget _buildRecommendedFriendTile(UserModel user) {
-  String initials = user.username
-      .split(" ")
-      .where((p) => p.isNotEmpty)
-      .map((e) => e[0])
-      .take(2)
-      .join()
-      .toUpperCase();
+  Widget _buildRecommendedFriendTile(UserModel user) {
+    String initials = user.username
+        .split(" ")
+        .where((p) => p.isNotEmpty)
+        .map((e) => e[0])
+        .take(2)
+        .join()
+        .toUpperCase();
 
-  return Container(
-    width: 115,
-    margin: const EdgeInsets.only(right: 12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: const Color.fromARGB(255, 190, 190, 190),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(height: 8),
-        CachedProfileImage(
-          photoURL: user.photoURL,
-          size: 60,
-          fallbackText: initials,
-          fallbackBackgroundColor: const Color(0xFF909533),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          user.username,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        ),
-        Text(
-          user.ccid,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
-        ),
-        const SizedBox(height: 6),
-        InkWell(
-          onTap: () async {
-            await AppUser.instance.sendFriendRequest(user.ccid);
-            setState(() {
-              _recommendedFriendsFuture = _loadRecommendedFriends();
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              gradient: _greenGradient,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              "Add",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+    return Container(
+      width: 115,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color.fromARGB(255, 190, 190, 190),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 8),
+          CachedProfileImage(
+            photoURL: user.photoURL,
+            size: 60,
+            fallbackText: initials,
+            fallbackBackgroundColor: const Color(0xFF909533),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            user.username,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          Text(
+            user.ccid,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style:
+                TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
+          ),
+          const SizedBox(height: 6),
+          InkWell(
+            onTap: () async {
+              await AppUser.instance.sendFriendRequest(user.ccid);
+              setState(() {
+                _recommendedFriendsFuture = _loadRecommendedFriends();
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: _greenGradient,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                "Add",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-      ],
-    ),
-  );
-}
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
 
   // The recommendations area always reserves a fixed height
   Widget _buildRecommendedFriendsHorizontal() {
     return FutureBuilder<List<UserModel>>(
       future: _recommendedFriendsFuture,
       builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting || _isLoadingFriends) {
+        if (snap.connectionState == ConnectionState.waiting ||
+            _isLoadingFriends) {
           return const SizedBox(
             height: 160,
             child: Center(child: CircularProgressIndicator()),
@@ -277,23 +279,15 @@ Widget _buildRecommendedFriendTile(UserModel user) {
     final upcoming = <Map<String, dynamic>>[];
 
     for (var evt in allEvents) {
-      final dateVal = evt['date'];
+      final dateVal = evt['startDate'];
       if (dateVal == null) continue;
-      try {
-        late DateTime dt;
-        if (dateVal is Timestamp) {
-          dt = dateVal.toDate();
-        } else {
-          dt = DateTime.parse(dateVal.toString());
+      late DateTime dt;
+      dt = dateVal.toDate();
+      if (dt.isAfter(now) && dt.isBefore(in30Days)) {
+        final imageUrl = evt['imageUrl'] as String? ?? '';
+        if (imageUrl.isNotEmpty && imageUrl != 'No image available.') {
+          upcoming.add(evt);
         }
-        if (dt.isAfter(now) && dt.isBefore(in30Days)) {
-          final imageUrl = evt['imageUrl'] as String? ?? '';
-          if (imageUrl.isNotEmpty && imageUrl != 'No image available.') {
-            upcoming.add(evt);
-          }
-        }
-      } catch (e) {
-        // Ignore bad date formats
       }
     }
     return upcoming;
@@ -427,177 +421,188 @@ Widget _buildRecommendedFriendTile(UserModel user) {
     );
   }
 
-@override
-Widget build(BuildContext context) {
-  final firstName = AppUser.instance.name?.split(' ').first ?? '';
-  final size = MediaQuery.of(context).size;
+  @override
+  Widget build(BuildContext context) {
+    final firstName = AppUser.instance.name?.split(' ').first ?? '';
+    final size = MediaQuery.of(context).size;
 
-  return Scaffold(
-    backgroundColor: Colors.white,
-    body: Stack(
-      children: [
-        _buildWavyHeader(size),
-        SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Logout Button in Top-right corner
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 10, right: 20),
-                    child: InkWell(
-                      onTap: () async {
-                        await AuthService().logout();
-                        AppUser.instance.logout();
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (context) => const AuthWrapper()),
-                          (route) => false,
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          _buildWavyHeader(size),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Logout Button in Top-right corner
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 10, right: 20),
+                      child: InkWell(
+                        onTap: () async {
+                          await AuthService().logout();
+                          AppUser.instance.logout();
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const AuthWrapper()),
+                            (route) => false,
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.logout,
+                                  size: 18, color: Colors.black87),
+                              SizedBox(width: 6),
+                              Text(
+                                'Logout',
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Greeting
+                  Padding(
+                    padding: const EdgeInsets.only(top: 7, left: 20),
+                    child: Text(
+                      'Hello $firstName,',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(0, 1),
+                            blurRadius: 2,
+                            color: Colors.black26,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // "Today's Events" and other sections
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.fromLTRB(16, 36, 10, 16),
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
+                              color: const Color.fromARGB(255, 190, 190, 190),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.logout, size: 18, color: Colors.black87),
-                            SizedBox(width: 6),
-                            Text(
-                              'Logout',
-                              style: TextStyle(
-                                color: Colors.black87,
+                            GradientText(
+                              "Today's Events",
+                              gradient: _greenGradient,
+                              style: const TextStyle(
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                            const SizedBox(height: 12),
+                            _isLoadingEvents
+                                ? const Center(
+                                    child: CircularProgressIndicator())
+                                : _todayEvents.isEmpty
+                                    ? const Text(
+                                        "No events for today.",
+                                        style: TextStyle(fontSize: 16),
+                                      )
+                                    : SizedBox(
+                                        height: 185,
+                                        child: SingleChildScrollView(
+                                          child: Column(
+                                            children: _todayEvents
+                                                .map(_buildTodayEventItem)
+                                                .toList(),
+                                          ),
+                                        ),
+                                      ),
+                            const SizedBox(height: 12),
+                            Center(
+                              child: InkWell(
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => const CalendarPage()),
+                                  );
+                                  _fetchTodayEvents();
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      "View Full Calendar",
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    ShaderMask(
+                                      shaderCallback: (bounds) =>
+                                          _greenGradient.createShader(
+                                        Rect.fromLTWH(
+                                            0, 0, bounds.width, bounds.height),
+                                      ),
+                                      child: const Icon(
+                                        Icons.arrow_forward,
+                                        size: 20,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                ),
-                // Greeting
-                Padding(
-                  padding: const EdgeInsets.only(top: 7, left: 20),
-                  child: Text(
-                    'Hello $firstName,',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          offset: Offset(0, 1),
-                          blurRadius: 2,
-                          color: Colors.black26,
+                      Positioned(
+                        top: -50,
+                        right: -52,
+                        child: IgnorePointer(
+                          child: Image.asset('assets/peaking.png', width: 400),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 20),
-                // "Today's Events" and other sections
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.fromLTRB(16, 36, 10, 16),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color.fromARGB(255, 190, 190, 190),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GradientText(
-                            "Today's Events",
-                            gradient: _greenGradient,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _isLoadingEvents
-                              ? const Center(child: CircularProgressIndicator())
-                              : _todayEvents.isEmpty
-                                  ? const Text(
-                                      "No events for today.",
-                                      style: TextStyle(fontSize: 16),
-                                    )
-                                  : SizedBox(
-                                      height: 185,
-                                      child: SingleChildScrollView(
-                                        child: Column(
-                                          children: _todayEvents.map(_buildTodayEventItem).toList(),
-                                        ),
-                                      ),
-                                    ),
-                          const SizedBox(height: 12),
-                          Center(
-                            child: InkWell(
-                              onTap: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const CalendarPage()),
-                                );
-                                _fetchTodayEvents();
-                              },
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    "View Full Calendar",
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  ShaderMask(
-                                    shaderCallback: (bounds) => _greenGradient.createShader(
-                                      Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-                                    ),
-                                    child: const Icon(
-                                      Icons.arrow_forward,
-                                      size: 20,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      top: -50,
-                      right: -52,
-                      child: IgnorePointer(
-                        child: Image.asset('assets/peaking.png', width: 400),
-                      ),
-                    ),
-                  ],
-                ),
 
                   // Recommended Friends
                   Container(
