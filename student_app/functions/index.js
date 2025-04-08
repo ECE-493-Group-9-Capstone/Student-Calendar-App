@@ -306,8 +306,12 @@ exports.fetchEventsOnRequest = onRequest(
 );
 
 exports.fetchEventsDaily = onSchedule(
-  { secrets: ["GOOGLE_MAPS_API_KEY", "UOFA_EVENTS_BEARER"] },
-  "0 2 * * *",
+  {
+    region: "us-central1",
+    timeZone: "America/Edmonton",
+    schedule: "every day 02:00",
+    secrets: ["GOOGLE_MAPS_API_KEY", "UOFA_EVENTS_BEARER"],
+  },
   async () => {
     logger.info(`[fetchEventsDaily] Scheduled fetch initiated at 2 AM.`);
     try {
