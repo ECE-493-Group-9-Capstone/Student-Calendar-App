@@ -12,6 +12,7 @@ import 'package:student_app/utils/social_graph.dart';
 import 'package:student_app/utils/user.dart';
 import 'package:student_app/utils/profile_picture.dart';
 import 'package:student_app/utils/event_service.dart';
+import 'package:student_app/pages/model/event_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -32,7 +33,7 @@ class _HomePageState extends State<HomePage> {
   late Future<List<UserModel>> _recommendedFriendsFuture;
   bool _isLoadingFriends = false;
   late EventService _eventService;
-  late Future<List<Map<String, dynamic>>> _upcomingEventsFuture;
+  late Future<List<Event>> _upcomingEventsFuture;
   late Timer _refreshTimer;
   final ScrollController _todayEventsScrollController = ScrollController();
 
@@ -303,50 +304,33 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<List<Map<String, dynamic>>> _loadUpcomingEvents() async {
+  Future<List<Event>> _loadUpcomingEvents() async {
     final now = DateTime.now();
     final in30Days = now.add(const Duration(days: 30));
     final allEvents = await _eventService.getAllEvents();
-    final upcoming = <Map<String, dynamic>>[];
+    final upcoming = <Event>[];
 
     for (var evt in allEvents) {
-      final dateVal = evt['startDate'];
-      if (dateVal == null) continue;
-      late DateTime dt;
-      dt = dateVal.toDate();
-      if (dt.isAfter(now) && dt.isBefore(in30Days)) {
-        final imageUrl = evt['imageUrl'] as String? ?? '';
-        if (imageUrl.isNotEmpty && imageUrl != 'No image available.') {
-          upcoming.add(evt);
+      final event = Event.fromMap(evt, evt['id']);
+      if (event.startDate.isAfter(now) && event.startDate.isBefore(in30Days)) {
+        if (event.imageUrl != null && event.imageUrl!.isNotEmpty) {
+          upcoming.add(event);
         }
       }
     }
     return upcoming;
   }
 
-  Widget _buildUpcomingEventCard(Map<String, dynamic> event) {
-    final imageUrl = event['imageUrl'] as String? ?? '';
-    final title = event['title'] as String? ?? 'Untitled Event';
-    final location = event['location'] as String? ?? '';
-
-    String formattedDate = '';
-    final dateVal = event['date'];
-    if (dateVal != null) {
-      try {
-        DateTime dt;
-        if (dateVal is Timestamp) {
-          dt = dateVal.toDate();
-        } else {
-          dt = DateTime.parse(dateVal.toString());
-        }
-        formattedDate = DateFormat('MMM d, yyyy').format(dt);
-      } catch (_) {
-        formattedDate = dateVal.toString();
-      }
+  Widget _buildUpcomingEventCard(Event event) {
+    final DateFormat dateFormatter = DateFormat('MMM d, yyyy');
+    final DateFormat timeFormatter = DateFormat('h:mm a');
+    String dateString;
+    if (event.endDate != null) {
+      dateString =
+          "${dateFormatter.format(event.startDate)} - ${dateFormatter.format(event.endDate!)}";
+    } else {
+      dateString = dateFormatter.format(event.startDate);
     }
-
-    final startTime = event['start_time']?.toString() ?? '';
-    final endTime = event['end_time']?.toString() ?? '';
 
     return Container(
       width: 180,
@@ -368,7 +352,7 @@ class _HomePageState extends State<HomePage> {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             child: Image.network(
-              imageUrl,
+              event.imageUrl ?? '',
               height: 90,
               width: 180,
               fit: BoxFit.cover,
@@ -385,7 +369,7 @@ class _HomePageState extends State<HomePage> {
           Padding(
             padding: const EdgeInsets.all(10),
             child: Text(
-              title,
+              event.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -397,7 +381,7 @@ class _HomePageState extends State<HomePage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
-              "$formattedDate\n$startTime - $endTime\n$location",
+              "$dateString\n${timeFormatter.format(DateFormat('HH:mm').parse(event.startTime))} - ${timeFormatter.format(DateFormat('HH:mm').parse(event.endTime))}\n${event.location}",
               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -410,7 +394,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildUpcomingEventsHorizontal() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
+    return FutureBuilder<List<Event>>(
       future: _upcomingEventsFuture,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {

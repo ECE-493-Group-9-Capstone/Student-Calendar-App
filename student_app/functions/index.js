@@ -272,19 +272,22 @@ async function saveEventsToFirestore(events) {
  * @param {Object} req - The HTTP request object.
  * @param {Object} res - The HTTP response object.
  */
-exports.fetchEventsOnRequest = onRequest(async (req, res) => {
-  logger.log("Manual fetch initiated...");
-  const events = await fetchEvents();
-  if (events.length > 0) {
-    const { addedCount, skippedCount, updatedCount } =
-      await saveEventsToFirestore(events);
-    res.json({
-      processed: events.length,
-      added: addedCount,
-      skipped: skippedCount,
-      updated: updatedCount,
-    });
-  } else {
-    res.json({ message: "No events fetched." });
+exports.fetchEventsOnRequest = onRequest(
+  { secrets: ["GOOGLE_MAPS_API_KEY", "UOFA_EVENTS_BEARER"] },
+  async (req, res) => {
+    logger.log("Manual fetch initiated...");
+    const events = await fetchEvents();
+    if (events.length > 0) {
+      const { addedCount, skippedCount, updatedCount } =
+        await saveEventsToFirestore(events);
+      res.json({
+        processed: events.length,
+        added: addedCount,
+        skipped: skippedCount,
+        updated: updatedCount,
+      });
+    } else {
+      res.json({ message: "No events fetched." });
+    }
   }
-});
+);
