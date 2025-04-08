@@ -33,7 +33,8 @@ class StudySpotsPage extends StatefulWidget {
   _StudySpotsPageState createState() => _StudySpotsPageState();
 }
 
-class _StudySpotsPageState extends State<StudySpotsPage> {
+class _StudySpotsPageState extends State<StudySpotsPage>
+    with AutomaticKeepAliveClientMixin {
   final TextEditingController searchController = TextEditingController();
   final StudySpotService studySpotService =
       StudySpotService(firestore: FirebaseFirestore.instance);
@@ -80,6 +81,7 @@ class _StudySpotsPageState extends State<StudySpotsPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Call super.build to ensure state preservation
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -290,4 +292,7 @@ class _StudySpotsPageState extends State<StudySpotsPage> {
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }

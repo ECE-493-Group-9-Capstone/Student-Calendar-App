@@ -14,7 +14,7 @@ import 'utils/location_service.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:student_app/pages/study_spots_page.dart';
+import 'package:student_app/pages/discovery_page.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
@@ -117,7 +117,7 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
           _pages[index] = MapPage(key: _mapPageKey);
           break;
         case 2:
-          _pages[index] = StudySpotsPage();
+          _pages[index] = DiscoveryPage();
           break;
         case 3:
           _pages[index] = FriendsPage();
