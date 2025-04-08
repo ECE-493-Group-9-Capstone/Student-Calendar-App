@@ -22,8 +22,14 @@ Each method is explained in full detail below, including extra setup steps and c
 - A physical iPhone + lightning cable
 - A personal Apple Developer account (free)
 
-### 🪜 Steps
+### Steps
 
 1. **Install CocoaPods (only once):**
    ```bash
    sudo gem install cocoapods
+2. Connect your iPhone to your Mac using a USB cable and unlock it.
+3. A popup should appear on your iPhone asking if you trust this computer. Tap "Trust" and enter your passcode if prompted.
+4. If your iPhone is on iOS 16 or newer, enable Developer Mode:
+  - Open Settings on your iPhone
+  - Go to Privacy & Security > Developer Mode
+  - Enable Developer Mode and restart the device
