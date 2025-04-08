@@ -3,6 +3,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const { defineSecret } = require("firebase-functions/params");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const axios = require("axios");
 
 initializeApp();
@@ -55,7 +56,7 @@ function parseDate(dateString) {
   if (!dateString) {
     return { startDate, endDate };
   }
-  logger.log(`Parsing date string: ${dateString}`);
+  logger.log(`[parseDate] Parsing date string: ${dateString}`);
   const rangeSplit = dateString.split(" - ");
   if (rangeSplit.length == 2) {
     startDate = new Date(rangeSplit[0].trim());
@@ -64,7 +65,7 @@ function parseDate(dateString) {
     startDate = new Date(dateString.trim());
   }
   logger.log(
-    `Parsed date string to startDate: ${startDate}, endDate: ${endDate}`
+    `[parseDate] Parsed date string to startDate: ${startDate}, endDate: ${endDate}`
   );
   return { startDate, endDate };
 }
@@ -75,13 +76,15 @@ function parseDate(dateString) {
  */
 async function getCoordinates(locationName) {
   if (!locationName) {
-    logger.warn("Location name is empty. Skipping geocoding.");
+    logger.warn("[getCoordinates] Location name is empty. Skipping geocoding.");
     return null;
   }
 
   // check if the location name contains "Online" or "Zoom"
   if (/online|zoom/i.test(locationName)) {
-    logger.log(`Location "${locationName}" is virtual. Skipping geocoding.`);
+    logger.log(
+      `[getCoordinates] Location "${locationName}" is virtual. Skipping geocoding.`
+    );
     return null;
   }
 
@@ -93,7 +96,7 @@ async function getCoordinates(locationName) {
 
   if (!cachedLocation.empty) {
     const doc = cachedLocation.docs[0];
-    logger.log(`Cache hit for location: ${locationName}`);
+    logger.log(`[getCoordinates] Cache hit for location: ${locationName}`);
     return doc.data().coordinates;
   }
 
@@ -124,7 +127,9 @@ async function getCoordinates(locationName) {
     const response = await axios.post(PLACES_API_URL, requestBody, { headers });
 
     if (response.status !== 200) {
-      throw new Error(`API request failed with status: ${response.status}`);
+      throw new Error(
+        `[getCoordinates] API request failed with status: ${response.status}`
+      );
     }
 
     const data = response.data;
@@ -143,19 +148,25 @@ async function getCoordinates(locationName) {
           coordinates,
         });
 
-        logger.log(`Coordinates for ${locationName} cached in Firestore.`);
+        logger.log(
+          `[getCoordinates] Coordinates for ${locationName} cached in Firestore.`
+        );
         return coordinates;
       } else {
-        logger.warn("Location data not found in the response.");
+        logger.warn(
+          "[getCoordinates] Location data not found in the response."
+        );
         return null;
       }
     } else {
-      logger.warn(`No places found matching the query: ${locationName}`);
+      logger.warn(
+        `[getCoordinates] No places found matching the query: ${locationName}`
+      );
       return null;
     }
   } catch (error) {
     logger.error(
-      `Error fetching coordinates from Places API for ${locationName}:`,
+      `[getCoordinates] Error fetching coordinates from Places API for ${locationName}:`,
       error
     );
     return null;
@@ -212,7 +223,7 @@ async function fetchEvents(date = BEGIN_DATE) {
       if (firstResult + 24 >= totalCount) break;
       firstResult += 24;
     } catch (error) {
-      logger.error("Error fetching events:", error);
+      logger.error("[fetchEvents] Error fetching events:", error);
       break;
     }
   }
@@ -253,17 +264,19 @@ async function saveEventsToFirestore(events) {
 
       if (fieldsToUpdate.length > 0) {
         await eventsCollection.doc(existingDoc.id).update(fieldsToUpdate);
-        logger.log(`Updated event: ${event.title}`);
+        logger.log(`[saveEventsToFirestore] Updated event: ${event.title}`);
         updatedCount++;
       } else {
-        logger.log(`No changes for event: ${event.title}. Skipping.`);
+        logger.log(
+          `[saveEventsToFirestore] No changes for event: ${event.title}. Skipping.`
+        );
         skippedCount++;
       }
     }
   }
 
   logger.log(
-    `Processed ${events.length} events. Added: ${addedCount}, Skipped: ${skippedCount}, Updated: ${updatedCount}`
+    `[saveEventsToFirestore] Processed ${events.length} events. Added: ${addedCount}, Skipped: ${skippedCount}, Updated: ${updatedCount}`
   );
   return { addedCount, skippedCount, updatedCount };
 }
@@ -275,7 +288,7 @@ async function saveEventsToFirestore(events) {
 exports.fetchEventsOnRequest = onRequest(
   { secrets: ["GOOGLE_MAPS_API_KEY", "UOFA_EVENTS_BEARER"] },
   async (req, res) => {
-    logger.log("Manual fetch initiated...");
+    logger.log("[fetchEventsOnRequest] Manual fetch initiated");
     const events = await fetchEvents();
     if (events.length > 0) {
       const { addedCount, skippedCount, updatedCount } =
@@ -287,7 +300,29 @@ exports.fetchEventsOnRequest = onRequest(
         updated: updatedCount,
       });
     } else {
-      res.json({ message: "No events fetched." });
+      res.json({ message: "[fetchEventsOnRequest] No events fetched." });
+    }
+  }
+);
+
+exports.fetchEventsDaily = onSchedule(
+  { secrets: ["GOOGLE_MAPS_API_KEY", "UOFA_EVENTS_BEARER"] },
+  "0 2 * * *",
+  async () => {
+    logger.info(`[fetchEventsDaily] Scheduled fetch initiated at 2 AM.`);
+    try {
+      const events = await fetchEvents();
+      if (events.length > 0) {
+        await saveEventsToFirestore(events);
+      } else {
+        logger.info(
+          `[fetchEventsDaily] No events fetched during the scheduled run.`
+        );
+      }
+    } catch (error) {
+      logger.error(
+        `[fetchEventsDaily] Error during scheduled fetch: ${error.message}`
+      );
     }
   }
 );
