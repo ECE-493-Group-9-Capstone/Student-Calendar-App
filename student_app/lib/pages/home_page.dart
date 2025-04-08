@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
@@ -34,6 +34,8 @@ class _HomePageState extends State<HomePage> {
   bool _isLoadingFriends = false;
   late EventService _eventService;
   late Future<List<Event>> _upcomingEventsFuture;
+  late Timer _refreshTimer;
+  final ScrollController _todayEventsScrollController = ScrollController();
 
   @override
   void initState() {
@@ -42,23 +44,52 @@ class _HomePageState extends State<HomePage> {
     _fetchTodayEvents();
     _recommendedFriendsFuture = _loadRecommendedFriends();
     _upcomingEventsFuture = _loadUpcomingEvents();
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _fetchTodayEvents();
+    });
   }
 
   Future<void> _fetchTodayEvents() async {
-    setState(() => _isLoadingEvents = true);
-    final authService = AuthService();
-    final accessToken = await authService.getAccessToken();
-    if (accessToken == null) {
-      setState(() => _isLoadingEvents = false);
-      return;
+    try {
+      final authService = AuthService();
+      final accessToken = await authService.getAccessToken();
+
+      if (accessToken == null) {
+        setState(() => _isLoadingEvents = false);
+        return;
+      }
+
+      final calendarService = GoogleCalendarService();
+      final eventsToday =
+          await calendarService.fetchTodayCalendarEvents(accessToken);
+
+      if (!mounted) return;
+
+      double? oldOffset;
+
+      if (_todayEventsScrollController.hasClients) {
+        oldOffset = _todayEventsScrollController.offset;
+      }
+
+      setState(() {
+        _todayEvents = eventsToday;
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (oldOffset != null &&
+            _todayEventsScrollController.hasClients &&
+            _todayEventsScrollController.position.maxScrollExtent >=
+                oldOffset) {
+          _todayEventsScrollController.jumpTo(oldOffset);
+        }
+      });
+    } catch (e) {
+      debugPrint("Error fetching today's events: $e");
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingEvents = false);
+      }
     }
-    final calendarService = GoogleCalendarService();
-    final eventsToday =
-        await calendarService.fetchTodayCalendarEvents(accessToken);
-    setState(() {
-      _todayEvents = eventsToday;
-      _isLoadingEvents = false;
-    });
   }
 
   String _formatTime(DateTime dt) {
@@ -406,6 +437,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    _refreshTimer.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final firstName = AppUser.instance.name?.split(' ').first ?? '';
     final size = MediaQuery.of(context).size;
@@ -531,6 +568,8 @@ class _HomePageState extends State<HomePage> {
                                     : SizedBox(
                                         height: 185,
                                         child: SingleChildScrollView(
+                                          controller:
+                                              _todayEventsScrollController,
                                           child: Column(
                                             children: _todayEvents
                                                 .map(_buildTodayEventItem)
