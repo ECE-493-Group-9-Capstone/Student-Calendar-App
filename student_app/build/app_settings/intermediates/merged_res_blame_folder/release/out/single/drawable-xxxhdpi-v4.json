@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "com.spencerccf.app_settings-merged_res-25:/drawable-xxxhdpi-v4/ic_call_decline.png",
+        "source": "com.spencerccf.app_settings-core-1.13.1-7:/drawable-xxxhdpi-v4/ic_call_decline.png"
+    },
+    {
+        "merged": "com.spencerccf.app_settings-merged_res-25:/drawable-xxxhdpi-v4/ic_call_answer_video_low.png",
+        "source": "com.spencerccf.app_settings-core-1.13.1-7:/drawable-xxxhdpi-v4/ic_call_answer_video_low.png"
+    },
+    {
+        "merged": "com.spencerccf.app_settings-merged_res-25:/drawable-xxxhdpi-v4/ic_call_answer_video.png",
+        "source": "com.spencerccf.app_settings-core-1.13.1-7:/drawable-xxxhdpi-v4/ic_call_answer_video.png"
+    },
+    {
+        "merged": "com.spencerccf.app_settings-merged_res-25:/drawable-xxxhdpi-v4/ic_call_decline_low.png",
+        "source": "com.spencerccf.app_settings-core-1.13.1-7:/drawable-xxxhdpi-v4/ic_call_decline_low.png"
+    },
+    {
+        "merged": "com.spencerccf.app_settings-merged_res-25:/drawable-xxxhdpi-v4/ic_call_answer.png",
+        "source": "com.spencerccf.app_settings-core-1.13.1-7:/drawable-xxxhdpi-v4/ic_call_answer.png"
+    },
+    {
+        "merged": "com.spencerccf.app_settings-merged_res-25:/drawable-xxxhdpi-v4/ic_call_answer_low.png",
+        "source": "com.spencerccf.app_settings-core-1.13.1-7:/drawable-xxxhdpi-v4/ic_call_answer_low.png"
+    }
+]

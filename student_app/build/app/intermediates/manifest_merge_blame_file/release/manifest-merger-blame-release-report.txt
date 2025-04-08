@@ -1,0 +1,478 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.student_app"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="23"
+9        android:targetSdkVersion="35" />
+10    <!-- Location permissions -->
+11    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+11-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:3:5-78
+11-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:3:22-76
+12    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+12-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:4:5-80
+12-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:4:22-78
+13    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+13-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:5:5-84
+13-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:5:22-82
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+14-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:6:5-76
+14-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:6:22-74
+15    <uses-permission android:name="android.permission.WAKE_LOCK" />
+15-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:7:5-67
+15-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:7:22-65
+16    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+16-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:8:5-85
+16-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:8:22-83
+17
+18    <queries>
+18-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:51:5-56:15
+19        <intent>
+19-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:52:9-55:18
+20            <action android:name="android.intent.action.PROCESS_TEXT" />
+20-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:53:13-72
+20-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:53:21-70
+21
+22            <data android:mimeType="text/plain" />
+22-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:54:13-50
+22-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:54:19-48
+23        </intent>
+24        <!-- Needs to be explicitly declared on Android R+ -->
+25        <package android:name="com.google.android.apps.maps" />
+25-->[com.google.android.gms:play-services-maps:18.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\1b7e6503cbc679789b0e1529278741c6\transformed\jetified-play-services-maps-18.2.0\AndroidManifest.xml:33:9-64
+25-->[com.google.android.gms:play-services-maps:18.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\1b7e6503cbc679789b0e1529278741c6\transformed\jetified-play-services-maps-18.2.0\AndroidManifest.xml:33:18-61
+26    </queries>
+27
+28    <uses-permission android:name="android.permission.VIBRATE" />
+28-->[:flutter_local_notifications] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\flutter_local_notifications\intermediates\merged_manifest\release\AndroidManifest.xml:7:5-66
+28-->[:flutter_local_notifications] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\flutter_local_notifications\intermediates\merged_manifest\release\AndroidManifest.xml:7:22-63
+29    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+29-->[:flutter_local_notifications] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\flutter_local_notifications\intermediates\merged_manifest\release\AndroidManifest.xml:8:5-77
+29-->[:flutter_local_notifications] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\flutter_local_notifications\intermediates\merged_manifest\release\AndroidManifest.xml:8:22-74
+30    <uses-permission android:name="android.permission.INTERNET" />
+30-->[:google_sign_in_android] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\google_sign_in_android\intermediates\merged_manifest\release\AndroidManifest.xml:7:5-67
+30-->[:google_sign_in_android] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\google_sign_in_android\intermediates\merged_manifest\release\AndroidManifest.xml:7:22-64
+31    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+31-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:26:5-79
+31-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:26:22-76
+32
+33    <uses-feature
+33-->[com.google.android.gms:play-services-maps:18.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\1b7e6503cbc679789b0e1529278741c6\transformed\jetified-play-services-maps-18.2.0\AndroidManifest.xml:26:5-28:35
+34        android:glEsVersion="0x00020000"
+34-->[com.google.android.gms:play-services-maps:18.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\1b7e6503cbc679789b0e1529278741c6\transformed\jetified-play-services-maps-18.2.0\AndroidManifest.xml:27:9-41
+35        android:required="true" />
+35-->[com.google.android.gms:play-services-maps:18.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\1b7e6503cbc679789b0e1529278741c6\transformed\jetified-play-services-maps-18.2.0\AndroidManifest.xml:28:9-32
+36
+37    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+37-->[com.google.android.recaptcha:recaptcha:18.6.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\096216ed04c288761e2fdb14fadb6f1d\transformed\jetified-recaptcha-18.6.1\AndroidManifest.xml:9:5-98
+37-->[com.google.android.recaptcha:recaptcha:18.6.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\096216ed04c288761e2fdb14fadb6f1d\transformed\jetified-recaptcha-18.6.1\AndroidManifest.xml:9:22-95
+38
+39    <permission
+39-->[androidx.core:core:1.13.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\4cefa050b0c4ea9b1f45909d19944071\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+40        android:name="com.example.student_app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+40-->[androidx.core:core:1.13.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\4cefa050b0c4ea9b1f45909d19944071\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+41        android:protectionLevel="signature" />
+41-->[androidx.core:core:1.13.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\4cefa050b0c4ea9b1f45909d19944071\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+42
+43    <uses-permission android:name="com.example.student_app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+43-->[androidx.core:core:1.13.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\4cefa050b0c4ea9b1f45909d19944071\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+43-->[androidx.core:core:1.13.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\4cefa050b0c4ea9b1f45909d19944071\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+44
+45    <application
+46        android:name="android.app.Application"
+46-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:14:9-42
+47        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+47-->[androidx.core:core:1.13.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\4cefa050b0c4ea9b1f45909d19944071\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+48        android:extractNativeLibs="false"
+49        android:icon="@mipmap/ic_launcher"
+49-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:15:9-43
+50        android:label="student_app" >
+50-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:13:9-36
+51        <meta-data
+51-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:16:9-18:70
+52            android:name="com.google.android.geo.API_KEY"
+52-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:17:13-58
+53            android:value="AIzaSyC-ezFt3tL4XaDeGCCTUf5KbriDgK4-qd0" />
+53-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:18:13-68
+54
+55        <activity
+55-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:20:9-37:24
+56            android:name="com.example.student_app.MainActivity"
+56-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:21:13-41
+57            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+57-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:26:13-163
+58            android:exported="true"
+58-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:22:13-36
+59            android:hardwareAccelerated="true"
+59-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:27:13-47
+60            android:launchMode="singleTop"
+60-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:23:13-43
+61            android:taskAffinity=""
+61-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:24:13-36
+62            android:theme="@style/LaunchTheme"
+62-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:25:13-47
+63            android:windowSoftInputMode="adjustResize" >
+63-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:28:13-55
+64            <meta-data
+64-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:29:13-31:56
+65                android:name="io.flutter.embedding.android.NormalTheme"
+65-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:30:17-72
+66                android:resource="@style/NormalTheme" />
+66-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:31:17-54
+67
+68            <intent-filter>
+68-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:32:13-35:29
+69                <action android:name="android.intent.action.MAIN" />
+69-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:33:17-68
+69-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:33:25-66
+70
+71                <category android:name="android.intent.category.LAUNCHER" />
+71-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:34:17-76
+71-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:34:27-74
+72            </intent-filter>
+73        </activity>
+74
+75        <meta-data
+75-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:39:9-41:33
+76            android:name="flutterEmbedding"
+76-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:40:13-44
+77            android:value="2" />
+77-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:41:13-30
+78
+79        <service
+79-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:43:9-46:48
+80            android:name="com.baseflow.geolocator.GeolocatorService"
+80-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:44:5-61
+81            android:exported="false"
+81-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:45:5-29
+82            android:foregroundServiceType="location" />
+82-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:46:5-45
+83        <service
+83-->[:cloud_firestore] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\cloud_firestore\intermediates\merged_manifest\release\AndroidManifest.xml:8:9-12:19
+84            android:name="com.google.firebase.components.ComponentDiscoveryService"
+84-->[:cloud_firestore] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\cloud_firestore\intermediates\merged_manifest\release\AndroidManifest.xml:8:18-89
+85            android:directBootAware="true"
+85-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\89a830bb6cf712e3ce816b93687d6d1a\transformed\jetified-firebase-common-21.0.0\AndroidManifest.xml:32:13-43
+86            android:exported="false" >
+86-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:68:13-37
+87            <meta-data
+87-->[:cloud_firestore] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\cloud_firestore\intermediates\merged_manifest\release\AndroidManifest.xml:9:13-11:85
+88                android:name="com.google.firebase.components:io.flutter.plugins.firebase.firestore.FlutterFirebaseFirestoreRegistrar"
+88-->[:cloud_firestore] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\cloud_firestore\intermediates\merged_manifest\release\AndroidManifest.xml:10:17-134
+89                android:value="com.google.firebase.components.ComponentRegistrar" />
+89-->[:cloud_firestore] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\cloud_firestore\intermediates\merged_manifest\release\AndroidManifest.xml:11:17-82
+90            <meta-data
+90-->[:firebase_auth] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\firebase_auth\intermediates\merged_manifest\release\AndroidManifest.xml:9:13-11:85
+91                android:name="com.google.firebase.components:io.flutter.plugins.firebase.auth.FlutterFirebaseAuthRegistrar"
+91-->[:firebase_auth] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\firebase_auth\intermediates\merged_manifest\release\AndroidManifest.xml:10:17-124
+92                android:value="com.google.firebase.components.ComponentRegistrar" />
+92-->[:firebase_auth] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\firebase_auth\intermediates\merged_manifest\release\AndroidManifest.xml:11:17-82
+93            <meta-data
+93-->[:firebase_core] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\firebase_core\intermediates\merged_manifest\release\AndroidManifest.xml:9:13-11:85
+94                android:name="com.google.firebase.components:io.flutter.plugins.firebase.core.FlutterFirebaseCoreRegistrar"
+94-->[:firebase_core] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\firebase_core\intermediates\merged_manifest\release\AndroidManifest.xml:10:17-124
+95                android:value="com.google.firebase.components.ComponentRegistrar" />
+95-->[:firebase_core] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\firebase_core\intermediates\merged_manifest\release\AndroidManifest.xml:11:17-82
+96            <meta-data
+96-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:69:13-71:85
+97                android:name="com.google.firebase.components:com.google.firebase.auth.FirebaseAuthRegistrar"
+97-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:70:17-109
+98                android:value="com.google.firebase.components.ComponentRegistrar" />
+98-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:71:17-82
+99            <meta-data
+99-->[com.google.firebase:firebase-firestore:25.1.2] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\cb9ab749fd7294d74fb9940c52999e85\transformed\jetified-firebase-firestore-25.1.2\AndroidManifest.xml:17:13-19:85
+100                android:name="com.google.firebase.components:com.google.firebase.firestore.FirebaseFirestoreKtxRegistrar"
+100-->[com.google.firebase:firebase-firestore:25.1.2] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\cb9ab749fd7294d74fb9940c52999e85\transformed\jetified-firebase-firestore-25.1.2\AndroidManifest.xml:18:17-122
+101                android:value="com.google.firebase.components.ComponentRegistrar" />
+101-->[com.google.firebase:firebase-firestore:25.1.2] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\cb9ab749fd7294d74fb9940c52999e85\transformed\jetified-firebase-firestore-25.1.2\AndroidManifest.xml:19:17-82
+102            <meta-data
+102-->[com.google.firebase:firebase-firestore:25.1.2] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\cb9ab749fd7294d74fb9940c52999e85\transformed\jetified-firebase-firestore-25.1.2\AndroidManifest.xml:20:13-22:85
+103                android:name="com.google.firebase.components:com.google.firebase.firestore.FirestoreRegistrar"
+103-->[com.google.firebase:firebase-firestore:25.1.2] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\cb9ab749fd7294d74fb9940c52999e85\transformed\jetified-firebase-firestore-25.1.2\AndroidManifest.xml:21:17-111
+104                android:value="com.google.firebase.components.ComponentRegistrar" />
+104-->[com.google.firebase:firebase-firestore:25.1.2] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\cb9ab749fd7294d74fb9940c52999e85\transformed\jetified-firebase-firestore-25.1.2\AndroidManifest.xml:22:17-82
+105            <meta-data
+105-->[com.google.firebase:firebase-common-ktx:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ac55eadc9237fd7f183026198a886318\transformed\jetified-firebase-common-ktx-21.0.0\AndroidManifest.xml:12:13-14:85
+106                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
+106-->[com.google.firebase:firebase-common-ktx:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ac55eadc9237fd7f183026198a886318\transformed\jetified-firebase-common-ktx-21.0.0\AndroidManifest.xml:13:17-116
+107                android:value="com.google.firebase.components.ComponentRegistrar" />
+107-->[com.google.firebase:firebase-common-ktx:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ac55eadc9237fd7f183026198a886318\transformed\jetified-firebase-common-ktx-21.0.0\AndroidManifest.xml:14:17-82
+108            <meta-data
+108-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\89a830bb6cf712e3ce816b93687d6d1a\transformed\jetified-firebase-common-21.0.0\AndroidManifest.xml:35:13-37:85
+109                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+109-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\89a830bb6cf712e3ce816b93687d6d1a\transformed\jetified-firebase-common-21.0.0\AndroidManifest.xml:36:17-109
+110                android:value="com.google.firebase.components.ComponentRegistrar" />
+110-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\89a830bb6cf712e3ce816b93687d6d1a\transformed\jetified-firebase-common-21.0.0\AndroidManifest.xml:37:17-82
+111        </service>
+112        <service
+112-->[:geolocator_android] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\geolocator_android\intermediates\merged_manifest\release\AndroidManifest.xml:8:9-12:56
+113            android:name="com.baseflow.geolocator.GeolocatorLocationService"
+113-->[:geolocator_android] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\geolocator_android\intermediates\merged_manifest\release\AndroidManifest.xml:9:13-77
+114            android:enabled="true"
+114-->[:geolocator_android] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\geolocator_android\intermediates\merged_manifest\release\AndroidManifest.xml:10:13-35
+115            android:exported="false"
+115-->[:geolocator_android] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\geolocator_android\intermediates\merged_manifest\release\AndroidManifest.xml:11:13-37
+116            android:foregroundServiceType="location" />
+116-->[:geolocator_android] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\geolocator_android\intermediates\merged_manifest\release\AndroidManifest.xml:12:13-53
+117        <service
+117-->[:location] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\location\intermediates\merged_manifest\release\AndroidManifest.xml:11:9-15:56
+118            android:name="com.lyokone.location.FlutterLocationService"
+118-->[:location] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\location\intermediates\merged_manifest\release\AndroidManifest.xml:12:13-71
+119            android:enabled="true"
+119-->[:location] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\location\intermediates\merged_manifest\release\AndroidManifest.xml:13:13-35
+120            android:exported="false"
+120-->[:location] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\location\intermediates\merged_manifest\release\AndroidManifest.xml:14:13-37
+121            android:foregroundServiceType="location" />
+121-->[:location] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\location\intermediates\merged_manifest\release\AndroidManifest.xml:15:13-53
+122
+123        <activity
+123-->[:url_launcher_android] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\url_launcher_android\intermediates\merged_manifest\release\AndroidManifest.xml:8:9-11:74
+124            android:name="io.flutter.plugins.urllauncher.WebViewActivity"
+124-->[:url_launcher_android] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\url_launcher_android\intermediates\merged_manifest\release\AndroidManifest.xml:9:13-74
+125            android:exported="false"
+125-->[:url_launcher_android] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\url_launcher_android\intermediates\merged_manifest\release\AndroidManifest.xml:10:13-37
+126            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+126-->[:url_launcher_android] C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\build\url_launcher_android\intermediates\merged_manifest\release\AndroidManifest.xml:11:13-71
+127        <activity
+127-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:29:9-46:20
+128            android:name="com.google.firebase.auth.internal.GenericIdpActivity"
+128-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:30:13-80
+129            android:excludeFromRecents="true"
+129-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:31:13-46
+130            android:exported="true"
+130-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:32:13-36
+131            android:launchMode="singleTask"
+131-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:33:13-44
+132            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+132-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:34:13-72
+133            <intent-filter>
+133-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:35:13-45:29
+134                <action android:name="android.intent.action.VIEW" />
+134-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:36:17-69
+134-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:36:25-66
+135
+136                <category android:name="android.intent.category.DEFAULT" />
+136-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:38:17-76
+136-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:38:27-73
+137                <category android:name="android.intent.category.BROWSABLE" />
+137-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:39:17-78
+137-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:39:27-75
+138
+139                <data
+139-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:54:13-50
+140                    android:host="firebase.auth"
+141                    android:path="/"
+142                    android:scheme="genericidp" />
+143            </intent-filter>
+144        </activity>
+145        <activity
+145-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:47:9-64:20
+146            android:name="com.google.firebase.auth.internal.RecaptchaActivity"
+146-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:48:13-79
+147            android:excludeFromRecents="true"
+147-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:49:13-46
+148            android:exported="true"
+148-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:50:13-36
+149            android:launchMode="singleTask"
+149-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:51:13-44
+150            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+150-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:52:13-72
+151            <intent-filter>
+151-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:53:13-63:29
+152                <action android:name="android.intent.action.VIEW" />
+152-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:36:17-69
+152-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:36:25-66
+153
+154                <category android:name="android.intent.category.DEFAULT" />
+154-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:38:17-76
+154-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:38:27-73
+155                <category android:name="android.intent.category.BROWSABLE" />
+155-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:39:17-78
+155-->[com.google.firebase:firebase-auth:23.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\2ea4fb96240ca1860ca7265e3b6b209d\transformed\jetified-firebase-auth-23.2.0\AndroidManifest.xml:39:27-75
+156
+157                <data
+157-->C:\Users\Adib Nasreddine\Desktop\Student-Calendar-App\student_app\android\app\src\main\AndroidManifest.xml:54:13-50
+158                    android:host="firebase.auth"
+159                    android:path="/"
+160                    android:scheme="recaptcha" />
+161            </intent-filter>
+162        </activity>
+163
+164        <uses-library
+164-->[androidx.window:window:1.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\b61292485483c7499e83c4f5c6f9bd1a\transformed\jetified-window-1.2.0\AndroidManifest.xml:23:9-25:40
+165            android:name="androidx.window.extensions"
+165-->[androidx.window:window:1.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\b61292485483c7499e83c4f5c6f9bd1a\transformed\jetified-window-1.2.0\AndroidManifest.xml:24:13-54
+166            android:required="false" />
+166-->[androidx.window:window:1.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\b61292485483c7499e83c4f5c6f9bd1a\transformed\jetified-window-1.2.0\AndroidManifest.xml:25:13-37
+167        <uses-library
+167-->[androidx.window:window:1.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\b61292485483c7499e83c4f5c6f9bd1a\transformed\jetified-window-1.2.0\AndroidManifest.xml:26:9-28:40
+168            android:name="androidx.window.sidecar"
+168-->[androidx.window:window:1.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\b61292485483c7499e83c4f5c6f9bd1a\transformed\jetified-window-1.2.0\AndroidManifest.xml:27:13-51
+169            android:required="false" /> <!-- Needs to be explicitly declared on P+ -->
+169-->[androidx.window:window:1.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\b61292485483c7499e83c4f5c6f9bd1a\transformed\jetified-window-1.2.0\AndroidManifest.xml:28:13-37
+170        <uses-library
+170-->[com.google.android.gms:play-services-maps:18.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\1b7e6503cbc679789b0e1529278741c6\transformed\jetified-play-services-maps-18.2.0\AndroidManifest.xml:39:9-41:40
+171            android:name="org.apache.http.legacy"
+171-->[com.google.android.gms:play-services-maps:18.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\1b7e6503cbc679789b0e1529278741c6\transformed\jetified-play-services-maps-18.2.0\AndroidManifest.xml:40:13-50
+172            android:required="false" />
+172-->[com.google.android.gms:play-services-maps:18.2.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\1b7e6503cbc679789b0e1529278741c6\transformed\jetified-play-services-maps-18.2.0\AndroidManifest.xml:41:13-37
+173
+174        <service
+174-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:24:9-32:19
+175            android:name="androidx.credentials.playservices.CredentialProviderMetadataHolder"
+175-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:25:13-94
+176            android:enabled="true"
+176-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:26:13-35
+177            android:exported="false" >
+177-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:27:13-37
+178            <meta-data
+178-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:29:13-31:104
+179                android:name="androidx.credentials.CREDENTIAL_PROVIDER_KEY"
+179-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:30:17-76
+180                android:value="androidx.credentials.playservices.CredentialProviderPlayServicesImpl" />
+180-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:31:17-101
+181        </service>
+182
+183        <activity
+183-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:34:9-41:20
+184            android:name="androidx.credentials.playservices.HiddenActivity"
+184-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:35:13-76
+185            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+185-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:36:13-87
+186            android:enabled="true"
+186-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:37:13-35
+187            android:exported="false"
+187-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:38:13-37
+188            android:fitsSystemWindows="true"
+188-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:39:13-45
+189            android:theme="@style/Theme.Hidden" >
+189-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\3ee02f6ab44400b8187ddbf6a2b35c99\transformed\jetified-credentials-play-services-auth-1.2.0-rc01\AndroidManifest.xml:40:13-48
+190        </activity>
+191        <activity
+191-->[com.google.android.gms:play-services-auth:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\33e1efe02d200aad1f9ccc56ab38fa03\transformed\jetified-play-services-auth-21.0.0\AndroidManifest.xml:23:9-27:75
+192            android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
+192-->[com.google.android.gms:play-services-auth:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\33e1efe02d200aad1f9ccc56ab38fa03\transformed\jetified-play-services-auth-21.0.0\AndroidManifest.xml:24:13-93
+193            android:excludeFromRecents="true"
+193-->[com.google.android.gms:play-services-auth:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\33e1efe02d200aad1f9ccc56ab38fa03\transformed\jetified-play-services-auth-21.0.0\AndroidManifest.xml:25:13-46
+194            android:exported="false"
+194-->[com.google.android.gms:play-services-auth:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\33e1efe02d200aad1f9ccc56ab38fa03\transformed\jetified-play-services-auth-21.0.0\AndroidManifest.xml:26:13-37
+195            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+195-->[com.google.android.gms:play-services-auth:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\33e1efe02d200aad1f9ccc56ab38fa03\transformed\jetified-play-services-auth-21.0.0\AndroidManifest.xml:27:13-72
+196        <!--
+197            Service handling Google Sign-In user revocation. For apps that do not integrate with
+198            Google Sign-In, this service will never be started.
+199        -->
+200        <service
+200-->[com.google.android.gms:play-services-auth:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\33e1efe02d200aad1f9ccc56ab38fa03\transformed\jetified-play-services-auth-21.0.0\AndroidManifest.xml:33:9-37:51
+201            android:name="com.google.android.gms.auth.api.signin.RevocationBoundService"
+201-->[com.google.android.gms:play-services-auth:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\33e1efe02d200aad1f9ccc56ab38fa03\transformed\jetified-play-services-auth-21.0.0\AndroidManifest.xml:34:13-89
+202            android:exported="true"
+202-->[com.google.android.gms:play-services-auth:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\33e1efe02d200aad1f9ccc56ab38fa03\transformed\jetified-play-services-auth-21.0.0\AndroidManifest.xml:35:13-36
+203            android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
+203-->[com.google.android.gms:play-services-auth:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\33e1efe02d200aad1f9ccc56ab38fa03\transformed\jetified-play-services-auth-21.0.0\AndroidManifest.xml:36:13-107
+204            android:visibleToInstantApps="true" />
+204-->[com.google.android.gms:play-services-auth:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\33e1efe02d200aad1f9ccc56ab38fa03\transformed\jetified-play-services-auth-21.0.0\AndroidManifest.xml:37:13-48
+205
+206        <activity
+206-->[com.google.android.gms:play-services-base:18.3.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\a456ad57e908d23527b31f7d5597ad4d\transformed\jetified-play-services-base-18.3.0\AndroidManifest.xml:20:9-22:45
+207            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+207-->[com.google.android.gms:play-services-base:18.3.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\a456ad57e908d23527b31f7d5597ad4d\transformed\jetified-play-services-base-18.3.0\AndroidManifest.xml:20:19-85
+208            android:exported="false"
+208-->[com.google.android.gms:play-services-base:18.3.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\a456ad57e908d23527b31f7d5597ad4d\transformed\jetified-play-services-base-18.3.0\AndroidManifest.xml:22:19-43
+209            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+209-->[com.google.android.gms:play-services-base:18.3.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\a456ad57e908d23527b31f7d5597ad4d\transformed\jetified-play-services-base-18.3.0\AndroidManifest.xml:21:19-78
+210
+211        <provider
+211-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\89a830bb6cf712e3ce816b93687d6d1a\transformed\jetified-firebase-common-21.0.0\AndroidManifest.xml:23:9-28:39
+212            android:name="com.google.firebase.provider.FirebaseInitProvider"
+212-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\89a830bb6cf712e3ce816b93687d6d1a\transformed\jetified-firebase-common-21.0.0\AndroidManifest.xml:24:13-77
+213            android:authorities="com.example.student_app.firebaseinitprovider"
+213-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\89a830bb6cf712e3ce816b93687d6d1a\transformed\jetified-firebase-common-21.0.0\AndroidManifest.xml:25:13-72
+214            android:directBootAware="true"
+214-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\89a830bb6cf712e3ce816b93687d6d1a\transformed\jetified-firebase-common-21.0.0\AndroidManifest.xml:26:13-43
+215            android:exported="false"
+215-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\89a830bb6cf712e3ce816b93687d6d1a\transformed\jetified-firebase-common-21.0.0\AndroidManifest.xml:27:13-37
+216            android:initOrder="100" />
+216-->[com.google.firebase:firebase-common:21.0.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\89a830bb6cf712e3ce816b93687d6d1a\transformed\jetified-firebase-common-21.0.0\AndroidManifest.xml:28:13-36
+217
+218        <meta-data
+218-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\c736caf21b6d5efda4c2860684e8739a\transformed\jetified-play-services-basement-18.4.0\AndroidManifest.xml:6:9-122
+219            android:name="com.google.android.gms.version"
+219-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\c736caf21b6d5efda4c2860684e8739a\transformed\jetified-play-services-basement-18.4.0\AndroidManifest.xml:6:20-65
+220            android:value="@integer/google_play_services_version" />
+220-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\c736caf21b6d5efda4c2860684e8739a\transformed\jetified-play-services-basement-18.4.0\AndroidManifest.xml:6:66-119
+221
+222        <provider
+222-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\a4def40035927cb6d856303427b50933\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:24:9-32:20
+223            android:name="androidx.startup.InitializationProvider"
+223-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\a4def40035927cb6d856303427b50933\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:25:13-67
+224            android:authorities="com.example.student_app.androidx-startup"
+224-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\a4def40035927cb6d856303427b50933\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:26:13-68
+225            android:exported="false" >
+225-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\a4def40035927cb6d856303427b50933\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:27:13-37
+226            <meta-data
+226-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\a4def40035927cb6d856303427b50933\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:29:13-31:52
+227                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+227-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\a4def40035927cb6d856303427b50933\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:30:17-78
+228                android:value="androidx.startup" />
+228-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\a4def40035927cb6d856303427b50933\transformed\jetified-lifecycle-process-2.7.0\AndroidManifest.xml:31:17-49
+229            <meta-data
+229-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+230                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+230-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+231                android:value="androidx.startup" />
+231-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+232        </provider>
+233
+234        <receiver
+234-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+235            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+235-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+236            android:directBootAware="false"
+236-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+237            android:enabled="true"
+237-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+238            android:exported="true"
+238-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+239            android:permission="android.permission.DUMP" >
+239-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+240            <intent-filter>
+240-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+241                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+241-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+241-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+242            </intent-filter>
+243            <intent-filter>
+243-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+244                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+244-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+244-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+245            </intent-filter>
+246            <intent-filter>
+246-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+247                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+247-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+247-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+248            </intent-filter>
+249            <intent-filter>
+249-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+250                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+250-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+250-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\ec9fdb662d7f540d2603f340c7b5ab14\transformed\jetified-profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+251            </intent-filter>
+252        </receiver> <!-- The activities will be merged into the manifest of the hosting app. -->
+253        <activity
+253-->[com.google.android.play:core-common:2.0.3] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\bd82a2e767c0bfc11690fbbe97aaf42e\transformed\jetified-core-common-2.0.3\AndroidManifest.xml:14:9-18:65
+254            android:name="com.google.android.play.core.common.PlayCoreDialogWrapperActivity"
+254-->[com.google.android.play:core-common:2.0.3] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\bd82a2e767c0bfc11690fbbe97aaf42e\transformed\jetified-core-common-2.0.3\AndroidManifest.xml:15:13-93
+255            android:exported="false"
+255-->[com.google.android.play:core-common:2.0.3] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\bd82a2e767c0bfc11690fbbe97aaf42e\transformed\jetified-core-common-2.0.3\AndroidManifest.xml:16:13-37
+256            android:stateNotNeeded="true"
+256-->[com.google.android.play:core-common:2.0.3] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\bd82a2e767c0bfc11690fbbe97aaf42e\transformed\jetified-core-common-2.0.3\AndroidManifest.xml:17:13-42
+257            android:theme="@style/Theme.PlayCore.Transparent" />
+257-->[com.google.android.play:core-common:2.0.3] C:\Users\Adib Nasreddine\.gradle\caches\transforms-3\bd82a2e767c0bfc11690fbbe97aaf42e\transformed\jetified-core-common-2.0.3\AndroidManifest.xml:18:13-62
+258    </application>
+259
+260</manifest>
