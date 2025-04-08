@@ -138,15 +138,15 @@ This is the easiest method and does not require setting up Flutter, Android Stud
 1. Locate the APK file in your cloned project directory:
     > student_app/build/app/outputs/flutter-apk/app-release.apk
 2. Transfer the `app-release.apk` file to your Android device using one of the following methods:
-- USB cable (set the phone to **File Transfer** mode)
-- Upload the file to **Google Drive** and download it on your phone
-- Send it via **email** or a file-sharing app (e.g., Snapdrop, Nearby Share)
+    - USB cable (set the phone to **File Transfer** mode)
+    - Upload the file to **Google Drive** and download it on your phone
+    - Send it via **email** or a file-sharing app (e.g., Snapdrop, Nearby Share)
 3. On your Android phone, locate and tap the APK file to begin installation.
 
 4. If prompted, allow app installations from unknown sources:
-- Go to **Settings > Apps > Special access > Install unknown apps**
-- Select the app you're using to open the APK (e.g., Files, Drive, or your browser)
-- Enable **Allow from this source**
+    - Go to **Settings > Apps > Special access > Install unknown apps**
+    - Select the app you're using to open the APK (e.g., Files, Drive, or your browser)
+    - Enable **Allow from this source**
 
 5. Tap **Install** and wait for the installation to finish.
 
