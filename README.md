@@ -20,8 +20,9 @@ Each method is explained in full detail below, including extra setup steps and c
 
 - macOS with Xcode installed (from the App Store)
 - Flutter SDK installed and added to your PATH
-  - [Start building Flutter iOS apps on macOS](https://docs.flutter.dev/get-started/install/macos/mobile-ios)
-  - [Start building Flutter Android apps on Windows](https://docs.flutter.dev/get-started/install/windows/mobile)
+    - Only follow the steps required to install flutter SDK and to add to path
+        - [Start building Flutter iOS apps on macOS](https://docs.flutter.dev/get-started/install/macos/mobile-ios)
+        - [Start building Flutter Android apps on Windows](https://docs.flutter.dev/get-started/install/windows/mobile)
 - A physical iPhone and a Lightning cable
 - A personal Apple Developer account (free)
 - A cloned version of this repository
