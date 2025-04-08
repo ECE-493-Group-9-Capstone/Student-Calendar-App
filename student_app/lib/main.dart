@@ -116,19 +116,20 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
   Widget _getPage(int index) {
     if (_pages[index] == null) {
       switch (index) {
-        case 0:
-          _pages[index] = HomePage();
-          break;
-        case 1:
-          _pages[index] = MapPage(key: _mapPageKey);
-          break;
-        case 2:
-          _pages[index] = DiscoveryPage();
-          break;
-        case 3:
-          _pages[index] = FriendsPage();
-          break;
-      }
+  case 0:
+    _pages[index] = HomePage();
+    break;
+  case 1:
+    _pages[index] = FriendsPage();
+    break;
+  case 2:
+    _pages[index] = MapPage(key: _mapPageKey);
+    break;
+  case 3:
+    _pages[index] = EventsPage();
+    break;
+}
+
     }
     return _pages[index]!;
   }
@@ -211,7 +212,7 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
     setState(() {
       _currentIndex = index;
     });
-    if (index == 1) _mapPageKey.currentState?.refreshMarkers();
+    if (index == 2) _mapPageKey.currentState?.refreshMarkers();
   }
 
   Widget _buildNavItem(IconData icon, bool isSelected) => isSelected
@@ -274,9 +275,9 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
             animationDuration: const Duration(milliseconds: 300),
             items: [
               _buildNavItem(Icons.home, _currentIndex == 0),
-              _buildNavItem(Icons.map, _currentIndex == 1),
-              _buildNavItem(Icons.event, _currentIndex == 2),
-              _buildNavItem(Icons.group, _currentIndex == 3),
+              _buildNavItem(Icons.group, _currentIndex == 1),
+              _buildNavItem(Icons.map, _currentIndex == 2),
+              _buildNavItem(Icons.event, _currentIndex == 3),
             ],
             onTap: _onTabTapped,
             color: Colors.transparent.withOpacity(0.3),

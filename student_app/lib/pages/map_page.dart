@@ -14,6 +14,8 @@ import 'package:intl/intl.dart';
 import 'dart:math';
 import 'package:student_app/utils/study_spot_service.dart';
 import 'event_popup.dart';
+import 'study_spot_popup.dart';
+
 import 'package:student_app/utils/firebase_wrapper.dart';
 
 class MapPage extends StatefulWidget {
@@ -410,38 +412,46 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     setState(() {});
   }
 
-  Future<void> _addStudySpotMarkers() async {
-    if (_studySpotIcon == null) return;
+Future<void> _addStudySpotMarkers() async {
+  if (_studySpotIcon == null) return;
 
-    final studySpotService =
-        StudySpotService(firestore: FirebaseFirestore.instance);
-    final allStudySpots = await studySpotService.getAllStudySpots();
+  final studySpotService =
+      StudySpotService(firestore: FirebaseFirestore.instance);
+  final allStudySpots = await studySpotService.getAllStudySpots();
 
-    for (var spot in allStudySpots) {
-      final dynamic coord = spot['coordinates'];
-      double? lat;
-      double? lng;
-      if (coord is GeoPoint) {
-        lat = coord.latitude;
-        lng = coord.longitude;
-      } else if (coord is Map<String, dynamic>) {
-        lat = coord['lat'];
-        lng = coord['lng'];
-      }
-      final markerId = MarkerId("studySpot_${spot['id']}");
-      final marker = Marker(
-        markerId: markerId,
-        position: LatLng(lat!, lng!),
-        icon: _studySpotIcon!,
-        onTap: () {
-          _controller?.animateCamera(
-              CameraUpdate.newLatLngZoom(LatLng(lat!, lng!), 16));
-        },
-      );
-      _markers[markerId] = marker;
+  for (var spot in allStudySpots) {
+    final dynamic coord = spot['coordinates'];
+    double? lat;
+    double? lng;
+    if (coord is GeoPoint) {
+      lat = coord.latitude;
+      lng = coord.longitude;
+    } else if (coord is Map<String, dynamic>) {
+      lat = coord['lat'];
+      lng = coord['lng'];
     }
-    setState(() {});
+    if (lat == null || lng == null) continue;
+
+    final markerId = MarkerId("studySpot_${spot['id']}");
+    final marker = Marker(
+      markerId: markerId,
+      position: LatLng(lat, lng),
+      icon: _studySpotIcon!,
+      onTap: () {
+  debugPrint("Study spot marker tapped at ($lat, $lng)");
+  _controller?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat!, lng!), 16));
+  _customInfoWindowController.addInfoWindow!(
+    StudySpotPopup(studySpot: spot),
+    LatLng(lat!, lng!),
+  );
+},
+
+    );
+    _markers[markerId] = marker;
   }
+  setState(() {});
+}
+
 
   void _updateFriendSubscriptions() {
     final friendIds = AppUser.instance.friends.map((f) => f.ccid).toSet();
@@ -631,8 +641,8 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
           ),
           CustomInfoWindow(
             controller: _customInfoWindowController,
-            height: MediaQuery.of(context).size.height * 0.3,
-            width: MediaQuery.of(context).size.width * 0.8,
+            height: MediaQuery.of(context).size.height * 0.4,
+            width: MediaQuery.of(context).size.width * 0.9,
             offset: 50.0,
           ),
           MapsBottomSheet(

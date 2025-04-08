@@ -1,22 +1,20 @@
-// event_popup.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class EventPopup extends StatelessWidget {
   final Map<String, dynamic> event;
-  final VoidCallback? onMoreInfo; // Callback for the arrow button
+  final VoidCallback? onMoreInfo; // You can keep this if needed elsewhere
 
-  const EventPopup({Key? key, required this.event, this.onMoreInfo})
-      : super(key: key);
+  const EventPopup({
+    Key? key,
+    required this.event,
+    this.onMoreInfo,
+  }) : super(key: key);
 
-  /// Validate and prepare the image URL. If the URL is missing a scheme or host,
-  /// prepend "https://". If no URL is provided, return null.
   String? _prepareImageUrl(String? url) {
     if (url == null || url.isEmpty) return null;
     final uri = Uri.tryParse(url);
-    // If missing scheme or host, prepend "https://"
     if (uri == null || uri.scheme.isEmpty || uri.host.isEmpty) {
       return "https://$url";
     }
@@ -25,7 +23,10 @@ class EventPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Parse the event date.
+    final screenSize = MediaQuery.of(context).size;
+    final dialogWidth = screenSize.width * 0.9;
+    final dialogHeight = screenSize.height * 0.65;
+
     final dynamic dateValue = event['startDate'];
     DateTime eventDate;
     try {
@@ -38,7 +39,6 @@ class EventPopup extends StatelessWidget {
     }
     final String formattedDate = DateFormat('MMMM dd, yyyy').format(eventDate);
 
-    // Parse the start and end times.
     final startTimeStr = event['start_time'] ?? '00:00:00';
     final endTimeStr = event['end_time'] ?? '00:00:00';
     DateTime parsedStart;
@@ -58,104 +58,92 @@ class EventPopup extends StatelessWidget {
         DateFormat('h:mma').format(parsedStart).toLowerCase();
     final formattedEnd = DateFormat('h:mma').format(parsedEnd).toLowerCase();
 
-    // Prepare the image URL.
     final String? rawImageUrl = event['imageUrl'] as String?;
     final String? imageUrl = _prepareImageUrl(rawImageUrl);
 
-    return Container(
-      width: 380, // Slightly wider
-      height: 420, // Slightly taller
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        // Outer gradient border
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF396548),
-            Color(0xFF6B803D),
-            Color(0xFF909533),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        // Add some outer shadow for a subtle raised look
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            offset: const Offset(0, 4),
-            blurRadius: 8,
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Center(
+        child: Container(
+          width: dialogWidth,
+          height: dialogHeight,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF396548),
+                Color(0xFF6B803D),
+                Color(0xFF909533),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                offset: const Offset(0, 4),
+                blurRadius: 8,
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        // Use Material to allow Card-like effect
-        color: Colors.white,
-        elevation: 2,
-        borderRadius: BorderRadius.circular(10),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // If we have a valid image URL, display it — but hide on error.
-                if (imageUrl != null)
-                  Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    height: 150,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Hide the image if it fails to load
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                const SizedBox(height: 10),
-                // Content area
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Event Title (always shown, even if no image)
-                      Text(
-                        event['title'] ?? 'Event Title',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 10),
-                      _InfoRow(
-                        label: "Date:",
-                        value: formattedDate,
-                      ),
-                      const SizedBox(height: 8),
-                      _InfoRow(
-                        label: "Time:",
-                        value: "$formattedStart - $formattedEnd",
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Button row at the bottom
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+          child: Material(
+            color: Colors.white,
+            elevation: 2,
+            borderRadius: BorderRadius.circular(10),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextButton.icon(
-                      onPressed: onMoreInfo,
-                      icon: const Icon(Icons.arrow_forward),
-                      label: const Text("More Info"),
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF396548),
+                    if (imageUrl != null)
+                      SizedBox(
+                        height: dialogHeight * 0.40,
+                        width: double.infinity,
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (ctx, err, stack) {
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            event['title'] ?? 'Event Title',
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 10),
+                          _InfoRow(
+                            label: "Date:",
+                            value: formattedDate,
+                          ),
+                          const SizedBox(height: 8),
+                          _InfoRow(
+                            label: "Time:",
+                            value: "$formattedStart - $formattedEnd",
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(height: 16),
+                    // More Info button has been removed.
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -164,7 +152,6 @@ class EventPopup extends StatelessWidget {
   }
 }
 
-/// A small helper widget that displays a label and a value in a row.
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;

@@ -193,19 +193,20 @@ class _HomePageState extends State<HomePage> {
     return unique;
   }
 
-// Replace _buildRecommendedFriendTile with this updated version
-  Widget _buildRecommendedFriendTile(UserModel user) {
-    String initials = user.username
-        .split(" ")
-        .where((p) => p.isNotEmpty)
-        .map((e) => e[0])
-        .take(2)
-        .join()
-        .toUpperCase();
+Widget _buildRecommendedFriendTile(UserModel user) {
+  String initials = user.username
+      .split(" ")
+      .where((p) => p.isNotEmpty)
+      .map((e) => e[0])
+      .take(2)
+      .join()
+      .toUpperCase();
 
-    return Container(
+  return Padding(
+    padding: const EdgeInsets.all(8.0), // Adds padding around the entire tile
+    child: Container(
       width: 115,
-      margin: const EdgeInsets.only(right: 12),
+      margin: const EdgeInsets.only(right: 6), // Keeps the right margin for spacing between tiles
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -238,8 +239,7 @@ class _HomePageState extends State<HomePage> {
             user.ccid,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style:
-                TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
+            style: TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
           ),
           const SizedBox(height: 6),
           InkWell(
@@ -268,8 +268,10 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 8),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   // The recommendations area always reserves a fixed height
   Widget _buildRecommendedFriendsHorizontal() {
@@ -279,19 +281,19 @@ class _HomePageState extends State<HomePage> {
         if (snap.connectionState == ConnectionState.waiting ||
             _isLoadingFriends) {
           return const SizedBox(
-            height: 160,
+            height: 172,
             child: Center(child: CircularProgressIndicator()),
           );
         }
         if (!snap.hasData || snap.data!.isEmpty) {
           return const SizedBox(
-            height: 160,
+            height: 172,
             child: Center(child: Text("No recommendations right now.")),
           );
         }
         final recs = snap.data!;
         return SizedBox(
-          height: 160,
+          height: 172,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: recs.length,
@@ -320,21 +322,22 @@ class _HomePageState extends State<HomePage> {
     }
     return upcoming;
   }
+Widget _buildUpcomingEventCard(Event event) {
+  final DateFormat dateFormatter = DateFormat('MMM d, yyyy');
+  final DateFormat timeFormatter = DateFormat('h:mm a');
+  String dateString;
+  if (event.endDate != null) {
+    dateString =
+        "${dateFormatter.format(event.startDate)} - ${dateFormatter.format(event.endDate!)}";
+  } else {
+    dateString = dateFormatter.format(event.startDate);
+  }
 
-  Widget _buildUpcomingEventCard(Event event) {
-    final DateFormat dateFormatter = DateFormat('MMM d, yyyy');
-    final DateFormat timeFormatter = DateFormat('h:mm a');
-    String dateString;
-    if (event.endDate != null) {
-      dateString =
-          "${dateFormatter.format(event.startDate)} - ${dateFormatter.format(event.endDate!)}";
-    } else {
-      dateString = dateFormatter.format(event.startDate);
-    }
-
-    return Container(
+  return Padding(
+    padding: const EdgeInsets.all(8.0), // Added padding around the entire card
+    child: Container(
       width: 180,
-      margin: const EdgeInsets.only(right: 12),
+      margin: const EdgeInsets.only(right: 4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -358,7 +361,7 @@ class _HomePageState extends State<HomePage> {
               fit: BoxFit.cover,
               errorBuilder: (ctx, err, stack) {
                 return Container(
-                  height: 100,
+                  height: 90,
                   color: Colors.grey[300],
                   alignment: Alignment.center,
                   child: const Icon(Icons.broken_image),
@@ -390,8 +393,9 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 8),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildUpcomingEventsHorizontal() {
     return FutureBuilder<List<Event>>(
@@ -409,7 +413,7 @@ class _HomePageState extends State<HomePage> {
         }
         final events = snap.data!;
         return SizedBox(
-          height: 220,
+          height: 230,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(bottom: 4),
@@ -653,7 +657,7 @@ class _HomePageState extends State<HomePage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 6),
                         _buildRecommendedFriendsHorizontal(),
                       ],
                     ),

@@ -1119,49 +1119,68 @@ class _CalendarPageState extends State<CalendarPage> {
       ),
     );
   }
-
-  void _showToggleCalendarViewDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
+void _showToggleCalendarViewDialog() {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: _gradient,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(2),
           child: Container(
             decoration: BoxDecoration(
-              gradient: _gradient,
-              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
             ),
-            padding: const EdgeInsets.all(2),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      "Select Calendar View",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 98, 98, 98),
-                      ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Instructions for uploading the .ics file
+                  const Text(
+                    "Important",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
                     ),
-                    const SizedBox(height: 16),
-                    _buildDialogOption("Month View", CalendarView.month),
-                    _buildDialogOption("Week View", CalendarView.week),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "To use the calendar functionality, please download your .ics file from Beartracks under the Schedule tab and upload it to your main Google Calendar.",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black54,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  // Calendar view selection header and options
+                  const Text(
+                    "Select Calendar View",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromARGB(255, 98, 98, 98),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDialogOption("Month View", CalendarView.month),
+                  _buildDialogOption("Week View", CalendarView.week),
+                ],
               ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildDialogOption(String label, CalendarView value) {
     bool selected = _calendarView == value;

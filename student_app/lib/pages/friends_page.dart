@@ -29,6 +29,13 @@ class _FriendsPageState extends State<FriendsPage> {
   List<String> _requestedFriends = [];
   bool _hasLoaded = false;
 
+  // Define the green gradient to reuse (same as in EventsPage)
+  final LinearGradient _greenGradient = const LinearGradient(
+    colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -132,13 +139,12 @@ class _FriendsPageState extends State<FriendsPage> {
     });
   }
 
- void _openProfile(UserModel user) {
-  showDialog(
-    context: context,
-    builder: (_) => FriendProfilePopup(user: user),
-  );
-}
-
+  void _openProfile(UserModel user) {
+    showDialog(
+      context: context,
+      builder: (_) => FriendProfilePopup(user: user),
+    );
+  }
 
   Future<void> _removeFriend(String ccid) async {
     await AppUser.instance.removeFriend(ccid);
@@ -181,107 +187,127 @@ class _FriendsPageState extends State<FriendsPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Focus(
-      focusNode: _focusNode,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: PreferredSize(
-          preferredSize: Size.zero,
-          child: AppBar(backgroundColor: Colors.white, elevation: 0),
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with title and notification icon.
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(isSearching ? "Add Friends" : "Your Friends",
-                      style: const TextStyle(
-                          fontSize: 25, fontWeight: FontWeight.bold)),
-                  ValueListenableBuilder<List<Map<String, dynamic>>>(
-                    valueListenable: AppUser.instance.friendRequestsNotifier,
-                    builder: (_, requests, __) {
-                      final hasRequests = requests.isNotEmpty;
-                      return GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const FriendRequestPage()),
-                        ),
-                        child: Stack(
-                          alignment: Alignment.topRight,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: const LinearGradient(colors: [
-                                  Color(0xFF396548),
-                                  Color(0xFF6B803D),
-                                  Color(0xFF909533),
-                                ]),
-                              ),
-                              child: const Icon(Icons.notifications,
-                                  color: Colors.white),
-                            ),
-                            if (hasRequests)
-                              const Positioned(
-                                right: 4,
-                                top: 4,
-                                child: CircleAvatar(
-                                    radius: 6, backgroundColor: Colors.red),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+  /// NEW: Build header with a green gradient clipart background
+  /// similar to EventsPage. It shows the title and a white notification bell icon.
+  Widget _buildHeader(Size size) {
+    return Stack(
+      children: [
+        ClipPath(
+          clipper: _TopWaveClipper(),
+          child: Container(
+            height: 150,
+            width: size.width,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF396548),
+                  Color(0xFF6B803D),
+                  Color(0xFF909533),
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(height: 30),
-              _buildSearchBar(),
-              const SizedBox(height: 40),
-              isSearching ? _buildSearchResults() : _buildFriendsList(),
-            ],
+            ),
           ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 75, left: 20),
+          child: Text(
+            isSearching ? "Add Friends" : "Your Friends",
+            style: const TextStyle(
+              fontSize: 26,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        // Notification bell icon (white, without any extra circle background)
+        Positioned(
+          top: 50,
+          right: 20,
+          child: ValueListenableBuilder<List<Map<String, dynamic>>>(
+            valueListenable: AppUser.instance.friendRequestsNotifier,
+            builder: (_, requests, __) {
+              return GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FriendRequestPage(),
+                  ),
+                ),
+                child: Icon(
+                  Icons.notifications,
+                  size: 30,
+                  color: Colors.white,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// NEW: Build a gradient search bar matching EventsPage styling.
+  Widget _buildGradientSearchBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: _greenGradient,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Container(
+        margin: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 8),
+            Icon(Icons.search, color: Colors.grey[700]),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: searchController,
+                decoration: const InputDecoration(
+                  hintText: "Search for friends",
+                  border: InputBorder.none,
+                ),
+                onChanged: _onSearch,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSearchBar() => Container(
-        height: 48,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          gradient: const LinearGradient(
-              colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)]),
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    // Use a Column for the fixed header and search bar,
+    // and let the friends list (or search results) expand
+    return Focus(
+      focusNode: _focusNode,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        // No AppBar: the header covers that area.
+        body: Column(
+          children: [
+            _buildHeader(size),
+            const SizedBox(height: 10),
+            _buildGradientSearchBar(),
+            const SizedBox(height: 30),
+            Expanded(
+              child:
+                  isSearching ? _buildSearchResults() : _buildFriendsList(),
+            ),
+          ],
         ),
-        child: Container(
-          margin: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(13)),
-          child: Row(
-            children: [
-              IconButton(
-                  onPressed: () {}, icon: const Icon(Icons.search)),
-              Expanded(
-                child: TextField(
-                  controller: searchController,
-                  decoration: const InputDecoration(
-                      hintText: "Search for friends",
-                      border: InputBorder.none),
-                  onChanged: _onSearch,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      ),
+    );
+  }
 
   Widget _buildFriendsList() {
     return ValueListenableBuilder<List<UserModel>>(
@@ -290,28 +316,25 @@ class _FriendsPageState extends State<FriendsPage> {
         if (friends.isEmpty) {
           return const Center(child: Text('No friends yet'));
         }
-        return SizedBox(
-          height: MediaQuery.of(context).size.height - 250,
-          child: ListView.builder(
-            itemCount: friends.length,
-            itemBuilder: (_, i) {
-              final user = friends[i];
-              return Dismissible(
-                key: ValueKey(user.ccid),
-                direction: DismissDirection.endToStart,
-                background: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 20),
-                  decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(33)),
-                  child: const Icon(Icons.delete, color: Colors.white),
-                ),
-                onDismissed: (_) => _removeFriend(user.ccid),
-                child: _buildFriendTile(user),
-              );
-            },
-          ),
+        return ListView.builder(
+          itemCount: friends.length,
+          itemBuilder: (_, i) {
+            final user = friends[i];
+            return Dismissible(
+              key: ValueKey(user.ccid),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 20),
+                decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(33)),
+                child: const Icon(Icons.delete, color: Colors.white),
+              ),
+              onDismissed: (_) => _removeFriend(user.ccid),
+              child: _buildFriendTile(user),
+            );
+          },
         );
       },
     );
@@ -321,76 +344,73 @@ class _FriendsPageState extends State<FriendsPage> {
     if (filteredUsers.isEmpty) {
       return const Center(child: Text('No matches'));
     }
-    return SizedBox(
-      height: MediaQuery.of(context).size.height - 250,
-      child: ListView.builder(
-        itemCount: filteredUsers.length,
-        itemBuilder: (_, i) {
-          final user = filteredUsers[i];
-          return _buildSearchResultTile(user);
-        },
-      ),
+    return ListView.builder(
+      itemCount: filteredUsers.length,
+      itemBuilder: (_, i) {
+        final user = filteredUsers[i];
+        return _buildSearchResultTile(user);
+      },
     );
   }
 
- Widget _buildFriendTile(UserModel user) {
-  final fallbackInitials = (user.photoURL == null || user.photoURL!.isEmpty)
-      ? user.username
-          .split(" ")
-          .where((p) => p.isNotEmpty)
-          .map((e) => e[0])
-          .take(2)
-          .join()
-          .toUpperCase()
-      : null;
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 20),
-    child: Container(
-      height: 100,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(33),
-        gradient: const LinearGradient(
-            colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)]),
-      ),
+  Widget _buildFriendTile(UserModel user) {
+    final fallbackInitials = (user.photoURL == null || user.photoURL!.isEmpty)
+        ? user.username
+            .split(" ")
+            .where((p) => p.isNotEmpty)
+            .map((e) => e[0])
+            .take(2)
+            .join()
+            .toUpperCase()
+        : null;
+    return Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Container(
-        margin: const EdgeInsets.all(3),
+        height: 100,
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(30)),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(30),
-          onTap: () => _openProfile(user), // Pass the full user here
-          child: Row(
-            children: [
-              const SizedBox(width: 20),
-              CachedProfileImage(
-                photoURL: user.photoURL,
-                size: 64,
-                fallbackText: fallbackInitials,
-                fallbackBackgroundColor: const Color(0xFF909533),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(user.username,
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 5),
-                    const Text("Tap to view profile",
-                        style: TextStyle(fontSize: 14, color: Colors.black54)),
-                  ],
+          borderRadius: BorderRadius.circular(33),
+          gradient: _greenGradient,
+        ),
+        child: Container(
+          margin: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+              color: Colors.white, borderRadius: BorderRadius.circular(30)),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(30),
+            onTap: () => _openProfile(user),
+            child: Row(
+              children: [
+                const SizedBox(width: 20),
+                CachedProfileImage(
+                  photoURL: user.photoURL,
+                  size: 64,
+                  fallbackText: fallbackInitials,
+                  fallbackBackgroundColor: const Color(0xFF909533),
                 ),
-              ),
-              const SizedBox(width: 20),
-            ],
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(user.username,
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 5),
+                      const Text("Tap to view profile",
+                          style:
+                              TextStyle(fontSize: 14, color: Colors.black54)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 20),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildSearchResultTile(UserModel user) {
     final isFriend =
@@ -415,7 +435,6 @@ class _FriendsPageState extends State<FriendsPage> {
               .get(),
       builder: (context, snapshot) {
         bool isRequested = isLocallyRequested;
-
         if (!isLocallyRequested &&
             snapshot.connectionState == ConnectionState.done &&
             snapshot.hasData &&
@@ -425,20 +444,13 @@ class _FriendsPageState extends State<FriendsPage> {
               List<String>.from(data['requested_friends'] ?? []);
           isRequested = firebaseRequested.contains(user.ccid);
         }
-
         return Padding(
           padding: const EdgeInsets.only(bottom: 20),
           child: Container(
             height: 100,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(33),
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF396548),
-                  Color(0xFF6B803D),
-                  Color(0xFF909533)
-                ],
-              ),
+              gradient: _greenGradient,
             ),
             child: Container(
               margin: const EdgeInsets.all(3),
@@ -497,7 +509,8 @@ class _FriendsPageState extends State<FriendsPage> {
                         : isRequested
                             ? IconButton(
                                 icon: const Icon(Icons.hourglass_empty),
-                                onPressed: () => _cancelFriendRequest(user.ccid),
+                                onPressed: () =>
+                                    _cancelFriendRequest(user.ccid),
                               )
                             : IconButton(
                                 icon: const Icon(Icons.person_add),
@@ -513,4 +526,39 @@ class _FriendsPageState extends State<FriendsPage> {
       },
     );
   }
+}
+
+/// Custom clipper to create the wavy header shape (same as used in EventsPage)
+class _TopWaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height * 0.8);
+    final firstControlPoint = Offset(size.width * 0.25, size.height);
+    final firstEndPoint = Offset(size.width * 0.5, size.height * 0.9);
+    final secondControlPoint = Offset(size.width * 0.75, size.height * 0.8);
+    final secondEndPoint = Offset(size.width, size.height * 0.9);
+    path.cubicTo(
+      firstControlPoint.dx,
+      firstControlPoint.dy,
+      firstEndPoint.dx,
+      firstEndPoint.dy,
+      secondControlPoint.dx,
+      secondControlPoint.dy,
+    );
+    path.cubicTo(
+      secondControlPoint.dx,
+      secondControlPoint.dy,
+      secondEndPoint.dx,
+      secondEndPoint.dy,
+      size.width,
+      size.height * 0.7,
+    );
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(_TopWaveClipper oldClipper) => false;
 }
