@@ -34,21 +34,12 @@ Each method is explained in full detail below, including extra setup steps and c
    ```
    sudo gem install cocoapods
    ```
-
-   - If this a fresh macOS install this may not work, in order to get cocopods installed:
-
-     ```
-     xcode-select --install
-     sudo gem install cocoapods
-     ```
-   - If that still fails, the alternative (and often more stable) approach is to use Homebrew:
+   - If that fails, the alternative (and often more stable) approach is to use Homebrew:
 
      ```
-     /bin/ -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
      ```
-
      Install CocoaPods with Homebrew:
-
      ```
      brew install cocoapods
      ```
@@ -72,12 +63,7 @@ Each method is explained in full detail below, including extra setup steps and c
    cd ios 
    pod install
    ```
-7. Verify your iPhone is detected:
-
-   ```
-   flutter devices
-   ```
-
+7. Verify your iPhone is detected in Xcode, you can see at the top of Xcode what device is being used, by default if all the steps were followed it should show your connected iphone:
    If your iPhone does not appear:
 
    - Ensure it is unlocked and connected
