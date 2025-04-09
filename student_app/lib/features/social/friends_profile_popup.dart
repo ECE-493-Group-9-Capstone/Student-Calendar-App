@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:student_app/utils/user.dart';
-import 'package:student_app/utils/profile_picture.dart';
-import 'package:student_app/utils/firebase_wrapper.dart';
+import 'package:student_app/utils/user_model.dart';
+import 'package:student_app/utils/profile_picture_utils.dart';
+import 'package:student_app/services/firebase_service.dart';
 import 'package:student_app/user_singleton.dart';
 
 class FriendsProfilePopup extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:student_app/user_singleton.dart';
-import 'package:student_app/utils/firebase_wrapper.dart';
+import 'package:student_app/services/firebase_service.dart';
 
 class SocialsView extends StatefulWidget {
   const SocialsView({super.key});

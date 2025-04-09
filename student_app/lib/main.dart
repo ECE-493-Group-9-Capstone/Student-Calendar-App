@@ -8,13 +8,13 @@ import 'package:student_app/features/auth/auth_login_page.dart';
 import 'package:student_app/features/home/home_page.dart';
 import 'firebase_options.dart';
 import 'user_singleton.dart';
-import 'utils/firebase_wrapper.dart';
+import 'services/firebase_service.dart';
 import 'features/onboarding/onboarding_bottom_popup.dart';
-import 'utils/map_service.dart';
+import 'services/map_service.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'features/auth/auth_service.dart';
+import 'services/auth_service.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();

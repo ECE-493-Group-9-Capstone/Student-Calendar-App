@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-import 'package:student_app/features/auth/auth_service.dart';
-import 'package:student_app/utils/calendar_service.dart';
+import 'package:student_app/services/auth_service.dart';
+import 'package:student_app/services/calendar_service.dart';
 import 'package:intl/intl.dart';
 
 class CalendarPage extends StatefulWidget {
@@ -68,7 +68,7 @@ class _CalendarPageState extends State<CalendarPage> {
       return;
     }
 
-    final calendarService = GoogleCalendarService();
+    final calendarService = CalendarService();
     final googleEvents = await calendarService.fetchCalendarEvents(accessToken);
 
     final List<Appointment> freshAppointments = [];

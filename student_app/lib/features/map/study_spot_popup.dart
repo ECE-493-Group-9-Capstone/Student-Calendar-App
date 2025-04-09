@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-import 'package:student_app/utils/study_spot_service.dart';
+import 'package:student_app/services/study_spot_service.dart';
 import 'package:student_app/user_singleton.dart';
 
 class StudySpotPopup extends StatefulWidget {

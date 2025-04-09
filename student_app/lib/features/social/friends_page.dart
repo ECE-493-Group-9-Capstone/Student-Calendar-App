@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:student_app/utils/user.dart';
+import 'package:student_app/utils/user_model.dart';
 import '../../user_singleton.dart';
 import 'friends_request_page.dart';
-import 'package:student_app/utils/firebase_wrapper.dart';
+import 'package:student_app/services/firebase_service.dart';
 import 'package:student_app/features/social/friends_profile_popup.dart';
-import 'package:student_app/utils/profile_picture.dart';
+import 'package:student_app/utils/profile_picture_utils.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle, NetworkAssetBundle;
 import 'dart:typed_data';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../../utils/cache_helper.dart';
+import '../../services/cache_service.dart';
 
 /// Returns a small circular marker icon from a network image URL.
 Future<BitmapDescriptor> getCircleMarkerIcon(

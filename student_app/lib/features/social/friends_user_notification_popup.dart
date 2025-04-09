@@ -3,10 +3,10 @@
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import '../../user_singleton.dart';
-import '../../utils/user.dart';
+import '../../utils/user_model.dart';
 import '../../utils/social_graph.dart';
-import 'package:student_app/utils/firebase_wrapper.dart';
-import 'package:student_app/utils/profile_picture.dart';
+import 'package:student_app/services/firebase_service.dart';
+import 'package:student_app/utils/profile_picture_utils.dart';
 
 /// Widget that shows a user's profile popup including their profile image.
 class FriendsUserNotificationPopup extends StatelessWidget {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:student_app/features/auth/auth_service.dart';
+import 'package:student_app/services/auth_service.dart';
 
 class Onboarding extends StatefulWidget {
   const Onboarding({super.key});

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:typed_data';
-import 'package:student_app/utils/cache_helper.dart'; // Contains loadCachedImageBytes and cacheImageBytes
+import 'package:student_app/services/cache_service.dart'; // Contains loadCachedImageBytes and cacheImageBytes
 
 // Function to download image bytes from a URL.
 Future<Uint8List?> downloadImageBytes(String photoURL) async {

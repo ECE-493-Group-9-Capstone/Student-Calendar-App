@@ -5,7 +5,7 @@ import 'onboarding_discipline_view.dart';
 import 'onboarding_socials_view.dart';
 import 'onboarding_location_view.dart';
 import 'package:student_app/user_singleton.dart';
-import 'package:student_app/utils/firebase_wrapper.dart';
+import 'package:student_app/services/firebase_service.dart';
 import 'dart:developer' as developer;
 
 class BottomPopup extends StatefulWidget {

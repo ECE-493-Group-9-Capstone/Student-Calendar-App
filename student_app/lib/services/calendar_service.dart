@@ -3,7 +3,7 @@ import 'package:googleapis/calendar/v3.dart' as calendar;
 import 'package:googleapis_auth/auth_io.dart' as auth;
 import 'package:http/http.dart' as http;
 
-class GoogleCalendarService {
+class CalendarService {
   Future<List<calendar.Event>> fetchCalendarEvents(String accessToken) async {
     try {
       final client = http.Client();

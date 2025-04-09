@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/foundation.dart';
-import 'firebase_wrapper.dart';
+import 'firebase_service.dart';
 import 'package:student_app/user_singleton.dart';
 
 class MapService {

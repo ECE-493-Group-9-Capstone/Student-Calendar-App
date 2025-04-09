@@ -1,8 +1,8 @@
 // maps_bottom_sheet.dart
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:student_app/utils/firebase_wrapper.dart';
-import 'package:student_app/utils/profile_picture.dart';
+import 'package:student_app/services/firebase_service.dart';
+import 'package:student_app/utils/profile_picture_utils.dart';
 
 class MapBottomSheet extends StatefulWidget {
   final DraggableScrollableController draggableController;

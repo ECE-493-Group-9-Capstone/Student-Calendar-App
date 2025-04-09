@@ -8,10 +8,10 @@ import 'map_style.dart';
 import 'package:student_app/features/map/marker_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:student_app/utils/event_service.dart';
+import 'package:student_app/services/event_service.dart';
 import 'map_bottom_sheet.dart';
 import 'dart:math';
-import 'package:student_app/utils/study_spot_service.dart';
+import 'package:student_app/services/study_spot_service.dart';
 import 'event_popup.dart';
 import 'study_spot_popup.dart';
 

@@ -5,13 +5,13 @@ import 'package:googleapis/calendar/v3.dart' as gcal;
 import 'package:intl/intl.dart';
 import 'package:student_app/main.dart'; // For AuthWrapper
 import 'package:student_app/user_singleton.dart';
-import 'package:student_app/utils/calendar_service.dart';
-import 'package:student_app/features/auth/auth_service.dart';
+import 'package:student_app/services/calendar_service.dart';
+import 'package:student_app/services/auth_service.dart';
 import 'package:student_app/features/calendar/calendar_page.dart';
 import 'package:student_app/utils/social_graph.dart';
-import 'package:student_app/utils/user.dart';
-import 'package:student_app/utils/profile_picture.dart';
-import 'package:student_app/utils/event_service.dart';
+import 'package:student_app/utils/user_model.dart';
+import 'package:student_app/utils/profile_picture_utils.dart';
+import 'package:student_app/services/event_service.dart';
 import 'package:student_app/features/events/event_model.dart';
 
 class HomePage extends StatefulWidget {
@@ -59,7 +59,7 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
-      final calendarService = GoogleCalendarService();
+      final calendarService = CalendarService();
       final eventsToday =
           await calendarService.fetchTodayCalendarEvents(accessToken);
 

@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import './utils/firebase_wrapper.dart';
+import 'services/firebase_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import './utils/user.dart';
+import 'utils/user_model.dart';
 
 class AppUser {
   static final AppUser _instance = AppUser._internal(); // Singleton instance

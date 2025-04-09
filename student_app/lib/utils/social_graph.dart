@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'firebase_wrapper.dart';
-import '../utils/user.dart';
+import '../services/firebase_service.dart';
+import 'user_model.dart';
 
 class SocialGraph {
   Map<String, UserModel> users = {}; // Stores all users

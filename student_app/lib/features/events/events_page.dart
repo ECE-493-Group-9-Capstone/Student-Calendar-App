@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:student_app/utils/event_service.dart';
+import 'package:student_app/services/event_service.dart';
 import 'package:student_app/features/events/event_model.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
