@@ -51,6 +51,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
         title: 'Bottom Navigation Example',
         theme: ThemeData(primarySwatch: Colors.blue),
+        debugShowCheckedModeBanner: false,
         home: const AuthWrapper(),
         navigatorObservers: [routeObserver],
       );
