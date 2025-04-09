@@ -18,17 +18,11 @@ Each method is explained in full detail below, including extra setup steps and c
 
 ### Prerequisites
 
-- macOS with Xcode installed (from the App Store)
-- Flutter SDK installed and added to your PATH
-    - Only follow the steps required to install flutter SDK and to add to path
-        - [Start building Flutter iOS apps on macOS](https://docs.flutter.dev/get-started/install/macos/mobile-ios)
-        - [Start building Flutter Android apps on Windows](https://docs.flutter.dev/get-started/install/windows/mobile)
-- A physical iPhone and a Lightning cable
-- A personal Apple Developer account (free)
+- A physical iPhone and a Lightning cable 
+    - If you want to run in on your own device
 - A cloned version of this repository
 
 ### Steps
-
 1. Install CocoaPods (only required once):
 
    ```
@@ -43,49 +37,26 @@ Each method is explained in full detail below, including extra setup steps and c
      ```
      brew install cocoapods
      ```
-2. Connect your iPhone to your Mac using a USB cable and unlock it.
-3. A popup should appear on your iPhone asking if you trust this computer. Tap "Trust" and enter your passcode if prompted.
-4. If your iPhone is on iOS 16 or newer, enable Developer Mode:
-
-   - Open Settings on your iPhone
-   - Go to Privacy & Security > Developer Mode
-   - Enable Developer Mode and restart the device
-5. Open Terminal and navigate to your Flutter project directory:
+2. Install the Flutter SDK 
+    - Only follow the steps required to install flutter SDK and to add to path
+        - [Start building Flutter iOS apps on macOS](https://docs.flutter.dev/get-started/install/macos/mobile-ios)
+3. Open Terminal and navigate to your Flutter project directory:
 
    ```
    cd /path/to/your/project/Student-Calendar-App/student_app
    flutter clean
    flutter pub get
    ```
-6. Navigate into the iOS directory and install CocoaPods dependencies:
-
+4. Navigate into the iOS directory and install CocoaPods dependencies:
    ```
    cd ios 
    pod install
    ```
-7. Verify your iPhone is detected in Xcode, you can see at the top of Xcode what device is being used, by default if all the steps were followed it should show your connected iphone:
-   If your iPhone does not appear:
-
-   - Ensure it is unlocked and connected
-   - Try a different USB port or cable
-   - Open Xcode > Preferences > Locations and make sure the latest Command Line Tools are selected
-8. Launch the project in Xcode:
-
-   ```
-   open Runner.xcworkspace
-   ```
-
-   In Xcode:
-
-   - Wait for the project to finish indexing and building (you can see the status at the top)
-   - Ensure your iPhone is selected as the run target in the top toolbar
-   - Press the Run button (the ▶ icon at the top left) to build and launch the app on your iPhone
-9. If your iPhone blocks the app with an "Untrusted Developer" warning:
-
-   - Open Settings on your iPhone
-   - Go to General > VPN & Device Management
-   - Tap your Apple ID under Developer App and tap Trust
-     Rerun the app in Xcode once this is done and you should have the app running on your device!
+5. Follow the steps listed here to get the app up and running on Xcode. We have already installed Cocapods and the flutter SDK so you can skip them. 
+    - [Start building Flutter iOS apps on macOS](https://docs.flutter.dev/get-started/install/macos/mobile-ios)
+        - Follow the steps in the guide based on you specific device/ios configuration and whether you want to run it on an emulator or a physcial ios device 
+    > Note: You do not need an apple development account just and apple ID which is stated in the linked steps
+6. Once all these setps are complete you should have a fully working application and be greeted with the login page. 
 
 ## Method 2: Run on Android (Windows or macOS)
 
