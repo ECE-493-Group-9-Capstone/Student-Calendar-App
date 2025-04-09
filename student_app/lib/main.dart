@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:student_app/features/events/events_page.dart';
-import 'package:student_app/features/social/friends_page.dart';
+import 'package:student_app/features/friends/friends_page.dart';
 import 'package:student_app/features/map/map_page.dart';
 import 'package:student_app/features/auth/auth_login_page.dart';
 import 'package:student_app/features/home/home_page.dart';

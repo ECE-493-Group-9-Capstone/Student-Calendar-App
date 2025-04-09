@@ -5,7 +5,7 @@ import 'package:student_app/utils/user_model.dart';
 import '../../user_singleton.dart';
 import 'friends_request_page.dart';
 import 'package:student_app/services/firebase_service.dart';
-import 'package:student_app/features/social/friends_profile_popup.dart';
+import 'package:student_app/features/friends/friends_profile_popup.dart';
 import 'package:student_app/utils/profile_picture_utils.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
