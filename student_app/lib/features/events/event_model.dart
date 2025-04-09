@@ -27,21 +27,19 @@ class Event {
     this.link,
   });
 
-  factory Event.fromMap(Map<String, dynamic> data, String id) {
-    return Event(
-      id: id,
-      title: data['title'] ?? '',
-      description: data['description'] ?? '',
-      startDate: (data['startDate'] as Timestamp).toDate(),
-      endDate: data['endDate'] != null
-          ? (data['endDate'] as Timestamp).toDate()
-          : null,
-      startTime: data['start_time'] ?? '',
-      endTime: data['end_time'] ?? '',
-      location: data['location'] ?? '',
-      coordinates: data['coordinates'] as Map<String, dynamic>?,
-      imageUrl: data['imageUrl'] as String?,
-      link: data['link'] as String?,
-    );
-  }
+  factory Event.fromMap(Map<String, dynamic> data, String id) => Event(
+        id: id,
+        title: data['title'] ?? '',
+        description: data['description'] ?? '',
+        startDate: (data['startDate'] as Timestamp).toDate(),
+        endDate: data['endDate'] != null
+            ? (data['endDate'] as Timestamp).toDate()
+            : null,
+        startTime: data['start_time'] ?? '',
+        endTime: data['end_time'] ?? '',
+        location: data['location'] ?? '',
+        coordinates: data['coordinates'] as Map<String, dynamic>?,
+        imageUrl: data['imageUrl'] as String?,
+        link: data['link'] as String?,
+      );
 }

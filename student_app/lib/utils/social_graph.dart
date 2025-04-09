@@ -13,7 +13,7 @@ class SocialGraph {
   SocialGraph._internal();
 
   Future<void> buildGraph() async {
-    List<UserModel> userList = await getAllUsers();
+    final List<UserModel> userList = await getAllUsers();
     users.clear();
     connections.clear();
 
@@ -33,7 +33,9 @@ class SocialGraph {
   }
 
   List<UserModel> getFriends(String userId) {
-    if (!connections.containsKey(userId)) return [];
+    if (!connections.containsKey(userId)) {
+      return [];
+    }
     return connections[userId]!
         .map((id) => users[id])
         .where((user) => user != null)
@@ -54,14 +56,16 @@ class SocialGraph {
   }
 
   List<UserModel> getFriendRecommendations(String userId) {
-    Set<String> recommended = {};
-    if (!connections.containsKey(userId)) return [];
+    final Set<String> recommended = {};
+    if (!connections.containsKey(userId)) {
+      return [];
+    }
 
-    List<String> friends = connections[userId]!;
-    Set<String> friendSet = friends.toSet();
+    final List<String> friends = connections[userId]!;
+    final Set<String> friendSet = friends.toSet();
 
     // Mutual Friends Logic
-    Map<String, int> mutualFriendCount = {};
+    final Map<String, int> mutualFriendCount = {};
 
     for (String friend in friends) {
       for (String mutual in connections[friend] ?? []) {
@@ -72,7 +76,7 @@ class SocialGraph {
     }
 
     // Discipline-based Logic
-    String userDiscipline = users[userId]?.discipline ?? "";
+    final String userDiscipline = users[userId]?.discipline ?? '';
     for (UserModel user in users.values) {
       if (user.ccid != userId &&
           user.discipline == userDiscipline &&
@@ -82,14 +86,14 @@ class SocialGraph {
     }
 
     // Sort by mutual friend count
-    List<String> sortedMutuals = mutualFriendCount.keys.toList()
+    final List<String> sortedMutuals = mutualFriendCount.keys.toList()
       ..sort((a, b) => mutualFriendCount[b]!.compareTo(mutualFriendCount[a]!));
 
     // Combine both, avoiding duplicates
-    Set<String> combined = {...sortedMutuals, ...recommended};
+    final Set<String> combined = {...sortedMutuals, ...recommended};
 
     // remove self, friends, and invalid users
-    List<UserModel> finalRecommendations = combined
+    final List<UserModel> finalRecommendations = combined
         .where((id) =>
             id != userId && !friendSet.contains(id) && users.containsKey(id))
         .map((id) => users[id]!)

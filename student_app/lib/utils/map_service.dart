@@ -4,11 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'firebase_wrapper.dart';
 import 'package:student_app/user_singleton.dart';
 
-class LocationTrackingService {
-  static final LocationTrackingService _instance =
-      LocationTrackingService._internal();
-  factory LocationTrackingService() => _instance;
-  LocationTrackingService._internal();
+class MapService {
+  static final MapService _instance = MapService._internal();
+  factory MapService() => _instance;
+  MapService._internal();
 
   StreamSubscription<Position>? _positionSubscription;
   Timer? _heartbeatTimer;
@@ -38,7 +37,9 @@ class LocationTrackingService {
 
   // Starts foreground tracking with heartbeat.
   Future<void> startForegroundTracking() async {
-    if (!await _checkAndRequestPermissions(background: false)) return;
+    if (!await _checkAndRequestPermissions(background: false)) {
+      return;
+    }
     await _testOneTimePosition();
     _subscribe(
       locationSettings: _buildSettings(isBackground: false),
@@ -59,11 +60,14 @@ class LocationTrackingService {
     bool enabled = await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
       enabled = await Geolocator.openLocationSettings();
-      if (!enabled) return false;
+      if (!enabled) {
+        return false;
+      }
     }
     LocationPermission perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied)
+    if (perm == LocationPermission.denied) {
       perm = await Geolocator.requestPermission();
+    }
     if (background && perm == LocationPermission.whileInUse) {
       perm = await Geolocator.requestPermission();
     }
@@ -73,7 +77,7 @@ class LocationTrackingService {
   // Gets a one-time position update.
   Future<void> _testOneTimePosition() async {
     try {
-      final Position p = await Geolocator.getCurrentPosition();
+      await Geolocator.getCurrentPosition();
     } catch (e) {
       debugPrint('One‑time getCurrentPosition error: $e');
     }
@@ -132,7 +136,8 @@ class LocationTrackingService {
   // Starts a periodic heartbeat to update location timestamp.
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(Duration(seconds: 30), (timer) async {
+    _heartbeatTimer =
+        Timer.periodic(const Duration(seconds: 30), (timer) async {
       if (_lastLatitude != null && _lastLongitude != null) {
         final ccid = AppUser.instance.ccid;
         if (ccid != null) {

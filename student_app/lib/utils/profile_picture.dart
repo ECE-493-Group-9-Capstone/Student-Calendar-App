@@ -8,9 +8,11 @@ import 'package:student_app/utils/cache_helper.dart'; // Contains loadCachedImag
 Future<Uint8List?> downloadImageBytes(String photoURL) async {
   try {
     final response = await http.get(Uri.parse(photoURL));
-    if (response.statusCode == 200) return response.bodyBytes;
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    }
   } catch (e) {
-    debugPrint("Error downloading image: $e");
+    debugPrint('Error downloading image: $e');
   }
   return null;
 }
@@ -21,20 +23,20 @@ class CachedProfileImage extends StatefulWidget {
   final double size;
   final String? fallbackText;
   final Color? fallbackBackgroundColor;
-  
+
   const CachedProfileImage({
-    Key? key,
+    super.key,
     required this.photoURL,
     this.size = 64,
     this.fallbackText,
     this.fallbackBackgroundColor,
-  }) : super(key: key);
+  });
 
   @override
-  _CachedProfileImageState createState() => _CachedProfileImageState();
+  CachedProfileImageState createState() => CachedProfileImageState();
 }
 
-class _CachedProfileImageState extends State<CachedProfileImage> {
+class CachedProfileImageState extends State<CachedProfileImage> {
   Future<Uint8List?>? _imageFuture;
 
   @override
@@ -50,10 +52,14 @@ class _CachedProfileImageState extends State<CachedProfileImage> {
     final key = 'circle_${photoURL.hashCode}_${widget.size}';
     // Try to load from cache
     Uint8List? bytes = await loadCachedImageBytes(key);
-    if (bytes != null) return bytes;
+    if (bytes != null) {
+      return bytes;
+    }
     // If not in cache, download the image
     bytes = await downloadImageBytes(photoURL);
-    if (bytes != null) await cacheImageBytes(key, bytes);
+    if (bytes != null) {
+      await cacheImageBytes(key, bytes);
+    }
     return bytes;
   }
 
@@ -83,8 +89,8 @@ class _CachedProfileImageState extends State<CachedProfileImage> {
           return SizedBox(
             width: widget.size,
             height: widget.size,
-            child: const Center(
-                child: CircularProgressIndicator(strokeWidth: 2)),
+            child:
+                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
           );
         }
         if (snapshot.hasData && snapshot.data != null) {

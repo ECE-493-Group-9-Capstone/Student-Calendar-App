@@ -5,14 +5,14 @@ import 'package:googleapis/calendar/v3.dart' as gcal;
 import 'package:intl/intl.dart';
 import 'package:student_app/main.dart'; // For AuthWrapper
 import 'package:student_app/user_singleton.dart';
-import 'package:student_app/utils/google_calendar_service.dart';
-import 'package:student_app/pages/google_signin.dart';
-import 'package:student_app/pages/calendar_page.dart';
+import 'package:student_app/utils/calendar_service.dart';
+import 'package:student_app/features/auth/auth_service.dart';
+import 'package:student_app/features/calendar/calendar_page.dart';
 import 'package:student_app/utils/social_graph.dart';
 import 'package:student_app/utils/user.dart';
 import 'package:student_app/utils/profile_picture.dart';
 import 'package:student_app/utils/event_service.dart';
-import 'package:student_app/pages/model/event_model.dart';
+import 'package:student_app/features/events/event_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -63,7 +63,9 @@ class _HomePageState extends State<HomePage> {
       final eventsToday =
           await calendarService.fetchTodayCalendarEvents(accessToken);
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       double? oldOffset;
 
@@ -92,15 +94,15 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  String _formatTime(DateTime dt) {
-    return DateFormat('h:mm a').format(dt);
-  }
+  String _formatTime(DateTime dt) => DateFormat('h:mm a').format(dt);
 
   Widget _buildTodayEventItem(gcal.Event event) {
-    final title = event.summary ?? "No Title";
+    final title = event.summary ?? 'No Title';
     final start = (event.start?.dateTime ?? event.start?.date)?.toLocal();
     final end = (event.end?.dateTime ?? event.end?.date)?.toLocal();
-    if (start == null || end == null) return const SizedBox();
+    if (start == null || end == null) {
+      return const SizedBox();
+    }
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -131,10 +133,10 @@ class _HomePageState extends State<HomePage> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
-                  BoxShadow(
-                    color: const Color.fromARGB(255, 190, 190, 190),
+                  const BoxShadow(
+                    color: Color.fromARGB(255, 190, 190, 190),
                     blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    offset: Offset(0, 4),
                   ),
                 ],
               ),
@@ -150,7 +152,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    "${_formatTime(start)} → ${_formatTime(end)}",
+                    '${_formatTime(start)} → ${_formatTime(end)}',
                     style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                   ),
                 ],
@@ -171,7 +173,7 @@ class _HomePageState extends State<HomePage> {
     final alreadyRequested = AppUser.instance.requestedFriends;
     final alreadyFriends = AppUser.instance.friends.map((f) => f.ccid).toList();
     final pendingRequestsToYou = AppUser.instance.friendRequests
-        .map((req) => req["id"] as String)
+        .map((req) => req['id'] as String)
         .toList();
 
     final raw = SocialGraph().getFriendRecommendations(AppUser.instance.ccid!);
@@ -193,118 +195,117 @@ class _HomePageState extends State<HomePage> {
     return unique;
   }
 
-Widget _buildRecommendedFriendTile(UserModel user) {
-  String initials = user.username
-      .split(" ")
-      .where((p) => p.isNotEmpty)
-      .map((e) => e[0])
-      .take(2)
-      .join()
-      .toUpperCase();
+  Widget _buildRecommendedFriendTile(UserModel user) {
+    final String initials = user.username
+        .split(' ')
+        .where((p) => p.isNotEmpty)
+        .map((e) => e[0])
+        .take(2)
+        .join()
+        .toUpperCase();
 
-  return Padding(
-    padding: const EdgeInsets.all(8.0), // Adds padding around the entire tile
-    child: Container(
-      width: 115,
-      margin: const EdgeInsets.only(right: 6), // Keeps the right margin for spacing between tiles
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color.fromARGB(255, 190, 190, 190),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 8),
-          CachedProfileImage(
-            photoURL: user.photoURL,
-            size: 60,
-            fallbackText: initials,
-            fallbackBackgroundColor: const Color(0xFF909533),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            user.username,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          Text(
-            user.ccid,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: Colors.black.withOpacity(0.5)),
-          ),
-          const SizedBox(height: 6),
-          InkWell(
-            onTap: () async {
-              await AppUser.instance.sendFriendRequest(user.ccid);
-              setState(() {
-                _recommendedFriendsFuture = _loadRecommendedFriends();
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                gradient: _greenGradient,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                "Add",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+    return Padding(
+      padding: const EdgeInsets.all(8.0), // Adds padding around the entire tile
+      child: Container(
+        width: 115,
+        margin: const EdgeInsets.only(
+            right: 6), // Keeps the right margin for spacing between tiles
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            const BoxShadow(
+              color: Color.fromARGB(255, 190, 190, 190),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 8),
+            CachedProfileImage(
+              photoURL: user.photoURL,
+              size: 60,
+              fallbackText: initials,
+              fallbackBackgroundColor: const Color(0xFF909533),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              user.username,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            Text(
+              user.ccid,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 12, color: Colors.black.withValues(alpha: 0.5)),
+            ),
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: () async {
+                await AppUser.instance.sendFriendRequest(user.ccid);
+                setState(() {
+                  _recommendedFriendsFuture = _loadRecommendedFriends();
+                });
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: _greenGradient,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Add',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-        ],
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
-    ),
-  );
-}
-
-
-  // The recommendations area always reserves a fixed height
-  Widget _buildRecommendedFriendsHorizontal() {
-    return FutureBuilder<List<UserModel>>(
-      future: _recommendedFriendsFuture,
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting ||
-            _isLoadingFriends) {
-          return const SizedBox(
-            height: 172,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (!snap.hasData || snap.data!.isEmpty) {
-          return const SizedBox(
-            height: 172,
-            child: Center(child: Text("No recommendations right now.")),
-          );
-        }
-        final recs = snap.data!;
-        return SizedBox(
-          height: 172,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: recs.length,
-            itemBuilder: (context, index) {
-              return _buildRecommendedFriendTile(recs[index]);
-            },
-          ),
-        );
-      },
     );
   }
+
+  // The recommendations area always reserves a fixed height
+  Widget _buildRecommendedFriendsHorizontal() => FutureBuilder<List<UserModel>>(
+        future: _recommendedFriendsFuture,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting ||
+              _isLoadingFriends) {
+            return const SizedBox(
+              height: 172,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (!snap.hasData || snap.data!.isEmpty) {
+            return const SizedBox(
+              height: 172,
+              child: Center(child: Text('No recommendations right now.')),
+            );
+          }
+          final recs = snap.data!;
+          return SizedBox(
+            height: 172,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: recs.length,
+              itemBuilder: (context, index) =>
+                  _buildRecommendedFriendTile(recs[index]),
+            ),
+          );
+        },
+      );
 
   Future<List<Event>> _loadUpcomingEvents() async {
     final now = DateTime.now();
@@ -322,123 +323,119 @@ Widget _buildRecommendedFriendTile(UserModel user) {
     }
     return upcoming;
   }
-Widget _buildUpcomingEventCard(Event event) {
-  final DateFormat dateFormatter = DateFormat('MMM d, yyyy');
-  final DateFormat timeFormatter = DateFormat('h:mm a');
-  String dateString;
-  if (event.endDate != null) {
-    dateString =
-        "${dateFormatter.format(event.startDate)} - ${dateFormatter.format(event.endDate!)}";
-  } else {
-    dateString = dateFormatter.format(event.startDate);
-  }
 
-  return Padding(
-    padding: const EdgeInsets.all(8.0), // Added padding around the entire card
-    child: Container(
-      width: 180,
-      margin: const EdgeInsets.only(right: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color.fromARGB(255, 190, 190, 190),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            child: Image.network(
-              event.imageUrl ?? '',
-              height: 90,
-              width: 180,
-              fit: BoxFit.cover,
-              errorBuilder: (ctx, err, stack) {
-                return Container(
+  Widget _buildUpcomingEventCard(Event event) {
+    final DateFormat dateFormatter = DateFormat('MMM d, yyyy');
+    final DateFormat timeFormatter = DateFormat('h:mm a');
+    String dateString;
+    if (event.endDate != null) {
+      dateString =
+          '${dateFormatter.format(event.startDate)} - ${dateFormatter.format(event.endDate!)}';
+    } else {
+      dateString = dateFormatter.format(event.startDate);
+    }
+
+    return Padding(
+      padding:
+          const EdgeInsets.all(8.0), // Added padding around the entire card
+      child: Container(
+        width: 180,
+        margin: const EdgeInsets.only(right: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            const BoxShadow(
+              color: Color.fromARGB(255, 190, 190, 190),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+              child: Image.network(
+                event.imageUrl ?? '',
+                height: 90,
+                width: 180,
+                fit: BoxFit.cover,
+                errorBuilder: (ctx, err, stack) => Container(
                   height: 90,
                   color: Colors.grey[300],
                   alignment: Alignment.center,
                   child: const Icon(Icons.broken_image),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Text(
-              event.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              "$dateString\n${timeFormatter.format(DateFormat('HH:mm').parse(event.startTime))} - ${timeFormatter.format(DateFormat('HH:mm').parse(event.endTime))}\n${event.location}",
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Text(
+                event.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    ),
-  );
-}
-
-  Widget _buildUpcomingEventsHorizontal() {
-    return FutureBuilder<List<Event>>(
-      future: _upcomingEventsFuture,
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 100,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (!snap.hasData || snap.data!.isEmpty) {
-          return const Text(
-              "No upcoming events in the next 30 days with images.");
-        }
-        final events = snap.data!;
-        return SizedBox(
-          height: 230,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.only(bottom: 4),
-            itemCount: events.length,
-            itemBuilder: (ctx, index) {
-              return _buildUpcomingEventCard(events[index]);
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildWavyHeader(Size size) {
-    return ClipPath(
-      clipper: _TopWaveClipper(),
-      child: Container(
-        height: 150,
-        width: size.width,
-        decoration: BoxDecoration(
-          gradient: _greenGradient,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                "$dateString\n${timeFormatter.format(DateFormat('HH:mm').parse(event.startTime))} - ${timeFormatter.format(DateFormat('HH:mm').parse(event.endTime))}\n${event.location}",
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildUpcomingEventsHorizontal() => FutureBuilder<List<Event>>(
+        future: _upcomingEventsFuture,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const SizedBox(
+              height: 100,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (!snap.hasData || snap.data!.isEmpty) {
+            return const Text(
+                'No upcoming events in the next 30 days with images.');
+          }
+          final events = snap.data!;
+          return SizedBox(
+            height: 230,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(bottom: 4),
+              itemCount: events.length,
+              itemBuilder: (ctx, index) =>
+                  _buildUpcomingEventCard(events[index]),
+            ),
+          );
+        },
+      );
+
+  Widget _buildWavyHeader(Size size) => ClipPath(
+        clipper: _TopWaveClipper(),
+        child: Container(
+          height: 150,
+          width: size.width,
+          decoration: BoxDecoration(
+            gradient: _greenGradient,
+          ),
+        ),
+      );
 
   @override
   void dispose() {
@@ -485,10 +482,10 @@ Widget _buildUpcomingEventCard(Event event) {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
-                              BoxShadow(
+                              const BoxShadow(
                                 color: Colors.black26,
                                 blurRadius: 4,
-                                offset: const Offset(0, 2),
+                                offset: Offset(0, 2),
                               ),
                             ],
                           ),
@@ -542,10 +539,10 @@ Widget _buildUpcomingEventCard(Event event) {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
-                            BoxShadow(
-                              color: const Color.fromARGB(255, 190, 190, 190),
+                            const BoxShadow(
+                              color: Color.fromARGB(255, 190, 190, 190),
                               blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              offset: Offset(0, 4),
                             ),
                           ],
                         ),
@@ -566,7 +563,7 @@ Widget _buildUpcomingEventCard(Event event) {
                                     child: CircularProgressIndicator())
                                 : _todayEvents.isEmpty
                                     ? const Text(
-                                        "No events for today.",
+                                        'No events for today.',
                                         style: TextStyle(fontSize: 16),
                                       )
                                     : SizedBox(
@@ -596,7 +593,7 @@ Widget _buildUpcomingEventCard(Event event) {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Text(
-                                      "View Full Calendar",
+                                      'View Full Calendar',
                                       style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold),
@@ -639,10 +636,10 @@ Widget _buildUpcomingEventCard(Event event) {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
-                        BoxShadow(
-                          color: const Color.fromARGB(255, 190, 190, 190),
+                        const BoxShadow(
+                          color: Color.fromARGB(255, 190, 190, 190),
                           blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          offset: Offset(0, 4),
                         ),
                       ],
                     ),
@@ -650,7 +647,7 @@ Widget _buildUpcomingEventCard(Event event) {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         GradientText(
-                          "Recommended Friends",
+                          'Recommended Friends',
                           gradient: _greenGradient,
                           style: const TextStyle(
                             fontSize: 20,
@@ -671,10 +668,10 @@ Widget _buildUpcomingEventCard(Event event) {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
-                        BoxShadow(
-                          color: const Color.fromARGB(255, 190, 190, 190),
+                        const BoxShadow(
+                          color: Color.fromARGB(255, 190, 190, 190),
                           blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          offset: Offset(0, 4),
                         ),
                       ],
                     ),
@@ -682,7 +679,7 @@ Widget _buildUpcomingEventCard(Event event) {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         GradientText(
-                          "Upcoming Events",
+                          'Upcoming Events',
                           gradient: _greenGradient,
                           style: const TextStyle(
                             fontSize: 20,
@@ -718,24 +715,22 @@ class GradientText extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return ShaderMask(
-      shaderCallback: (bounds) => gradient.createShader(
-        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-      ),
-      child: Text(
-        text,
-        style: style?.copyWith(color: Colors.white),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ShaderMask(
+        shaderCallback: (bounds) => gradient.createShader(
+          Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+        ),
+        child: Text(
+          text,
+          style: style?.copyWith(color: Colors.white),
+        ),
+      );
 }
 
 //----- Custom Clipper -----//
 class _TopWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
-    Path path = Path();
+    final Path path = Path();
     path.lineTo(0, size.height * 0.8);
 
     final firstControlPoint = Offset(size.width * 0.25, size.height);

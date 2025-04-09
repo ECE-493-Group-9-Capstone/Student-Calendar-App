@@ -9,16 +9,16 @@ class StudySpotService {
 
   Future<List<Map<String, dynamic>>> getAllStudySpots() async {
     try {
-      QuerySnapshot querySnapshot =
+      final QuerySnapshot querySnapshot =
           await firestore.collection('studySpots').get();
 
-      List<Map<String, dynamic>> allStudySpots = querySnapshot.docs
-          .map((doc) => {"id": doc.id, ...doc.data() as Map<String, dynamic>})
+      final List<Map<String, dynamic>> allStudySpots = querySnapshot.docs
+          .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
           .toList();
 
       return allStudySpots;
     } catch (e) {
-      debugPrint("Error fetching Study Spots: $e");
+      debugPrint('Error fetching Study Spots: $e');
       return [];
     }
   }
@@ -26,18 +26,18 @@ class StudySpotService {
   // get studySpot by name
   Future<List<Map<String, dynamic>>> getStudySpotByName(String name) async {
     try {
-      QuerySnapshot querySnapshot = await firestore
+      final QuerySnapshot querySnapshot = await firestore
           .collection('studySpots')
           .where('name', isEqualTo: name)
           .get();
 
-      List<Map<String, dynamic>> studySpots = querySnapshot.docs
-          .map((doc) => {"id": doc.id, ...doc.data() as Map<String, dynamic>})
+      final List<Map<String, dynamic>> studySpots = querySnapshot.docs
+          .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
           .toList();
 
       return studySpots;
     } catch (e) {
-      debugPrint("Error fetching Study Spots by name: $e");
+      debugPrint('Error fetching Study Spots by name: $e');
       return [];
     }
   }
@@ -47,7 +47,7 @@ class StudySpotService {
     try {
       await firestore.collection('studySpots').doc(id).update({field: value});
     } catch (e) {
-      debugPrint("Error editing Study Spots: $e");
+      debugPrint('Error editing Study Spots: $e');
     }
   }
 
@@ -66,7 +66,7 @@ class StudySpotService {
       });
       await updateAverageRating(spotId);
     } catch (e) {
-      debugPrint("Error rating Study Spot: $e");
+      debugPrint('Error rating Study Spot: $e');
     }
   }
 
@@ -84,14 +84,14 @@ class StudySpotService {
         for (var doc in ratingsSnapshot.docs) {
           totalRating += doc['rating'];
         }
-        double averageRating = totalRating / ratingsSnapshot.docs.length;
+        final double averageRating = totalRating / ratingsSnapshot.docs.length;
 
         await firestore.collection('studySpots').doc(spotId).update({
           'averageRating': averageRating,
         });
       }
     } catch (e) {
-      debugPrint("Error updating average rating: $e");
+      debugPrint('Error updating average rating: $e');
     }
   }
 
@@ -103,7 +103,7 @@ class StudySpotService {
         return doc.data()?['averageRating'] ?? 0.0;
       }
     } catch (e) {
-      debugPrint("Error fetching Study Spot rating: $e");
+      debugPrint('Error fetching Study Spot rating: $e');
     }
     return 0.0;
   }
@@ -111,19 +111,19 @@ class StudySpotService {
   // get all ratings for a studySpot
   Future<List<Map<String, dynamic>>> getAllRatingsForSpot(String spotId) async {
     try {
-      QuerySnapshot querySnapshot = await firestore
+      final QuerySnapshot querySnapshot = await firestore
           .collection('studySpots')
           .doc(spotId)
           .collection('ratings')
           .get();
 
-      List<Map<String, dynamic>> ratings = querySnapshot.docs
-          .map((doc) => {"id": doc.id, ...doc.data() as Map<String, dynamic>})
+      final List<Map<String, dynamic>> ratings = querySnapshot.docs
+          .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
           .toList();
 
       return ratings;
     } catch (e) {
-      debugPrint("Error fetching Study Spot ratings: $e");
+      debugPrint('Error fetching Study Spot ratings: $e');
       return [];
     }
   }

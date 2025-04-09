@@ -1,21 +1,20 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:student_app/pages/events_page.dart';
-import 'package:student_app/pages/friends_page.dart';
-import 'package:student_app/pages/map_page.dart';
-import 'package:student_app/pages/on_boarding.dart';
-import 'package:student_app/pages/home_page.dart';
+import 'package:student_app/features/events/events_page.dart';
+import 'package:student_app/features/social/friends_page.dart';
+import 'package:student_app/features/map/map_page.dart';
+import 'package:student_app/features/auth/auth_login_page.dart';
+import 'package:student_app/features/home/home_page.dart';
 import 'firebase_options.dart';
 import 'user_singleton.dart';
 import 'utils/firebase_wrapper.dart';
-import 'pages/model/bottom_popup.dart';
-import 'utils/location_service.dart';
+import 'features/onboarding/onboarding_bottom_popup.dart';
+import 'utils/map_service.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:student_app/pages/discovery_page.dart';
-import './pages/google_signin.dart';
+import 'features/auth/auth_service.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
@@ -117,20 +116,19 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
   Widget _getPage(int index) {
     if (_pages[index] == null) {
       switch (index) {
-  case 0:
-    _pages[index] = HomePage();
-    break;
-  case 1:
-    _pages[index] = FriendsPage();
-    break;
-  case 2:
-    _pages[index] = MapPage(key: _mapPageKey);
-    break;
-  case 3:
-    _pages[index] = EventsPage();
-    break;
-}
-
+        case 0:
+          _pages[index] = const HomePage();
+          break;
+        case 1:
+          _pages[index] = const FriendsPage();
+          break;
+        case 2:
+          _pages[index] = MapPage(key: _mapPageKey);
+          break;
+        case 3:
+          _pages[index] = const EventsPage();
+          break;
+      }
     }
     return _pages[index]!;
   }
@@ -153,22 +151,24 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () async {
-      if (_lastState == state) return;
+      if (_lastState == state) {
+        return;
+      }
       _lastState = state;
       final pref = AppUser.instance.locationTracking;
       final ccid = AppUser.instance.ccid;
       if (ccid != null) {
         updateUserActiveStatus(ccid, state == AppLifecycleState.resumed);
-        LocationTrackingService().stopTracking();
+        MapService().stopTracking();
         final userData = await fetchUserData(ccid);
         final hasSeen = userData?['hasSeenBottomPopup'] ?? false;
         if (hasSeen) {
           if (state == AppLifecycleState.resumed) {
-            LocationTrackingService().startForegroundTracking();
+            MapService().startForegroundTracking();
           } else if ((state == AppLifecycleState.paused ||
                   state == AppLifecycleState.detached) &&
               pref == 'Live Tracking') {
-            LocationTrackingService().startLiveTracking();
+            MapService().startLiveTracking();
           }
         }
       }
@@ -177,10 +177,12 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   Future<void> _initializeApp() async {
     final ccid = AppUser.instance.ccid;
-    if (ccid == null) return;
+    if (ccid == null) {
+      return;
+    }
     Future.delayed(const Duration(seconds: 2), () async {
       final userData = await fetchUserData(ccid);
-      bool hasSeen = userData?['hasSeenBottomPopup'] ?? false;
+      final bool hasSeen = userData?['hasSeenBottomPopup'] ?? false;
       if (!hasSeen) {
         final firstName = (AppUser.instance.name ?? 'Guest').split(' ').first;
         await showModalBottomSheet(
@@ -196,13 +198,13 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
         final updatedPref = updatedData?['location_tracking'];
         if (updatedPref == 'Live Tracking' ||
             updatedPref == 'Only When Using App') {
-          LocationTrackingService().startForegroundTracking();
+          MapService().startForegroundTracking();
         }
       } else {
         final pref = AppUser.instance.locationTracking;
         if (pref == 'Live Tracking' || pref == 'Only When Using App') {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            LocationTrackingService().startForegroundTracking();
+            MapService().startForegroundTracking();
           });
         }
       }
@@ -213,7 +215,9 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
     setState(() {
       _currentIndex = index;
     });
-    if (index == 2) _mapPageKey.currentState?.refreshMarkers();
+    if (index == 2) {
+      _mapPageKey.currentState?.refreshMarkers();
+    }
   }
 
   Widget _buildNavItem(IconData icon, bool isSelected) => isSelected
@@ -221,14 +225,14 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
           width: 60,
           height: 60,
           alignment: Alignment.center,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             shape: BoxShape.circle,
             color: Colors.white,
             boxShadow: [
               BoxShadow(
                 color: Colors.black26,
                 blurRadius: 8,
-                offset: const Offset(0, 4),
+                offset: Offset(0, 4),
               )
             ],
           ),
@@ -237,54 +241,52 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
       : Icon(icon, size: 30, color: Colors.white);
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: List.generate(4, (index) {
-          return Offstage(
-            offstage: _currentIndex != index,
-            child: TickerMode(
-              enabled: _currentIndex == index,
-              child: _getPage(index),
-            ),
-          );
-        }),
-      ),
-      bottomNavigationBar: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          Container(
-            height: 55,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF396548),
-                  const Color(0xFF6B803D),
-                  const Color(0xFF909533),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+  Widget build(BuildContext context) => Scaffold(
+        body: Stack(
+          children: List.generate(
+              4,
+              (index) => Offstage(
+                    offstage: _currentIndex != index,
+                    child: TickerMode(
+                      enabled: _currentIndex == index,
+                      child: _getPage(index),
+                    ),
+                  )),
+        ),
+        bottomNavigationBar: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            Container(
+              height: 55,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF396548),
+                    Color(0xFF6B803D),
+                    Color(0xFF909533),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
             ),
-          ),
-          CurvedNavigationBar(
-            index: _currentIndex,
-            height: 55,
-            backgroundColor: Colors.transparent,
-            buttonBackgroundColor: Colors.transparent,
-            animationCurve: Curves.easeInOut,
-            animationDuration: const Duration(milliseconds: 300),
-            items: [
-              _buildNavItem(Icons.home, _currentIndex == 0),
-              _buildNavItem(Icons.group, _currentIndex == 1),
-              _buildNavItem(Icons.map, _currentIndex == 2),
-              _buildNavItem(Icons.event, _currentIndex == 3),
-            ],
-            onTap: _onTabTapped,
-            color: Colors.transparent.withOpacity(0.3),
-          ),
-        ],
-      ),
-    );
-  }
+            CurvedNavigationBar(
+              index: _currentIndex,
+              height: 55,
+              backgroundColor: Colors.transparent,
+              buttonBackgroundColor: Colors.transparent,
+              animationCurve: Curves.easeInOut,
+              animationDuration: const Duration(milliseconds: 300),
+              items: [
+                _buildNavItem(Icons.home, _currentIndex == 0),
+                _buildNavItem(Icons.group, _currentIndex == 1),
+                _buildNavItem(Icons.map, _currentIndex == 2),
+                _buildNavItem(Icons.event, _currentIndex == 3),
+              ],
+              onTap: _onTabTapped,
+              color: Colors.transparent.withValues(alpha: 0.3),
+            ),
+          ],
+        ),
+      );
 }

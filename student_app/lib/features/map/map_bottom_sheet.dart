@@ -4,27 +4,26 @@ import 'dart:async';
 import 'package:student_app/utils/firebase_wrapper.dart';
 import 'package:student_app/utils/profile_picture.dart';
 
-class MapsBottomSheet extends StatefulWidget {
+class MapBottomSheet extends StatefulWidget {
   final DraggableScrollableController draggableController;
   final List<dynamic> friends;
   final Set<String> hiddenFromMe;
   final ValueNotifier<Map<String, DateTime?>> lastUpdatedNotifier;
   final void Function(dynamic friend) onFriendTap;
 
-  const MapsBottomSheet(
-      {Key? key,
+  const MapBottomSheet(
+      {super.key,
       required this.draggableController,
       required this.friends,
       required this.lastUpdatedNotifier,
       required this.onFriendTap,
-      required this.hiddenFromMe})
-      : super(key: key);
+      required this.hiddenFromMe});
 
   @override
-  _MapsBottomSheetState createState() => _MapsBottomSheetState();
+  MapBottomSheetState createState() => MapBottomSheetState();
 }
 
-class _MapsBottomSheetState extends State<MapsBottomSheet> {
+class MapBottomSheetState extends State<MapBottomSheet> {
   StreamSubscription? _friendLocationSubscription;
   Map<String, bool> mapFilters = {
     'Study Spots': true,
@@ -38,16 +37,15 @@ class _MapsBottomSheetState extends State<MapsBottomSheet> {
     _initializeAndSubscribe();
   }
 
-  Set<String> _getFriendIds(List<dynamic> friends) {
-    return friends.map<String>((friend) => friend.ccid as String).toSet();
-  }
+  Set<String> _getFriendIds(List<dynamic> friends) =>
+      friends.map<String>((friend) => friend.ccid as String).toSet();
 
   Future<void> _initializeAndSubscribe() async {
     if (widget.friends.isEmpty) {
       return;
     } else {
       await initializeLastSeen(widget.friends, widget.lastUpdatedNotifier);
-      List<String> friendIds = widget.friends
+      final List<String> friendIds = widget.friends
           .map<String>((friend) => friend.ccid as String)
           .toList();
       _friendLocationSubscription =
@@ -56,7 +54,7 @@ class _MapsBottomSheetState extends State<MapsBottomSheet> {
   }
 
   @override
-  void didUpdateWidget(covariant MapsBottomSheet oldWidget) {
+  void didUpdateWidget(covariant MapBottomSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
     final oldFriendIds = _getFriendIds(oldWidget.friends);
     final newFriendIds = _getFriendIds(widget.friends);
@@ -74,17 +72,15 @@ class _MapsBottomSheetState extends State<MapsBottomSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: DraggableScrollableSheet(
-        controller: widget.draggableController,
-        initialChildSize: 0.4,
-        minChildSize: 0.1,
-        maxChildSize: 0.6,
-        builder: (_, scrollController) {
-          return Container(
+  Widget build(BuildContext context) => Positioned.fill(
+        child: DraggableScrollableSheet(
+          controller: widget.draggableController,
+          initialChildSize: 0.4,
+          minChildSize: 0.1,
+          maxChildSize: 0.6,
+          builder: (_, scrollController) => Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(20)),
             ),
@@ -128,11 +124,9 @@ class _MapsBottomSheetState extends State<MapsBottomSheet> {
                 ),
               ],
             ),
-          );
-        },
-      ),
-    );
-  }
+          ),
+        ),
+      );
 }
 
 class _FriendsList extends StatelessWidget {
@@ -153,8 +147,8 @@ class _FriendsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (friends.isEmpty) {
-  return const Center(child: Text("No friends yet"));
-}
+      return const Center(child: Text('No friends yet'));
+    }
 
     return ListView.separated(
       controller: controller,
@@ -181,25 +175,27 @@ class FriendTile extends StatefulWidget {
   final bool isHiddenFromMe;
 
   const FriendTile({
-    Key? key,
+    super.key,
     required this.friend,
     required this.lastUpdatedNotifier,
     required this.onTap,
     required this.isHiddenFromMe,
-  }) : super(key: key);
+  });
 
   @override
-  _FriendTileState createState() => _FriendTileState();
+  FriendTileState createState() => FriendTileState();
 }
 
-class _FriendTileState extends State<FriendTile> {
+class FriendTileState extends State<FriendTile> {
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
     });
   }
 
@@ -212,7 +208,7 @@ class _FriendTileState extends State<FriendTile> {
   @override
   Widget build(BuildContext context) {
     final fallbackInitials = (widget.friend.username?.toString() ?? '')
-        .split(" ")
+        .split(' ')
         .where((p) => p.isNotEmpty)
         .map((e) => e[0])
         .take(2)

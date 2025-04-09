@@ -1,17 +1,17 @@
+// ignore_for_file: unused_import
+
 import 'package:flutter/material.dart';
 import 'dart:typed_data';
-import '../user_singleton.dart';
-import '../utils/user.dart';
-import '../utils/social_graph.dart';
+import '../../user_singleton.dart';
+import '../../utils/user.dart';
+import '../../utils/social_graph.dart';
 import 'package:student_app/utils/firebase_wrapper.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/widgets.dart';
 import 'package:student_app/utils/profile_picture.dart';
 
 /// Widget that shows a user's profile popup including their profile image.
-class UserProfilePopup extends StatelessWidget {
+class FriendsUserNotificationPopup extends StatelessWidget {
   final String userId;
-  const UserProfilePopup({Key? key, required this.userId}) : super(key: key);
+  const FriendsUserNotificationPopup({super.key, required this.userId});
 
   /// Retrieves a user's profile data.
   Future<UserModel> getUserProfile(String userId) async {
@@ -20,42 +20,41 @@ class UserProfilePopup extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<UserModel>(
-      future: getUserProfile(userId),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final user = snapshot.data!;
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CachedProfileImage(
-                photoURL: user.photoURL,
-                size: 80,
-                fallbackText: user.username
-                    .split(" ")
-                    .where((p) => p.isNotEmpty)
-                    .map((e) => e[0])
-                    .take(2)
-                    .join()
-                    .toUpperCase(),
-                fallbackBackgroundColor: const Color(0xFF909533),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                user.username,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => FutureBuilder<UserModel>(
+        future: getUserProfile(userId),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final user = snapshot.data!;
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CachedProfileImage(
+                  photoURL: user.photoURL,
+                  size: 80,
+                  fallbackText: user.username
+                      .split(' ')
+                      .where((p) => p.isNotEmpty)
+                      .map((e) => e[0])
+                      .take(2)
+                      .join()
+                      .toUpperCase(),
+                  fallbackBackgroundColor: const Color(0xFF909533),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  user.username,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          );
+        },
+      );
 }
 
 /// Gradient constant for tile decorations.
@@ -71,13 +70,13 @@ const _tileGradient = LinearGradient(
 
 /// UserNotificationPopup widget that displays friend requests and friend recommendations.
 class UserNotificationPopup extends StatefulWidget {
-  const UserNotificationPopup({Key? key}) : super(key: key);
+  const UserNotificationPopup({super.key});
 
   @override
-  _UserNotificationPopupState createState() => _UserNotificationPopupState();
+  UserNotificationPopupState createState() => UserNotificationPopupState();
 }
 
-class _UserNotificationPopupState extends State<UserNotificationPopup> {
+class UserNotificationPopupState extends State<UserNotificationPopup> {
   late Future<List<UserModel>> recommendedFriends;
 
   /// Initializes the recommended friends future.
@@ -91,16 +90,18 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
   Future<List<UserModel>> loadRecommendedFriends() async {
     await AppUser.instance.refreshUserData();
     await SocialGraph().updateGraph();
-    List<String> alreadyRequested = AppUser.instance.requestedFriends;
-    List<String> alreadyFriends = AppUser.instance.friends.map((f) => f.ccid).toList();
-    List<String> pendingRequestsToYou = AppUser.instance.friendRequests
-        .map((req) => req["id"] as String)
+    final List<String> alreadyRequested = AppUser.instance.requestedFriends;
+    final List<String> alreadyFriends =
+        AppUser.instance.friends.map((f) => f.ccid).toList();
+    final List<String> pendingRequestsToYou = AppUser.instance.friendRequests
+        .map((req) => req['id'] as String)
         .toList();
 
-    List<UserModel> raw = SocialGraph().getFriendRecommendations(AppUser.instance.ccid!);
+    final List<UserModel> raw =
+        SocialGraph().getFriendRecommendations(AppUser.instance.ccid!);
     final seen = <String>{};
-    List<UserModel> unique = [];
-   
+    final List<UserModel> unique = [];
+
     for (var user in raw) {
       if (!seen.contains(user.ccid) &&
           !alreadyRequested.contains(user.ccid) &&
@@ -115,13 +116,14 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
   }
 
   Widget buildFriendRequestTile(Map<String, dynamic> request) {
-    String name = request["name"] ?? "Unknown";
-    String id = request["id"];
-    String initials = name.isNotEmpty
-        ? name.split(" ").map((e) => e[0]).take(2).join().toUpperCase()
-        : "?";
+    final String name = request['name'] ?? 'Unknown';
+    final String id = request['id'];
+    final String initials = name.isNotEmpty
+        ? name.split(' ').map((e) => e[0]).take(2).join().toUpperCase()
+        : '?';
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8).add(const EdgeInsets.only(bottom: 20)),
+      padding: const EdgeInsets.symmetric(horizontal: 8)
+          .add(const EdgeInsets.only(bottom: 20)),
       child: Container(
         height: 100,
         decoration: BoxDecoration(
@@ -129,7 +131,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
           gradient: _tileGradient,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 5,
               offset: const Offset(0, 2),
             ),
@@ -145,7 +147,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
             children: [
               const SizedBox(width: 20),
               CachedProfileImage(
-                photoURL: request["photoURL"],
+                photoURL: request['photoURL'],
                 size: 64,
                 fallbackText: initials,
                 fallbackBackgroundColor: const Color(0xFF909533),
@@ -159,7 +161,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                     Text(
                       name,
                       style: const TextStyle(
-                        fontSize: 15, 
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,
@@ -169,8 +171,8 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                     Text(
                       id,
                       style: TextStyle(
-                        fontSize: 14, 
-                        color: Colors.black.withOpacity(0.5),
+                        fontSize: 14,
+                        color: Colors.black.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -180,7 +182,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
               GestureDetector(
                 onTap: () async {
                   await AppUser.instance.addFriend(id);
-                  await AppUser.instance.refreshUserData(); 
+                  await AppUser.instance.refreshUserData();
                   setState(() {
                     recommendedFriends = loadRecommendedFriends();
                   });
@@ -188,7 +190,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                 child: Container(
                   width: 40,
                   height: 40,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: _tileGradient,
                   ),
@@ -206,7 +208,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                 child: Container(
                   width: 40,
                   height: 40,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: _tileGradient,
                   ),
@@ -218,7 +220,8 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                     ),
                     child: Center(
                       child: ShaderMask(
-                        shaderCallback: (bounds) => _tileGradient.createShader(bounds),
+                        shaderCallback: (bounds) =>
+                            _tileGradient.createShader(bounds),
                         child: const Icon(
                           Icons.close,
                           size: 24,
@@ -238,14 +241,15 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
   }
 
   Widget buildRecommendedFriendTile(UserModel user) {
-    String initials = user.username
-        .split(" ")
-        .map((e) => e.isNotEmpty ? e[0] : "")
+    final String initials = user.username
+        .split(' ')
+        .map((e) => e.isNotEmpty ? e[0] : '')
         .take(2)
         .join()
         .toUpperCase();
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8).add(const EdgeInsets.only(bottom: 20)),
+      padding: const EdgeInsets.symmetric(horizontal: 8)
+          .add(const EdgeInsets.only(bottom: 20)),
       child: Container(
         height: 100,
         decoration: BoxDecoration(
@@ -253,7 +257,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
           gradient: _tileGradient,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 5,
               offset: const Offset(0, 2),
             ),
@@ -284,7 +288,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                     Text(
                       user.username,
                       style: const TextStyle(
-                        fontSize: 15, 
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,
@@ -295,7 +299,7 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                       user.ccid,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -309,7 +313,8 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                   });
                 },
                 icon: ShaderMask(
-                  shaderCallback: (bounds) => _tileGradient.createShader(bounds),
+                  shaderCallback: (bounds) =>
+                      _tileGradient.createShader(bounds),
                   child: const Icon(
                     Icons.add,
                     size: 30,
@@ -337,24 +342,28 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            List<Map<String, dynamic>> friendRequests = AppUser.instance.friendRequests;
+            final List<Map<String, dynamic>> friendRequests =
+                AppUser.instance.friendRequests;
             return Padding(
               padding: const EdgeInsets.only(left: 8, right: 8, bottom: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Friend Requests",
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black54),
+                    'Friend Requests',
+                    style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54),
                   ),
                   const SizedBox(height: 13),
                   friendRequests.isEmpty
                       ? SizedBox(
                           height: sectionHeight,
-                          child: Center(
+                          child: const Center(
                             child: Text(
-                              "No friend requests found.",
-                              style: const TextStyle(fontSize: 16),
+                              'No friend requests found.',
+                              style: TextStyle(fontSize: 16),
                             ),
                           ),
                         )
@@ -362,15 +371,17 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                           height: sectionHeight,
                           child: ListView.builder(
                             itemCount: friendRequests.length,
-                            itemBuilder: (context, index) {
-                              return buildFriendRequestTile(friendRequests[index]);
-                            },
+                            itemBuilder: (context, index) =>
+                                buildFriendRequestTile(friendRequests[index]),
                           ),
                         ),
                   const SizedBox(height: 20),
                   const Text(
-                    "Friend Recommendations",
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black54),
+                    'Friend Recommendations',
+                    style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54),
                   ),
                   const SizedBox(height: 13),
                   FutureBuilder<List<UserModel>>(
@@ -381,10 +392,10 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                       } else if (!snap.hasData || snap.data!.isEmpty) {
                         return SizedBox(
                           height: sectionHeight,
-                          child: Center(
+                          child: const Center(
                             child: Text(
-                              "No recommendations right now.",
-                              style: const TextStyle(fontSize: 16),
+                              'No recommendations right now.',
+                              style: TextStyle(fontSize: 16),
                             ),
                           ),
                         );
@@ -392,7 +403,10 @@ class _UserNotificationPopupState extends State<UserNotificationPopup> {
                         return SizedBox(
                           height: sectionHeight,
                           child: ListView(
-                            children: snap.data!.take(5).map(buildRecommendedFriendTile).toList(),
+                            children: snap.data!
+                                .take(5)
+                                .map(buildRecommendedFriendTile)
+                                .toList(),
                           ),
                         );
                       }

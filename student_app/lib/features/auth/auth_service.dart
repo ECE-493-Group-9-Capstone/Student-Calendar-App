@@ -18,15 +18,9 @@ class AuthService {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
-        log("Google sign-in canceled by the user.");
+        log('Google sign-in canceled by the user.');
         return null;
       }
-
-      // if (!googleUser.email.endsWith("@gmail.com")) {
-      //   await _googleSignIn.signOut();
-      //   log("Non-UAlberta email used: ${googleUser.email}");
-      //   return null;
-      // }
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
@@ -38,23 +32,23 @@ class AuthService {
 
       final UserCredential userCredential =
           await _auth.signInWithCredential(credential);
-      log("User signed in: ${userCredential.user?.displayName}");
+      log('User signed in: ${userCredential.user?.displayName}');
 
       final String? profilePicUrl =
           googleUser.photoUrl; // or userCredential.user?.photoURL
-      log("Profile picture URL: $profilePicUrl");
+      log('Profile picture URL: $profilePicUrl');
 
       // Process ccid only once.
       final String ccid =
           userCredential.user?.email?.split('@')[0] ?? userCredential.user!.uid;
 
       return {
-        'displayName': userCredential.user?.displayName ?? "New User",
+        'displayName': userCredential.user?.displayName ?? 'New User',
         'ccid': ccid,
-        'photoURL': profilePicUrl ?? "",
+        'photoURL': profilePicUrl ?? '',
       };
     } catch (e) {
-      log("Error during Google sign-in: $e");
+      log('Error during Google sign-in: $e');
       return null;
     }
   }
@@ -63,9 +57,9 @@ class AuthService {
     try {
       await _googleSignIn.signOut();
       await _auth.signOut();
-      log("User signed out successfully.");
+      log('User signed out successfully.');
     } catch (e) {
-      log("Error during sign-out: $e");
+      log('Error during sign-out: $e');
     }
   }
 

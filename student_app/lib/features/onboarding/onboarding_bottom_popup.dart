@@ -1,9 +1,9 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
-import 'welcome_view.dart';
-import 'discipline_view.dart';
-import 'socials_view.dart';
-import 'location_permission.dart';
+import 'onboarding_welcome_view.dart';
+import 'onboarding_discipline_view.dart';
+import 'onboarding_socials_view.dart';
+import 'onboarding_location_view.dart';
 import 'package:student_app/user_singleton.dart';
 import 'package:student_app/utils/firebase_wrapper.dart';
 import 'dart:developer' as developer;
@@ -27,36 +27,36 @@ class BottomPopupState extends State<BottomPopup> {
   String? _selectedEducationLevel;
   String? _selectedDegree;
   String? _selectedMajor;
-  String _selectedLocationOption = "Only When Using App";
+  String _selectedLocationOption = 'Only When Using App';
 
-  final List<String> _educationLevels = ["Undergraduate", "Graduate"];
+  final List<String> _educationLevels = ['Undergraduate', 'Graduate'];
   final List<String> _degreeOptions = [
-    "Bachelor of Science",
-    "Bachelor of Arts",
-    "Bachelor of Engineering",
-    "Master of Science",
-    "Master of Arts",
-    "Master of Engineering"
+    'Bachelor of Science',
+    'Bachelor of Arts',
+    'Bachelor of Engineering',
+    'Master of Science',
+    'Master of Arts',
+    'Master of Engineering'
   ];
   final List<String> _majorOptions = [
-    "Computer Science",
-    "Business",
-    "Engineering",
-    "Psychology",
-    "Biology",
-    "Art"
+    'Computer Science',
+    'Business',
+    'Engineering',
+    'Psychology',
+    'Biology',
+    'Art'
   ];
 
   @override
   void initState() {
     super.initState();
     _currentStep = _savedStep;
-    developer.log("BottomPopup initState: _savedStep=$_savedStep",
+    developer.log('BottomPopup initState: _savedStep=$_savedStep',
         name: 'BottomPopup');
   }
 
   void _updateLocationPreference(String preference) {
-    developer.log("Updating location preference to: $preference",
+    developer.log('Updating location preference to: $preference',
         name: 'BottomPopup');
     setState(() {
       _selectedLocationOption = preference;
@@ -64,7 +64,7 @@ class BottomPopupState extends State<BottomPopup> {
   }
 
   Widget _buildContent() {
-    developer.log("Building content for step: $_currentStep",
+    developer.log('Building content for step: $_currentStep',
         name: 'BottomPopup');
     switch (_currentStep) {
       case 0:
@@ -107,7 +107,7 @@ class BottomPopupState extends State<BottomPopup> {
       icon = Icons.arrow_forward;
       onPressed = () async {
         try {
-          developer.log("Floating button pressed at step: $_currentStep",
+          developer.log('Floating button pressed at step: $_currentStep',
               name: 'BottomPopup');
 
           if (_currentStep == 1) {
@@ -151,7 +151,7 @@ class BottomPopupState extends State<BottomPopup> {
             _savedStep = _currentStep;
           });
         } catch (e, stack) {
-          developer.log("Exception in floating button onPressed: $e",
+          developer.log('Exception in floating button onPressed: $e',
               name: 'BottomPopup', error: e, stackTrace: stack);
         }
       };
@@ -168,7 +168,7 @@ class BottomPopupState extends State<BottomPopup> {
             Navigator.of(context).pop();
           }
         } catch (e, stack) {
-          developer.log("Exception in final step onPressed: $e",
+          developer.log('Exception in final step onPressed: $e',
               name: 'BottomPopup', error: e, stackTrace: stack);
         }
       };
@@ -185,9 +185,9 @@ class BottomPopupState extends State<BottomPopup> {
           child: Container(
             width: 60,
             height: 60,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [
                   Color(0xFF396548),
                   Color(0xFF6B803D),
@@ -199,7 +199,7 @@ class BottomPopupState extends State<BottomPopup> {
               boxShadow: [
                 BoxShadow(
                   color: Colors.black26,
-                  offset: const Offset(0, 3),
+                  offset: Offset(0, 3),
                   blurRadius: 6,
                 ),
               ],
@@ -235,7 +235,7 @@ class BottomPopupState extends State<BottomPopup> {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF396548).withOpacity(0.5),
+              color: const Color(0xFF396548).withValues(alpha: 0.5),
               offset: const Offset(0, -5),
               blurRadius: 20,
             ),

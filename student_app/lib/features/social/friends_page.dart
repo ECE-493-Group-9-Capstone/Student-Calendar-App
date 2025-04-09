@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:typed_data';
 import 'package:student_app/utils/user.dart';
-import '../user_singleton.dart';
-import 'package:student_app/utils/cache_helper.dart';
-import 'friend_request_page.dart';
+import '../../user_singleton.dart';
+import 'friends_request_page.dart';
 import 'package:student_app/utils/firebase_wrapper.dart';
-import 'package:student_app/pages/user_profile_page.dart';
+import 'package:student_app/features/social/friends_profile_popup.dart';
 import 'package:student_app/utils/profile_picture.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -16,10 +14,10 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 class FriendsPage extends StatefulWidget {
   const FriendsPage({super.key});
   @override
-  _FriendsPageState createState() => _FriendsPageState();
+  FriendsPageState createState() => FriendsPageState();
 }
 
-class _FriendsPageState extends State<FriendsPage> {
+class FriendsPageState extends State<FriendsPage> {
   final TextEditingController searchController = TextEditingController();
   List<UserModel> allUsers = [];
   List<UserModel> filteredUsers = [];
@@ -59,7 +57,7 @@ class _FriendsPageState extends State<FriendsPage> {
           0,
           'New Friend Request',
           'You have $currentCount pending request(s)',
-          NotificationDetails(
+          const NotificationDetails(
             android: AndroidNotificationDetails(
               'friend_requests',
               'Friend Requests',
@@ -93,7 +91,7 @@ class _FriendsPageState extends State<FriendsPage> {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iOS = DarwinInitializationSettings();
     await flutterLocalNotificationsPlugin.initialize(
-      InitializationSettings(android: android, iOS: iOS),
+      const InitializationSettings(android: android, iOS: iOS),
     );
   }
 
@@ -131,18 +129,19 @@ class _FriendsPageState extends State<FriendsPage> {
         AppUser.instance.friends.map((friend) => friend.ccid).toSet();
     setState(() {
       isSearching = query.isNotEmpty;
-      filteredUsers = allUsers.where((u) {
-        return !friendCcids.contains(u.ccid) &&
-            (u.username.toLowerCase().contains(lc) ||
-                u.ccid.toLowerCase().contains(lc));
-      }).toList();
+      filteredUsers = allUsers
+          .where((u) =>
+              !friendCcids.contains(u.ccid) &&
+              (u.username.toLowerCase().contains(lc) ||
+                  u.ccid.toLowerCase().contains(lc)))
+          .toList();
     });
   }
 
   void _openProfile(UserModel user) {
     showDialog(
       context: context,
-      builder: (_) => FriendProfilePopup(user: user),
+      builder: (_) => FriendsProfilePopup(user: user),
     );
   }
 
@@ -166,10 +165,10 @@ class _FriendsPageState extends State<FriendsPage> {
 
   Future<void> _cancelFriendRequest(String ccid) async {
     try {
-      DocumentReference senderRef = FirebaseFirestore.instance
+      final DocumentReference senderRef = FirebaseFirestore.instance
           .collection('users')
           .doc(AppUser.instance.ccid);
-      DocumentReference receiverRef =
+      final DocumentReference receiverRef =
           FirebaseFirestore.instance.collection('users').doc(ccid);
       await senderRef.update({
         'requested_friends': FieldValue.arrayRemove([ccid])
@@ -183,105 +182,99 @@ class _FriendsPageState extends State<FriendsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Friend request canceled')));
     } catch (e) {
-      debugPrint("Error canceling friend request: $e");
+      debugPrint('Error canceling friend request: $e');
     }
   }
 
   /// NEW: Build header with a green gradient clipart background
   /// similar to EventsPage. It shows the title and a white notification bell icon.
-  Widget _buildHeader(Size size) {
-    return Stack(
-      children: [
-        ClipPath(
-          clipper: _TopWaveClipper(),
-          child: Container(
-            height: 150,
-            width: size.width,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF396548),
-                  Color(0xFF6B803D),
-                  Color(0xFF909533),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+  Widget _buildHeader(Size size) => Stack(
+        children: [
+          ClipPath(
+            clipper: _TopWaveClipper(),
+            child: Container(
+              height: 150,
+              width: size.width,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF396548),
+                    Color(0xFF6B803D),
+                    Color(0xFF909533),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: 75, left: 20),
-          child: Text(
-            isSearching ? "Add Friends" : "Your Friends",
-            style: const TextStyle(
-              fontSize: 26,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+          Padding(
+            padding: const EdgeInsets.only(top: 75, left: 20),
+            child: Text(
+              isSearching ? 'Add Friends' : 'Your Friends',
+              style: const TextStyle(
+                fontSize: 26,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ),
-        // Notification bell icon (white, without any extra circle background)
-        Positioned(
-          top: 50,
-          right: 20,
-          child: ValueListenableBuilder<List<Map<String, dynamic>>>(
-            valueListenable: AppUser.instance.friendRequestsNotifier,
-            builder: (_, requests, __) {
-              return GestureDetector(
+          // Notification bell icon (white, without any extra circle background)
+          Positioned(
+            top: 50,
+            right: 20,
+            child: ValueListenableBuilder<List<Map<String, dynamic>>>(
+              valueListenable: AppUser.instance.friendRequestsNotifier,
+              builder: (_, requests, __) => GestureDetector(
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const FriendRequestPage(),
+                    builder: (_) => const FriendsRequestPage(),
                   ),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.notifications,
                   size: 30,
                   color: Colors.white,
                 ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// NEW: Build a gradient search bar matching EventsPage styling.
-  Widget _buildGradientSearchBar() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: _greenGradient,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Container(
-        margin: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 8),
-            Icon(Icons.search, color: Colors.grey[700]),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: searchController,
-                decoration: const InputDecoration(
-                  hintText: "Search for friends",
-                  border: InputBorder.none,
-                ),
-                onChanged: _onSearch,
               ),
             ),
-          ],
+          ),
+        ],
+      );
+
+  /// NEW: Build a gradient search bar matching EventsPage styling.
+  Widget _buildGradientSearchBar() => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          gradient: _greenGradient,
+          borderRadius: BorderRadius.circular(15),
         ),
-      ),
-    );
-  }
+        child: Container(
+          margin: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 8),
+              Icon(Icons.search, color: Colors.grey[700]),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Search for friends',
+                    border: InputBorder.none,
+                  ),
+                  onChanged: _onSearch,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -300,8 +293,7 @@ class _FriendsPageState extends State<FriendsPage> {
             _buildGradientSearchBar(),
             const SizedBox(height: 30),
             Expanded(
-              child:
-                  isSearching ? _buildSearchResults() : _buildFriendsList(),
+              child: isSearching ? _buildSearchResults() : _buildFriendsList(),
             ),
           ],
         ),
@@ -309,36 +301,34 @@ class _FriendsPageState extends State<FriendsPage> {
     );
   }
 
-  Widget _buildFriendsList() {
-    return ValueListenableBuilder<List<UserModel>>(
-      valueListenable: AppUser.instance.friendsNotifier,
-      builder: (_, friends, __) {
-        if (friends.isEmpty) {
-          return const Center(child: Text('No friends yet'));
-        }
-        return ListView.builder(
-          itemCount: friends.length,
-          itemBuilder: (_, i) {
-            final user = friends[i];
-            return Dismissible(
-              key: ValueKey(user.ccid),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 20),
-                decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(33)),
-                child: const Icon(Icons.delete, color: Colors.white),
-              ),
-              onDismissed: (_) => _removeFriend(user.ccid),
-              child: _buildFriendTile(user),
-            );
-          },
-        );
-      },
-    );
-  }
+  Widget _buildFriendsList() => ValueListenableBuilder<List<UserModel>>(
+        valueListenable: AppUser.instance.friendsNotifier,
+        builder: (_, friends, __) {
+          if (friends.isEmpty) {
+            return const Center(child: Text('No friends yet'));
+          }
+          return ListView.builder(
+            itemCount: friends.length,
+            itemBuilder: (_, i) {
+              final user = friends[i];
+              return Dismissible(
+                key: ValueKey(user.ccid),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(33)),
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                onDismissed: (_) => _removeFriend(user.ccid),
+                child: _buildFriendTile(user),
+              );
+            },
+          );
+        },
+      );
 
   Widget _buildSearchResults() {
     if (filteredUsers.isEmpty) {
@@ -356,7 +346,7 @@ class _FriendsPageState extends State<FriendsPage> {
   Widget _buildFriendTile(UserModel user) {
     final fallbackInitials = (user.photoURL == null || user.photoURL!.isEmpty)
         ? user.username
-            .split(" ")
+            .split(' ')
             .where((p) => p.isNotEmpty)
             .map((e) => e[0])
             .take(2)
@@ -364,7 +354,7 @@ class _FriendsPageState extends State<FriendsPage> {
             .toUpperCase()
         : null;
     return Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Container(
         height: 100,
         decoration: BoxDecoration(
@@ -397,7 +387,7 @@ class _FriendsPageState extends State<FriendsPage> {
                           style: const TextStyle(
                               fontSize: 15, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 5),
-                      const Text("Tap to view profile",
+                      const Text('Tap to view profile',
                           style:
                               TextStyle(fontSize: 14, color: Colors.black54)),
                     ],
@@ -418,7 +408,7 @@ class _FriendsPageState extends State<FriendsPage> {
     final isLocallyRequested = _requestedFriends.contains(user.ccid);
     final fallbackInitials = (user.photoURL == null || user.photoURL!.isEmpty)
         ? user.username
-            .split(" ")
+            .split(' ')
             .where((p) => p.isNotEmpty)
             .map((e) => e[0])
             .take(2)
@@ -494,10 +484,10 @@ class _FriendsPageState extends State<FriendsPage> {
                           const SizedBox(height: 5),
                           Text(
                             isFriend
-                                ? "Already a friend"
+                                ? 'Already a friend'
                                 : (isRequested
-                                    ? "Request Pending..."
-                                    : "Tap to add friend"),
+                                    ? 'Request Pending...'
+                                    : 'Tap to add friend'),
                             style: const TextStyle(
                                 fontSize: 14, color: Colors.black54),
                           ),

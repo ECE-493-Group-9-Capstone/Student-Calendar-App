@@ -10,7 +10,7 @@ class UserModel {
   final String? _photoURL;
   final String? _phoneNumber;
   final String? _instagram;
-  final Map<String, dynamic>? _currentLocation; 
+  final Map<String, dynamic>? _currentLocation;
 
   UserModel(
     this._ccid,
@@ -22,7 +22,7 @@ class UserModel {
     this._degree,
     this._locationTracking,
     this._photoURL,
-    this._currentLocation, 
+    this._currentLocation,
     this._phoneNumber,
     this._instagram,
   );
@@ -32,12 +32,12 @@ class UserModel {
   String get username => _username;
   String get email => _email;
   String get discipline => _discipline;
-  String get schedule => _schedule ?? "Null";
+  String get schedule => _schedule ?? 'Null';
   String get educationLv1 => _educationLvl;
   String get degree => _degree;
   String get locationTracking => _locationTracking;
   String? get phoneNumber => _phoneNumber;
   String? get photoURL => _photoURL;
   String? get instagram => _instagram;
-  Map<String, dynamic>? get currentLocation => _currentLocation; 
+  Map<String, dynamic>? get currentLocation => _currentLocation;
 }

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 
-
 //this file is meant to experinment with catcheing user markers so we dont have to wait for them to load
 /// Generates a cache file path based on a key.
 Future<String> _getCacheFilePath(String key) async {

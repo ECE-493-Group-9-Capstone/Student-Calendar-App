@@ -4,19 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:custom_info_window/custom_info_window.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:student_app/user_singleton.dart';
-import 'model/map_style.dart';
-import 'package:student_app/utils/marker_utils.dart';
+import 'map_style.dart';
+import 'package:student_app/features/map/marker_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:student_app/utils/event_service.dart';
-import 'maps_bottom_sheet.dart';
-import 'package:intl/intl.dart';
+import 'map_bottom_sheet.dart';
 import 'dart:math';
 import 'package:student_app/utils/study_spot_service.dart';
 import 'event_popup.dart';
 import 'study_spot_popup.dart';
-
-import 'package:student_app/utils/firebase_wrapper.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -77,10 +74,16 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   }
 
   Color _getDensityColor(int count) {
-    if (count == 0) return Colors.transparent;
-    if (count < 3) return Colors.green.withOpacity(0.3);
-    if (count < 7) return Colors.orange.withOpacity(0.4);
-    return Colors.red.withOpacity(0.5);
+    if (count == 0) {
+      return Colors.transparent;
+    }
+    if (count < 3) {
+      return Colors.green.withValues(alpha: 0.3);
+    }
+    if (count < 7) {
+      return Colors.orange.withValues(alpha: 0.4);
+    }
+    return Colors.red.withValues(alpha: 0.5);
   }
 
   Future<void> _generateStudySpotHeatmap() async {
@@ -126,7 +129,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
           .map((doc) {
             final loc = doc['currentLocation'];
             if (loc == null || loc['lat'] == null || loc['lng'] == null) {
-              debugPrint("Skipping user with missing location: ${doc.id}");
+              debugPrint('Skipping user with missing location: ${doc.id}');
               return null;
             }
             return LatLng(loc['lat'], loc['lng']);
@@ -134,13 +137,13 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
           .whereType<LatLng>()
           .toList();
 
-      Set<Circle> spotCircles = {};
+      final Set<Circle> spotCircles = {};
 
       for (int i = 0; i < spots.length; i++) {
         final spot = spots[i];
         final LatLng spotLocation = spot['location'];
 
-        int count = userLocations
+        final int count = userLocations
             .where((userLoc) =>
                 _calculateDistanceMeters(spotLocation, userLoc) <= 50)
             .length;
@@ -160,7 +163,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         _heatmapCircles = spotCircles;
       });
     } catch (e) {
-      debugPrint("Error in _generateStudySpotHeatmap: $e");
+      debugPrint('Error in _generateStudySpotHeatmap: $e');
     }
   }
 
@@ -209,8 +212,10 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
       _updateFriendSubscriptions();
 
-      _refreshTimer = Timer.periodic(Duration(seconds: 15), (_) {
-        if (_showHeatmap) _generateStudySpotHeatmap();
+      _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+        if (_showHeatmap) {
+          _generateStudySpotHeatmap();
+        }
       });
     });
     final ccid = AppUser.instance.ccid;
@@ -235,12 +240,10 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     }
   }
 
-  CameraPosition _fallbackPosition() {
-    return const CameraPosition(
-      target: LatLng(53.522518, -113.530457),
-      zoom: 15.0,
-    );
-  }
+  CameraPosition _fallbackPosition() => const CameraPosition(
+        target: LatLng(53.522518, -113.530457),
+        zoom: 15.0,
+      );
 
   @override
   void dispose() {
@@ -267,7 +270,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         try {
           final circleBytes = await createCircleImageBytes(photoUrl, 80);
           final circleMemoryImage = MemoryImage(circleBytes);
-          final circleIcon = BitmapDescriptor.fromBytes(circleBytes);
+          final circleIcon = BitmapDescriptor.bytes(circleBytes);
 
           final pinIcon = await getPinMarkerIcon(
             photoUrl,
@@ -279,7 +282,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
           _circleIcons[friend.ccid] = circleIcon;
           _pinIcons[friend.ccid] = pinIcon;
         } catch (e) {
-          debugPrint("Error loading icons for ${friend.ccid}: $e");
+          debugPrint('Error loading icons for ${friend.ccid}: $e');
           _circleIcons[friend.ccid] = BitmapDescriptor.defaultMarker;
           _pinIcons[friend.ccid] = BitmapDescriptor.defaultMarker;
         }
@@ -291,27 +294,31 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   }
 
   Future<void> _loadEventIcon() async {
-    if (_eventMarkerIcon != null) return;
+    if (_eventMarkerIcon != null) {
+      return;
+    }
 
     try {
       _eventMarkerIcon =
           await getResizedMarkerIcon('assets/event_marker.png', 80, 80);
-      debugPrint("Successfully loaded event_marker.png as custom marker");
+      debugPrint('Successfully loaded event_marker.png as custom marker');
     } catch (e) {
-      debugPrint("Error loading event marker icon: $e");
+      debugPrint('Error loading event marker icon: $e');
       _eventMarkerIcon = BitmapDescriptor.defaultMarker;
     }
   }
 
   Future<void> _loadStudySpotIcon() async {
-    if (_studySpotIcon != null) return;
+    if (_studySpotIcon != null) {
+      return;
+    }
 
     try {
       _studySpotIcon =
           await getResizedMarkerIcon('assets/study_spot.png', 80, 80);
-      debugPrint("Successfully loaded study_spot_marker.png as custom marker");
+      debugPrint('Successfully loaded study_spot_marker.png as custom marker');
     } catch (e) {
-      debugPrint("Error loading study spot marker icon: $e");
+      debugPrint('Error loading study spot marker icon: $e');
       _studySpotIcon = BitmapDescriptor.defaultMarker;
     }
   }
@@ -319,10 +326,14 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   Future<void> _addFriendMarkers() async {
     final friends = AppUser.instance.friends;
     for (var friend in friends) {
-      if (_hiddenFromMe.contains(friend.ccid)) continue;
+      if (_hiddenFromMe.contains(friend.ccid)) {
+        continue;
+      }
       final lat = friend.currentLocation?['lat'];
       final lng = friend.currentLocation?['lng'];
-      if (lat == null || lng == null) continue;
+      if (lat == null || lng == null) {
+        continue;
+      }
 
       final markerId = MarkerId(friend.ccid);
       final circleIcon =
@@ -346,7 +357,9 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
   void _switchToPinIcon(MarkerId markerId, dynamic friend) {
     final oldMarker = _markers[markerId];
-    if (oldMarker == null) return;
+    if (oldMarker == null) {
+      return;
+    }
     final newIcon = _pinIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
     final updatedMarker = oldMarker.copyWith(iconParam: newIcon);
     setState(() {
@@ -359,7 +372,9 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
     for (var friend in friends) {
       final markerId = MarkerId(friend.ccid);
       final oldMarker = _markers[markerId];
-      if (oldMarker == null) continue;
+      if (oldMarker == null) {
+        continue;
+      }
       final circleIcon =
           _circleIcons[friend.ccid] ?? BitmapDescriptor.defaultMarker;
       final updatedMarker = oldMarker.copyWith(iconParam: circleIcon);
@@ -369,18 +384,24 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
   }
 
   Future<void> _addEventMarkers() async {
-    if (_eventMarkerIcon == null) return;
+    if (_eventMarkerIcon == null) {
+      return;
+    }
 
     final eventService = EventService(firestore: FirebaseFirestore.instance);
     final allEvents = await eventService.getAllEvents();
 
     for (var event in allEvents) {
       final coords = event['coordinates'] as Map<String, dynamic>?;
-      if (coords == null) continue;
+      if (coords == null) {
+        continue;
+      }
 
       final lat = coords['lat'] as double?;
       final lng = coords['lng'] as double?;
-      if (lat == null || lng == null) continue;
+      if (lat == null || lng == null) {
+        continue;
+      }
 
       final markerId = MarkerId("event_${event['id']}");
       final marker = Marker(
@@ -388,70 +409,74 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
         position: LatLng(lat, lng),
         icon: _eventMarkerIcon!,
         onTap: () {
-  final eventLatLng = LatLng(lat, lng);
-  _controller?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
-  _customInfoWindowController.addInfoWindow!(
-  EventPopup(
-    event: event,
-    onMoreInfo: () {
-      // Redirect to your detailed event page, for example:
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => EventPopup(event: event),
-        ),
-      );
-    },
-  ),
-  eventLatLng,
-);
-},
+          final eventLatLng = LatLng(lat, lng);
+          _controller
+              ?.animateCamera(CameraUpdate.newLatLngZoom(eventLatLng, 16));
+          _customInfoWindowController.addInfoWindow!(
+            EventPopup(
+              event: event,
+              onMoreInfo: () {
+                // Redirect to your detailed event page, for example:
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EventPopup(event: event),
+                  ),
+                );
+              },
+            ),
+            eventLatLng,
+          );
+        },
       );
       _markers[markerId] = marker;
     }
     setState(() {});
   }
 
-Future<void> _addStudySpotMarkers() async {
-  if (_studySpotIcon == null) return;
-
-  final studySpotService =
-      StudySpotService(firestore: FirebaseFirestore.instance);
-  final allStudySpots = await studySpotService.getAllStudySpots();
-
-  for (var spot in allStudySpots) {
-    final dynamic coord = spot['coordinates'];
-    double? lat;
-    double? lng;
-    if (coord is GeoPoint) {
-      lat = coord.latitude;
-      lng = coord.longitude;
-    } else if (coord is Map<String, dynamic>) {
-      lat = coord['lat'];
-      lng = coord['lng'];
+  Future<void> _addStudySpotMarkers() async {
+    if (_studySpotIcon == null) {
+      return;
     }
-    if (lat == null || lng == null) continue;
 
-    final markerId = MarkerId("studySpot_${spot['id']}");
-    final marker = Marker(
-      markerId: markerId,
-      position: LatLng(lat, lng),
-      icon: _studySpotIcon!,
-      onTap: () {
-  debugPrint("Study spot marker tapped at ($lat, $lng)");
-  _controller?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat!, lng!), 16));
-  _customInfoWindowController.addInfoWindow!(
-    StudySpotPopup(studySpot: spot),
-    LatLng(lat!, lng!),
-  );
-},
+    final studySpotService =
+        StudySpotService(firestore: FirebaseFirestore.instance);
+    final allStudySpots = await studySpotService.getAllStudySpots();
 
-    );
-    _markers[markerId] = marker;
+    for (var spot in allStudySpots) {
+      final dynamic coord = spot['coordinates'];
+      double? lat;
+      double? lng;
+      if (coord is GeoPoint) {
+        lat = coord.latitude;
+        lng = coord.longitude;
+      } else if (coord is Map<String, dynamic>) {
+        lat = coord['lat'];
+        lng = coord['lng'];
+      }
+      if (lat == null || lng == null) {
+        continue;
+      }
+
+      final markerId = MarkerId("studySpot_${spot['id']}");
+      final marker = Marker(
+        markerId: markerId,
+        position: LatLng(lat, lng),
+        icon: _studySpotIcon!,
+        onTap: () {
+          debugPrint('Study spot marker tapped at ($lat, $lng)');
+          _controller?.animateCamera(
+              CameraUpdate.newLatLngZoom(LatLng(lat!, lng!), 16));
+          _customInfoWindowController.addInfoWindow!(
+            StudySpotPopup(studySpot: spot),
+            LatLng(lat!, lng!),
+          );
+        },
+      );
+      _markers[markerId] = marker;
+    }
+    setState(() {});
   }
-  setState(() {});
-}
-
 
   void _updateFriendSubscriptions() {
     final friendIds = AppUser.instance.friends.map((f) => f.ccid).toSet();
@@ -467,15 +492,21 @@ Future<void> _addStudySpotMarkers() async {
     });
 
     for (final friend in AppUser.instance.friends) {
-      if (_hiddenFromMe.contains(friend.ccid)) continue;
-      if (_friendSubscriptions.containsKey(friend.ccid)) continue;
+      if (_hiddenFromMe.contains(friend.ccid)) {
+        continue;
+      }
+      if (_friendSubscriptions.containsKey(friend.ccid)) {
+        continue;
+      }
 
       final sub = FirebaseFirestore.instance
           .collection('users')
           .doc(friend.ccid)
           .snapshots()
           .listen((doc) {
-        if (!doc.exists) return;
+        if (!doc.exists) {
+          return;
+        }
         final data = doc.data()!;
         final loc = data['currentLocation'] as Map<String, dynamic>?;
 
@@ -487,7 +518,9 @@ Future<void> _addStudySpotMarkers() async {
           friend.ccid: timestamp,
         };
 
-        if (loc == null || loc['lat'] == null || loc['lng'] == null) return;
+        if (loc == null || loc['lat'] == null || loc['lng'] == null) {
+          return;
+        }
         final newPos = LatLng(loc['lat'], loc['lng']);
         final markerId = MarkerId(friend.ccid);
         final existing = _friendMarkers[friend.ccid];
@@ -529,34 +562,32 @@ Future<void> _addStudySpotMarkers() async {
   @override
   bool get wantKeepAlive => true;
 
-  Widget gradientIcon() {
-    return Container(
-      padding: const EdgeInsets.all(3.0),
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFF396548),
-            Color(0xFF6B803D),
-            Color(0xFF909533),
-          ],
-        ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(8.0),
+  Widget gradientIcon() => Container(
+        padding: const EdgeInsets.all(3.0),
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white,
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF396548),
+              Color(0xFF6B803D),
+              Color(0xFF909533),
+            ],
+          ),
         ),
-        child: Image.asset(
-          'assets/Google_Maps_icon_(2015-2020).png',
-          width: 30,
-          height: 30,
-          fit: BoxFit.contain,
+        child: Container(
+          padding: const EdgeInsets.all(8.0),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+          ),
+          child: Image.asset(
+            'assets/Google_Maps_icon_(2015-2020).png',
+            width: 30,
+            height: 30,
+            fit: BoxFit.contain,
+          ),
         ),
-      ),
-    );
-  }
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -566,7 +597,7 @@ Future<void> _addStudySpotMarkers() async {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(40),
         child: AppBar(
-          backgroundColor: Colors.white.withOpacity(0.2),
+          backgroundColor: Colors.white.withValues(alpha: 0.2),
           elevation: 0,
           actions: [
             IconButton(
@@ -577,7 +608,7 @@ Future<void> _addStudySpotMarkers() async {
           flexibleSpace: ClipRect(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(color: Colors.white.withOpacity(0)),
+              child: Container(color: Colors.white.withValues(alpha: 0)),
             ),
           ),
         ),
@@ -608,16 +639,16 @@ Future<void> _addStudySpotMarkers() async {
             right: 5,
             child: FloatingActionButton(
               mini: true,
-              heroTag: "open_gmaps",
+              heroTag: 'open_gmaps',
               onPressed: () async {
                 final lat = _currentCameraPosition.target.latitude;
                 final lng = _currentCameraPosition.target.longitude;
-                final url =
-                    'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng';
-                if (await canLaunch(url)) {
-                  await launch(url);
+                final url = Uri.parse(
+                    'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url);
                 } else {
-                  debugPrint("Could not launch Google Maps");
+                  debugPrint('Could not launch Google Maps');
                 }
               },
               backgroundColor: Colors.transparent,
@@ -630,7 +661,7 @@ Future<void> _addStudySpotMarkers() async {
             right: 5,
             child: FloatingActionButton(
               mini: true,
-              heroTag: "toggle_heatmap",
+              heroTag: 'toggle_heatmap',
               onPressed: _toggleHeatmap,
               backgroundColor: Colors.white,
               child: Icon(
@@ -645,7 +676,7 @@ Future<void> _addStudySpotMarkers() async {
             width: MediaQuery.of(context).size.width * 0.9,
             offset: 50.0,
           ),
-          MapsBottomSheet(
+          MapBottomSheet(
             draggableController: _draggableController,
             friends: AppUser.instance.friends,
             lastUpdatedNotifier: _lastUpdatedNotifier,
@@ -678,7 +709,7 @@ Future<void> _addStudySpotMarkers() async {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Select Map Theme",
+              'Select Map Theme',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
@@ -686,38 +717,36 @@ Future<void> _addStudySpotMarkers() async {
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _mapThemes.length,
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () {
-                      _controller?.setMapStyle(_mapThemes[index]['style']);
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      width: 100,
-                      margin: const EdgeInsets.only(right: 10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        image: DecorationImage(
-                          fit: BoxFit.cover,
-                          image: NetworkImage(_mapThemes[index]['image']),
-                        ),
+                itemBuilder: (context, index) => GestureDetector(
+                  onTap: () {
+                    _controller?.setMapStyle(_mapThemes[index]['style']);
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    width: 100,
+                    margin: const EdgeInsets.only(right: 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      image: DecorationImage(
+                        fit: BoxFit.cover,
+                        image: NetworkImage(_mapThemes[index]['image']),
                       ),
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Container(
-                          width: double.infinity,
-                          color: Colors.black.withOpacity(0.5),
-                          padding: const EdgeInsets.symmetric(vertical: 5),
-                          child: Text(
-                            _mapThemes[index]['name'],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white),
-                          ),
+                    ),
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Container(
+                        width: double.infinity,
+                        color: Colors.black.withValues(alpha: 0.5),
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        child: Text(
+                          _mapThemes[index]['name'],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white),
                         ),
                       ),
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           ],

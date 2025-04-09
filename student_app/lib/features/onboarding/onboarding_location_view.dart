@@ -19,26 +19,26 @@ class LocationView extends StatefulWidget {
 
 class LocationViewState extends State<LocationView>
     with WidgetsBindingObserver {
-  String _currentPreference = "Checking...";
+  String _currentPreference = 'Checking...';
 
   @override
   void initState() {
     super.initState();
-    developer.log("[LocationView] initState", name: 'LocationView');
+    developer.log('[LocationView] initState', name: 'LocationView');
     WidgetsBinding.instance.addObserver(this);
     _checkCurrentPermission();
   }
 
   @override
   void dispose() {
-    developer.log("[LocationView] dispose", name: 'LocationView');
+    developer.log('[LocationView] dispose', name: 'LocationView');
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    developer.log("[LocationView] Lifecycle state: $state",
+    developer.log('[LocationView] Lifecycle state: $state',
         name: 'LocationView');
     if (state == AppLifecycleState.resumed) {
       _checkCurrentPermission();
@@ -48,35 +48,36 @@ class LocationViewState extends State<LocationView>
   // Checks the current permission and updates the parent's callback
   Future<void> _checkCurrentPermission() async {
     try {
-      developer.log("[LocationView] Checking location permissions...",
+      developer.log('[LocationView] Checking location permissions...',
           name: 'LocationView');
 
       // Check locationAlways first
-      PermissionStatus status = await Permission.locationAlways.status;
+      final PermissionStatus status = await Permission.locationAlways.status;
       String newPreference;
 
       if (status.isGranted) {
-        newPreference = "Live Tracking"; // user grants "Always"
+        newPreference = 'Live Tracking'; // user grants "Always"
         widget.onPreferenceUpdated(newPreference);
       } else {
         // If not Always, check locationWhenInUse
-        PermissionStatus fgStatus = await Permission.locationWhenInUse.status;
+        final PermissionStatus fgStatus =
+            await Permission.locationWhenInUse.status;
         if (fgStatus.isGranted) {
-          newPreference = "Only When Using App";
+          newPreference = 'Only When Using App';
           widget.onPreferenceUpdated(newPreference);
         } else {
           // If neither is granted => "No Permission Granted"
-          newPreference = "No Permission Granted";
+          newPreference = 'No Permission Granted';
         }
       }
 
       setState(() => _currentPreference = newPreference);
 
       developer.log(
-          "[LocationView] Updated _currentPreference: $_currentPreference",
+          '[LocationView] Updated _currentPreference: $_currentPreference',
           name: 'LocationView');
     } catch (e, stack) {
-      developer.log("[LocationView] Exception in _checkCurrentPermission: $e",
+      developer.log('[LocationView] Exception in _checkCurrentPermission: $e',
           name: 'LocationView', error: e, stackTrace: stack);
     }
   }
@@ -84,22 +85,22 @@ class LocationViewState extends State<LocationView>
   void _redirectToSettings() async {
     try {
       // If user already has "Live Tracking" or "Only When Using App," show a simple AlertDialog
-      if (_currentPreference == "Live Tracking" ||
-          _currentPreference == "Only When Using App") {
+      if (_currentPreference == 'Live Tracking' ||
+          _currentPreference == 'Only When Using App') {
         _showAlreadySetDialog();
-        developer.log("[LocationView] Already set. Showing AlertDialog.",
+        developer.log('[LocationView] Already set. Showing AlertDialog.',
             name: 'LocationView');
         return;
       }
 
       // Otherwise, open app settings
-      developer.log("[LocationView] Calling openAppSettings()",
+      developer.log('[LocationView] Calling openAppSettings()',
           name: 'LocationView');
       await openAppSettings();
       await Future.delayed(const Duration(seconds: 2));
       _checkCurrentPermission();
     } catch (e, stack) {
-      developer.log("[LocationView] Exception in _redirectToSettings: $e",
+      developer.log('[LocationView] Exception in _redirectToSettings: $e',
           name: 'LocationView', error: e, stackTrace: stack);
     }
   }
@@ -109,25 +110,28 @@ class LocationViewState extends State<LocationView>
       context: widget.parentContext,
       builder: (context) {
         Widget gradientText(String text,
-            {double fontSize = 20,
-            FontWeight fontWeight = FontWeight.bold,
-            TextAlign textAlign = TextAlign.center}) {
-          return ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-            child: Text(
-              text,
-              textAlign: textAlign,
-              style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: fontWeight,
-                  color: Colors.white),
-            ),
-          );
-        }
+                {double fontSize = 20,
+                FontWeight fontWeight = FontWeight.bold,
+                TextAlign textAlign = TextAlign.center}) =>
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [
+                  Color(0xFF396548),
+                  Color(0xFF6B803D),
+                  Color(0xFF909533)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+              child: Text(
+                text,
+                textAlign: textAlign,
+                style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: fontWeight,
+                    color: Colors.white),
+              ),
+            );
 
         return Dialog(
           shape: RoundedRectangleBorder(
@@ -157,11 +161,11 @@ class LocationViewState extends State<LocationView>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Center(
-                    child: gradientText("Permission Already Set", fontSize: 20),
+                    child: gradientText('Permission Already Set', fontSize: 20),
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    "Permission already set. Change it in your device settings.",
+                    'Permission already set. Change it in your device settings.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16),
                   ),
@@ -170,7 +174,7 @@ class LocationViewState extends State<LocationView>
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: gradientText("OK",
+                      child: gradientText('OK',
                           fontSize: 16, fontWeight: FontWeight.normal),
                     ),
                   ),
@@ -199,7 +203,7 @@ class LocationViewState extends State<LocationView>
               .createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
           blendMode: BlendMode.srcIn,
           child: const Text(
-            "Location Tracking",
+            'Location Tracking',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
           ),
@@ -208,7 +212,7 @@ class LocationViewState extends State<LocationView>
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 4),
           child: Text(
-            "Set your location tracking preference in settings.",
+            'Set your location tracking preference in settings.',
             style: TextStyle(fontSize: 16),
           ),
         ),
@@ -230,8 +234,8 @@ class LocationViewState extends State<LocationView>
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(23),
                 ),
-                child: _currentPreference == "Live Tracking" ||
-                        _currentPreference == "Only When Using App"
+                child: _currentPreference == 'Live Tracking' ||
+                        _currentPreference == 'Only When Using App'
                     ? Text(
                         _currentPreference,
                         style: const TextStyle(
@@ -241,7 +245,7 @@ class LocationViewState extends State<LocationView>
                         ),
                       )
                     : const Text(
-                        "Go to Settings",
+                        'Go to Settings',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

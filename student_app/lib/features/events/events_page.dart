@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:student_app/utils/event_service.dart';
-import 'package:student_app/pages/model/event_model.dart';
+import 'package:student_app/features/events/event_model.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -9,10 +9,10 @@ class EventsPage extends StatefulWidget {
   const EventsPage({super.key});
 
   @override
-  _EventsPageState createState() => _EventsPageState();
+  EventsPageState createState() => EventsPageState();
 }
 
-class _EventsPageState extends State<EventsPage>
+class EventsPageState extends State<EventsPage>
     with AutomaticKeepAliveClientMixin {
   final EventService eventService =
       EventService(firestore: FirebaseFirestore.instance);
@@ -39,7 +39,9 @@ class _EventsPageState extends State<EventsPage>
   Future<void> _fetchEvents() async {
     try {
       final events = await eventService.getAllEvents();
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         allEvents =
             events.map((data) => Event.fromMap(data, data['id'])).toList();
@@ -47,8 +49,10 @@ class _EventsPageState extends State<EventsPage>
         isLoading = false;
       });
     } catch (e) {
-      debugPrint("Error fetching events: $e");
-      if (!mounted) return;
+      debugPrint('Error fetching events: $e');
+      if (!mounted) {
+        return;
+      }
       setState(() {
         isLoading = false;
       });
@@ -124,76 +128,72 @@ class _EventsPageState extends State<EventsPage>
   }
 
   /// Builds the header with the green wavy clipart and title.
-  Widget _buildHeader(Size size) {
-    return Stack(
-      children: [
-        ClipPath(
-          clipper: _TopWaveClipper(),
-          child: Container(
-            height: 150,
-            width: size.width,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF396548),
-                  Color(0xFF6B803D),
-                  Color(0xFF909533),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+  Widget _buildHeader(Size size) => Stack(
+        children: [
+          ClipPath(
+            clipper: _TopWaveClipper(),
+            child: Container(
+              height: 150,
+              width: size.width,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF396548),
+                    Color(0xFF6B803D),
+                    Color(0xFF909533),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: 75, left: 20),
-          child: Text(
-            "Upcoming Events",
-            style: TextStyle(
-              fontSize: 26,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+          const Padding(
+            padding: EdgeInsets.only(top: 75, left: 20),
+            child: Text(
+              'Upcoming Events',
+              style: TextStyle(
+                fontSize: 26,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      );
 
   /// Builds the search bar with a gradient border.
-  Widget _buildGradientSearchBar() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: _greenGradient,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Container(
-        margin: const EdgeInsets.all(2),
+  Widget _buildGradientSearchBar() => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(13),
+          gradient: _greenGradient,
+          borderRadius: BorderRadius.circular(15),
         ),
-        child: Row(
-          children: [
-            const SizedBox(width: 8),
-            Icon(Icons.search, color: Colors.grey[700]),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: searchController,
-                decoration: const InputDecoration(
-                  hintText: "Search for events",
-                  border: InputBorder.none,
+        child: Container(
+          margin: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 8),
+              Icon(Icons.search, color: Colors.grey[700]),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Search for events',
+                    border: InputBorder.none,
+                  ),
+                  onChanged: _onSearch,
                 ),
-                onChanged: _onSearch,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      );
 
   /// Builds a horizontally scrolling list of event cards.
   Widget _buildEventsList() {
@@ -247,7 +247,7 @@ class _EventsPageState extends State<EventsPage>
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.25),
+                  color: Colors.black.withValues(alpha: 0.25),
                   spreadRadius: 2,
                   blurRadius: 12,
                   offset: const Offset(0, 6),
@@ -274,7 +274,7 @@ class _EventsPageState extends State<EventsPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Date:",
+                      'Date:',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -296,7 +296,7 @@ class _EventsPageState extends State<EventsPage>
                 Row(
                   children: [
                     Text(
-                      "Location:",
+                      'Location:',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -328,7 +328,7 @@ class _EventsPageState extends State<EventsPage>
                       if (event.link != null && event.link!.isNotEmpty) {
                         final url = Uri.parse(event.link!);
                         if (!await launchUrl(url)) {
-                          debugPrint("Could not launch URL: ${event.link}");
+                          debugPrint('Could not launch URL: ${event.link}');
                         }
                       }
                     },
@@ -336,7 +336,7 @@ class _EventsPageState extends State<EventsPage>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         GradientText(
-                          text: "Learn More",
+                          text: 'Learn More',
                           gradient: _greenGradient,
                           style: const TextStyle(
                             fontSize: 14,
@@ -345,7 +345,8 @@ class _EventsPageState extends State<EventsPage>
                         ),
                         const SizedBox(width: 4),
                         ShaderMask(
-                          shaderCallback: (bounds) => _greenGradient.createShader(
+                          shaderCallback: (bounds) =>
+                              _greenGradient.createShader(
                             Rect.fromLTWH(0, 0, bounds.width, bounds.height),
                           ),
                           child: const Icon(
@@ -372,7 +373,7 @@ class _EventsPageState extends State<EventsPage>
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),
@@ -385,17 +386,15 @@ class _EventsPageState extends State<EventsPage>
                     child: Image.network(
                       event.imageUrl ?? '',
                       fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stack) {
-                        return Container(
-                          color: Colors.grey[300],
-                          alignment: Alignment.center,
-                          child: const Icon(
-                            Icons.event,
-                            size: 30,
-                            color: Colors.white,
-                          ),
-                        );
-                      },
+                      errorBuilder: (ctx, err, stack) => Container(
+                        color: Colors.grey[300],
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.event,
+                          size: 30,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                   // Shadow overlay over the image.
@@ -406,7 +405,7 @@ class _EventsPageState extends State<EventsPage>
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.3),
+                          Colors.black.withValues(alpha: 0.3),
                           Colors.transparent,
                         ],
                       ),
@@ -429,23 +428,21 @@ class GradientText extends StatelessWidget {
   final Gradient gradient;
 
   const GradientText({
-    Key? key,
+    super.key,
     required this.text,
     required this.style,
     required this.gradient,
-  }) : super(key: key);
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return ShaderMask(
-      shaderCallback: (bounds) =>
-          gradient.createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
-      child: Text(
-        text,
-        style: style.copyWith(color: Colors.white),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ShaderMask(
+        shaderCallback: (bounds) => gradient
+            .createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+        child: Text(
+          text,
+          style: style.copyWith(color: Colors.white),
+        ),
+      );
 }
 
 /// Custom clipper to create the wavy header shape.

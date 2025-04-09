@@ -7,16 +7,18 @@ class EventPopup extends StatelessWidget {
   final VoidCallback? onMoreInfo; // You can keep this if needed elsewhere
 
   const EventPopup({
-    Key? key,
+    super.key,
     required this.event,
     this.onMoreInfo,
-  }) : super(key: key);
+  });
 
   String? _prepareImageUrl(String? url) {
-    if (url == null || url.isEmpty) return null;
+    if (url == null || url.isEmpty) {
+      return null;
+    }
     final uri = Uri.tryParse(url);
     if (uri == null || uri.scheme.isEmpty || uri.host.isEmpty) {
-      return "https://$url";
+      return 'https://$url';
     }
     return url;
   }
@@ -81,7 +83,7 @@ class EventPopup extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 offset: const Offset(0, 4),
                 blurRadius: 8,
               ),
@@ -105,9 +107,8 @@ class EventPopup extends StatelessWidget {
                         child: Image.network(
                           imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) {
-                            return const SizedBox.shrink();
-                          },
+                          errorBuilder: (ctx, err, stack) =>
+                              const SizedBox.shrink(),
                         ),
                       ),
                     const SizedBox(height: 10),
@@ -128,13 +129,13 @@ class EventPopup extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           _InfoRow(
-                            label: "Date:",
+                            label: 'Date:',
                             value: formattedDate,
                           ),
                           const SizedBox(height: 8),
                           _InfoRow(
-                            label: "Time:",
-                            value: "$formattedStart - $formattedEnd",
+                            label: 'Time:',
+                            value: '$formattedStart - $formattedEnd',
                           ),
                         ],
                       ),
@@ -156,32 +157,29 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoRow({Key? key, required this.label, required this.value})
-      : super(key: key);
+  const _InfoRow({required this.label, required this.value});
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.black54,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            value,
+  Widget build(BuildContext context) => Row(
+        children: [
+          Text(
+            label,
             style: const TextStyle(
-              color: Colors.black87,
+              color: Colors.black54,
+              fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
           ),
-        ),
-      ],
-    );
-  }
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      );
 }

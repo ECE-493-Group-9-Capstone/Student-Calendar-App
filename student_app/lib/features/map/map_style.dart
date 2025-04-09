@@ -1,5 +1,5 @@
 class MapStyle {
-  final String aubergine = """
+  final String aubergine = '''
     [
       {
         "elementType": "geometry",
@@ -232,9 +232,9 @@ class MapStyle {
           }
         ]
       }
-    ]""";
+    ]''';
 
-  final String sliver = """
+  final String sliver = '''
     [
       {
         "elementType": "geometry",
@@ -394,9 +394,9 @@ class MapStyle {
           }
         ]
       }
-    ]""";
+    ]''';
 
-  final String retro = """
+  final String retro = '''
     [
       {
         "elementType": "geometry",
@@ -611,9 +611,9 @@ class MapStyle {
           }
         ]
       }
-    ]""";
+    ]''';
 
-  final String dark = """
+  final String dark = '''
     [
       {
         "elementType": "geometry",
@@ -799,9 +799,9 @@ class MapStyle {
           }
         ]
       }
-    ]""";
+    ]''';
 
-  final String night = """
+  final String night = '''
     [
       {
         "elementType": "geometry",
@@ -962,5 +962,5 @@ class MapStyle {
           }
         ]
       }
-    ]""";
+    ]''';
 }

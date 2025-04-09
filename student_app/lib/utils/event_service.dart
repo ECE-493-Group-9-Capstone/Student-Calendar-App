@@ -9,15 +9,16 @@ class EventService {
 
   Future<List<Map<String, dynamic>>> getAllEvents() async {
     try {
-      QuerySnapshot querySnapshot = await firestore.collection('events').get();
+      final QuerySnapshot querySnapshot =
+          await firestore.collection('events').get();
 
-      List<Map<String, dynamic>> allEvents = querySnapshot.docs
-          .map((doc) => {"id": doc.id, ...doc.data() as Map<String, dynamic>})
+      final List<Map<String, dynamic>> allEvents = querySnapshot.docs
+          .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
           .toList();
 
       return allEvents;
     } catch (e) {
-      debugPrint("Error fetching events: $e");
+      debugPrint('Error fetching events: $e');
       return [];
     }
   }
@@ -26,18 +27,18 @@ class EventService {
   Future<List<Map<String, dynamic>>> getEventsByStartDate(
       DateTime startDate) async {
     try {
-      QuerySnapshot querySnapshot = await firestore
+      final QuerySnapshot querySnapshot = await firestore
           .collection('events')
           .where('startDate', isEqualTo: startDate)
           .get();
 
-      List<Map<String, dynamic>> events = querySnapshot.docs
-          .map((doc) => {"id": doc.id, ...doc.data() as Map<String, dynamic>})
+      final List<Map<String, dynamic>> events = querySnapshot.docs
+          .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
           .toList();
 
       return events;
     } catch (e) {
-      debugPrint("Error fetching events by start date: $e");
+      debugPrint('Error fetching events by start date: $e');
       return [];
     }
   }
@@ -45,18 +46,18 @@ class EventService {
   Future<List<Map<String, dynamic>>> getEventsByLocation(
       String location) async {
     try {
-      QuerySnapshot querySnapshot = await firestore
+      final QuerySnapshot querySnapshot = await firestore
           .collection('events')
           .where('location', isEqualTo: location)
           .get();
 
-      List<Map<String, dynamic>> events = querySnapshot.docs
-          .map((doc) => {"id": doc.id, ...doc.data() as Map<String, dynamic>})
+      final List<Map<String, dynamic>> events = querySnapshot.docs
+          .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
           .toList();
 
       return events;
     } catch (e) {
-      debugPrint("Error fetching events by location: $e");
+      debugPrint('Error fetching events by location: $e');
       return [];
     }
   }
@@ -66,7 +67,7 @@ class EventService {
     try {
       await firestore.collection('events').doc(id).update({field: value});
     } catch (e) {
-      debugPrint("Error editing event: $e");
+      debugPrint('Error editing event: $e');
     }
   }
 }
