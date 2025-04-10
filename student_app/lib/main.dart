@@ -14,17 +14,15 @@ import 'services/map_service.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'services/auth_service.dart';
 
-final RouteObserver<ModalRoute<void>> routeObserver =
-    RouteObserver<ModalRoute<void>>();
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Initialize local notifications
   const AndroidInitializationSettings androidInit =
       AndroidInitializationSettings('@mipmap/ic_launcher');
   const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
@@ -34,12 +32,12 @@ Future<void> main() async {
   );
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>()
+      .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
       ?.requestPermissions(alert: true, badge: true, sound: true);
 
-  final authService = AuthService();
-  await authService.getAccessToken();
+  // Removed the automatic call to getAccessToken()
+  // final authService = AuthService();
+  // await authService.getAccessToken();
 
   runApp(const MyApp());
 }
@@ -91,15 +89,12 @@ Future<bool> _ensureUserExists(User user) async {
   final ccid = user.email?.split('@')[0] ?? user.uid;
   final firestoreData = await fetchUserData(ccid);
   if (firestoreData == null) {
-    await addUser(user.displayName ?? 'New User', ccid,
-        photoURL: user.photoURL);
-  } else if (user.photoURL != null &&
-      firestoreData['photoURL'] != user.photoURL) {
+    await addUser(user.displayName ?? 'New User', ccid, photoURL: user.photoURL);
+  } else if (user.photoURL != null && firestoreData['photoURL'] != user.photoURL) {
     await updateUserPhoto(ccid, user.photoURL!);
   }
   return true;
 }
-
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
   @override

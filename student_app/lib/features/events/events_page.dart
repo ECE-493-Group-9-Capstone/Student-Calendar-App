@@ -73,7 +73,6 @@ class EventsPageState extends State<EventsPage>
   String _formatDateWithSuffix(DateTime date) {
     final day = date.day;
     String suffix;
-    // Handle special cases for 11th, 12th, 13th.
     if (day % 100 >= 11 && day % 100 <= 13) {
       suffix = 'th';
     } else {
@@ -105,23 +104,28 @@ class EventsPageState extends State<EventsPage>
     final size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: const Color(0xFFFDFDFD),
-      // Vertical layout as a Column (non-scrollable vertically).
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Extra top padding.
-                const SizedBox(height: 0),
-                // Header (green wave clipart + title).
                 _buildHeader(size),
-                // Extra padding between header and search bar.
-                const SizedBox(height: 10),
-                // Gradient search bar.
-                _buildGradientSearchBar(),
-                // Additional padding before events list.
-                const SizedBox(height: 30),
-                _buildEventsList(),
-                const SizedBox(height: 24),
+                Expanded(
+                  child: SingleChildScrollView(
+                    
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 10),
+                          _buildGradientSearchBar(),
+                          const SizedBox(height: 30),
+                          _buildEventsList(),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
     );
@@ -220,8 +224,7 @@ class EventsPageState extends State<EventsPage>
     );
   }
 
-  /// Builds an event card with the title first, then gradient "Date:" label, date,
-  /// then location with "Location:" label and finally a "Learn More" link.
+  /// Builds an event card with title, date, location and a "Learn More" link.
   Widget _buildEventTile(Event event) {
     final dateString = _formatDateWithSuffix(event.startDate);
     final screenSize = MediaQuery.of(context).size;
@@ -257,7 +260,6 @@ class EventsPageState extends State<EventsPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title at the top.
                 Text(
                   event.title,
                   maxLines: 2,
@@ -269,7 +271,6 @@ class EventsPageState extends State<EventsPage>
                   ),
                 ),
                 const SizedBox(height: 6),
-                // Row with gradient "Date:" label and the date in grey.
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -292,7 +293,6 @@ class EventsPageState extends State<EventsPage>
                   ],
                 ),
                 const SizedBox(height: 6),
-                // Row with "Location:" label, icon, and location text.
                 Row(
                   children: [
                     Text(
@@ -304,7 +304,8 @@ class EventsPageState extends State<EventsPage>
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                    const Icon(Icons.location_on,
+                        size: 16, color: Colors.grey),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
@@ -320,7 +321,7 @@ class EventsPageState extends State<EventsPage>
                   ],
                 ),
                 const Spacer(),
-                // "Learn More" link with gradient text and gradient arrow.
+                // "Learn More" link.
                 Align(
                   alignment: Alignment.centerRight,
                   child: InkWell(
@@ -362,7 +363,6 @@ class EventsPageState extends State<EventsPage>
               ],
             ),
           ),
-          // Overlapping event image with shadow overlay.
           Positioned(
             top: 10,
             left: cardWidth * 0.1,
@@ -383,21 +383,24 @@ class EventsPageState extends State<EventsPage>
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      event.imageUrl ?? '',
-                      fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stack) => Container(
-                        color: Colors.grey[300],
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.event,
-                          size: 30,
-                          color: Colors.white,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: double.infinity,
+                      child: Image.network(
+                        event.imageUrl ?? '',
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, stack) => Container(
+                          color: Colors.grey[300],
+                          alignment: Alignment.center,
+                          child: const Icon(
+                            Icons.event,
+                            size: 30,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  // Shadow overlay over the image.
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
