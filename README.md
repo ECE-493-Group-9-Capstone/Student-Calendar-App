@@ -138,7 +138,7 @@ This is the easiest method and does not require setting up Flutter, Android Stud
    - Upload the file to **Google Drive** and download it on your phone
    - Send it via **email** or a file-sharing app (e.g., Snapdrop, Nearby Share)
 3. On your Android phone, locate and tap the APK file to begin installation.
-4. If prompted, allow app installations from unknown sources:
+4. If prompted, allow app installations from unknown sources (an automatic popup should show that redirects you to settings where you can allow download from unknown sources)
 
    - Go to **Settings > Apps > Special access > Install unknown apps**
    - Select the app you're using to open the APK (e.g., Files, Drive, or your browser)
