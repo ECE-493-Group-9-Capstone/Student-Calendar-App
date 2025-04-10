@@ -1,12 +1,16 @@
-// ignore_for_file: unused_import
-
 import 'package:flutter/material.dart';
-import 'dart:typed_data';
 import '../../user_singleton.dart';
 import '../../utils/user_model.dart';
 import '../../utils/social_graph.dart';
 import 'package:student_app/services/firebase_service.dart';
 import 'package:student_app/utils/profile_picture_utils.dart';
+
+// FR12 - Friends.Requests - The system shall display pending friend requests.
+// FR30 - Social.Match - The system shall list matching peers, including their contact methods and visibility status.
+// FR31 - Social.Request - The system shall allow users to send connection requests via selected contact methods.
+// FR37 - SocialGraph.Generate - The system shall create a social graph with users as nodes and friendships with other users as edges.
+// FR38 - SocialGraph.Sync - The system shall keep the graph up to date by adding or removing nodes and edges.
+// FR39 - SocialGraph.Recommend - The system shall recommend potential friends based on the user's mutual friends and/or schedules.
 
 /// Widget that shows a user's profile popup including their profile image.
 class FriendsUserNotificationPopup extends StatelessWidget {

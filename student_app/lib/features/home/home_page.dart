@@ -14,6 +14,17 @@ import 'package:student_app/utils/profile_picture_utils.dart';
 import 'package:student_app/services/event_service.dart';
 import 'package:student_app/features/events/event_model.dart';
 
+// FR5 - Calendar.Sync - The system shall synchronize any modifications in the schedule with the version in the database.
+// FR6 - Calendar.Modify - The system shall allow users to add, edit, or delete events in their schedules.
+// FR7 - Calendar.Display - The system shall display the user’s calendar with options for interaction.
+// FR16 - FriendConnect.Display - The system shall display a list of available time slots amongst friends on the calendar screen.
+// FR18 - Events.Pull - The system will pull event data from the University of Alberta database and store it in the Firebase database.
+// FR30 - Social.Match - The system shall list matching peers, including their contact methods and visibility status.
+// FR31 - Social.Request - The system shall allow users to send connection requests via selected contact methods.
+// FR37 - SocialGraph.Generate - The system shall create a social graph with users as nodes and friendships with other users as edges.
+// FR38 - SocialGraph.Sync - The system shall keep the graph up to date by adding or removing nodes and edges.
+// FR39 - SocialGraph.Recommend - The system shall recommend potential friends based on the user's mutual friends and/or schedules.
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 

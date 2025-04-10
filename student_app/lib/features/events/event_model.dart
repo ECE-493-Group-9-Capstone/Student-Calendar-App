@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// FR18 - Events.Pull: Represents event data structure retrieved from Firebase
+
 class Event {
   final String id;
   final String title;

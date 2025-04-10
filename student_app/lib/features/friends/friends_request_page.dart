@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'friends_user_notification_popup.dart';
 
+// FR12 - Friends.Requests - The system shall display pending friend requests.
+
 class FriendsRequestPage extends StatelessWidget {
   const FriendsRequestPage({super.key});
 

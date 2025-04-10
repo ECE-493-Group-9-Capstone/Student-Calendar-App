@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:developer' as developer;
-
+// FR2 - Auth.Valid
 class LocationView extends StatefulWidget {
   final Function(String)
       onPreferenceUpdated; // Callback to update user preference

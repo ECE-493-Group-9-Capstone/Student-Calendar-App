@@ -8,6 +8,12 @@ import 'package:student_app/services/firebase_service.dart';
 import 'package:student_app/features/friends/friends_profile_popup.dart';
 import 'package:student_app/utils/profile_picture_utils.dart';
 
+// FR10 - Friends.Display - The system shall display a list of friends and friend groups.
+// FR11 - Friends.Modify - The system shall allow users to add or remove friends.
+// FR12 - Friends.Requests - The system shall display pending friend requests.
+// FR14 - Friends.Filter - The system shall filter the friend's list based on filter text input.
+// FR15 - Friends.Search - The system shall search the University of Alberta database for students matching the search input.
+
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 

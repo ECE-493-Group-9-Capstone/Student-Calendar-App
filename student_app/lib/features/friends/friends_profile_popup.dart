@@ -6,6 +6,10 @@ import 'package:student_app/utils/profile_picture_utils.dart';
 import 'package:student_app/services/firebase_service.dart';
 import 'package:student_app/user_singleton.dart';
 
+// FR10 - Friends.Display - The system shall display a list of friends and friend groups.
+// FR33 - Location.Toggle - Users can enable or disable location sharing with specific friends.
+// FR35 - Privacy.Settings - Users will be able to customize location sharing privacy with on, off, friends only, and time-based sharing.
+
 class FriendsProfilePopup extends StatefulWidget {
   final UserModel user;
   const FriendsProfilePopup({super.key, required this.user});

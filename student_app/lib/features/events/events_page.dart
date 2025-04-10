@@ -5,6 +5,11 @@ import 'package:student_app/features/events/event_model.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// FR18 - Events.Pull: Fetches and displays events from the Firebase database
+// FR7 - Calendar.Display: Displays events with detailed information (date, location, title)
+// FR15 - Friends.Search: Implements keyword-based event search functionality (similar search behavior)
+// FR22 - Map.Markers: Displays event data that can be linked to map markers
+
 class EventsPage extends StatefulWidget {
   const EventsPage({super.key});
 

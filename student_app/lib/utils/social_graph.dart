@@ -1,7 +1,12 @@
 import 'dart:async';
 import '../services/firebase_service.dart';
 import 'user_model.dart';
-
+// FR37 - SocialGraph.Generate - The system shall create a social graph with users as nodes and 
+// friendships with other users as edges 
+// FR38 - SocialGraph.Sync - The system shall keep the graph up to date by adding or removing 
+// nodes and edges 
+// FR39 - SocialGraph.Recommend - The system shall recommend potential friends based on the 
+// user's mutual friends and/or schedules
 class SocialGraph {
   Map<String, UserModel> users = {}; // Stores all users
   Map<String, List<String>> connections = {}; // Adjacency list of friends

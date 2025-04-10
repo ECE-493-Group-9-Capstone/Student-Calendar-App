@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
+// FR18 - Events.Pull - The system will pull event data from the University of Alberta database and store it in the Firebase database.
+// FR22 - Map.Markers - The system shall display markers for study spots with ratings, events with clickable descriptions, and friend locations.
+
 class EventPopup extends StatelessWidget {
   final Map<String, dynamic> event;
   final VoidCallback? onMoreInfo; // You can keep this if needed elsewhere

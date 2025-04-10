@@ -7,6 +7,19 @@ import 'package:student_app/services/auth_service.dart';
 import 'package:student_app/services/calendar_service.dart';
 import 'package:intl/intl.dart';
 
+// FR4 - Calendar.Upload - The system shall accept uploaded schedules as an ICS file and store 
+// the data in FireBase. 
+// FR5 - Calendar.Sync - The system shall synchronize any modifications in the schedule with the 
+// version in the database. 
+// FR6 - Calendar.Modify - The system shall allow users to add, edit, or delete events in their 
+// schedules. 
+// FR7 - Calendar.Display - The system shall display the user’s calendar with options for 
+// interaction. 
+// FR8 - Calendar.Navigation - The system shall support basic calendar navigation, such as 
+// switching between daily, weekly, and monthly views. 
+// FR9 - Calendar.Offline - The system shall provide offline access to the most recently 
+// synchronized calendar.
+
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
 

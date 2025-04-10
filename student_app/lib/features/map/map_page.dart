@@ -15,6 +15,16 @@ import 'package:student_app/services/study_spot_service.dart';
 import 'event_popup.dart';
 import 'study_spot_popup.dart';
 
+// FR21 - Map.Display - The system shall integrate with Google Maps API to render the campus map.
+// FR22 - Map.Markers - The system shall display markers for study spots with ratings, events with clickable descriptions, and friend locations.
+// FR23 - Map.Search - The system shall allow users to search for specific locations, events, or friends on the map, displaying results as pins or overlays.
+// FR24 - Map.Update - The system shall update map markers in real time based on changes in the data.
+// FR25 - HeatMap.Pull - The system shall pull real-time data from the Google Maps Places API at regular intervals to get density data such as traffic and place popularity.
+// FR33 - Location.Toggle - Users can enable or disable location sharing with specific friends.
+// FR34 - Location.Fetch - The application will use device location services to fetch the user’s live location and share it with friends based on privacy settings.
+// FR36 - Location.Update - The app will update the real-time location of users who have enabled sharing and display it on the map.
+// FR38 - SocialGraph.Sync - The system shall keep the graph up to date by adding or removing nodes and edges.
+
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
 

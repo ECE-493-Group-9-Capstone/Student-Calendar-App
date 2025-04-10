@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:student_app/user_singleton.dart';
 import 'package:student_app/services/firebase_service.dart';
-
+// FR2 - Auth.Valid
 class SocialsView extends StatefulWidget {
   const SocialsView({super.key});
 

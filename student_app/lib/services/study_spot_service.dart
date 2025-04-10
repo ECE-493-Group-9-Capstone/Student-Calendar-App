@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
+// FR19 - StudySpots.Pull - The system shall fetch data about the study spots from the Firebase 
+// database. 
+// FR20 - StudySpots.Sync - The system shall update the study spots data, by changing an existing 
+// entry or adding a new one. 
 class StudySpotService {
   final FirebaseFirestore firestore;
 

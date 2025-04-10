@@ -5,7 +5,12 @@ import 'dart:typed_data';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../services/cache_service.dart';
 
-/// Returns a small circular marker icon from a network image URL.
+// FR21 - Map.Display - The system shall integrate with Google Maps API to render the campus map.
+// FR22 - Map.Markers - The system shall display markers for study spots with ratings, events with clickable descriptions, and friend locations.
+// FR27 - HeatMap.SpotInfo - The system shall display current crowd density and ratings when a user selects a study spot.
+// FR28 - Social.Status - The system shall allow users to set and update their visibility status (e.g., "Open to Connect" or "Private").
+// FR29 - Social.Search - The system shall enable users to search for peers based on shared schedules.
+
 Future<BitmapDescriptor> getCircleMarkerIcon(
   String networkImageUrl, {
   double size = 100,

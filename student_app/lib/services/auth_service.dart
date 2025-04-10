@@ -1,7 +1,11 @@
 import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
+// FR1 - Auth.Prompt - The system shall redirect users to the Google authentication page for 
+// authentication. 
+// FR2 - Auth.Valid - The system shall redirect users to the homepage if a validation token is 
+// received. 
+// FR3 - Auth.Invalid - The system shall deny access to users with invalid login credentials.
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(

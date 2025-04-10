@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:googleapis/calendar/v3.dart' as calendar;
 import 'package:googleapis_auth/auth_io.dart' as auth;
 import 'package:http/http.dart' as http;
-
+// FR6 - Calendar.Modify - The system shall allow users to add, edit, or delete events in their 
+// schedules. 
+// FR7 - Calendar.Display - The system shall display the user’s calendar with options for 
+// interaction. 
+// FR8 - Calendar.Navigation - The system shall support basic calendar navigation, such as 
+// switching between daily, weekly, and monthly views. 
+// FR9 - Calendar.Offline - The system shall provide offline access to the most recently 
+// synchronized calendar.
 class CalendarService {
   Future<List<calendar.Event>> fetchCalendarEvents(String accessToken) async {
     try {

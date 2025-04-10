@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
+// FR18 - Events.Pull - The system will pull event data from the University of Alberta database and 
+// store it in the Firebase database. 
 class EventService {
   final FirebaseFirestore firestore;
 

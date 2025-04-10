@@ -8,6 +8,7 @@ import 'package:student_app/user_singleton.dart';
 import 'package:student_app/services/firebase_service.dart';
 import 'dart:developer' as developer;
 
+// FR2 - Auth.Valid
 class BottomPopup extends StatefulWidget {
   final String userName;
   const BottomPopup({super.key, required this.userName});

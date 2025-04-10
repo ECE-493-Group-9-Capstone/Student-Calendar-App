@@ -4,6 +4,10 @@ import 'dart:async';
 import 'package:student_app/services/study_spot_service.dart';
 import 'package:student_app/user_singleton.dart';
 
+// FR19 - StudySpots.Pull - The system shall fetch data about the study spots from the Firebase 
+// database. 
+// FR20 - StudySpots.Sync - The system shall update the study spots data, by changing an existing 
+// entry or adding a new one. 
 class StudySpotPopup extends StatefulWidget {
   final Map<String, dynamic> studySpot;
   final VoidCallback? onMoreInfo; // Optional callback for additional actions
