@@ -1215,25 +1215,27 @@ class _CalendarPageState extends State<CalendarPage> {
           ],
         ),
         body: SafeArea(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: SizedBox(
-                        height: 325,
-                        width: 325,
-                        child: _calendarView == CalendarView.week
-                            ? _buildWeekCalendar(key: const ValueKey('week'))
-                            : _buildMonthCalendar(key: const ValueKey('month')),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Expanded(child: _buildBottomEventsSection()),
-                  ],
-                ),
+  bottom: false, // disable bottom padding
+  child: _isLoading
+      ? const Center(child: CircularProgressIndicator())
+      : Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: SizedBox(
+                height: 325,
+                width: 325,
+                child: _calendarView == CalendarView.week
+                    ? _buildWeekCalendar(key: const ValueKey('week'))
+                    : _buildMonthCalendar(key: const ValueKey('month')),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(child: _buildBottomEventsSection()),
+          ],
         ),
+)
+
       );
 }
 

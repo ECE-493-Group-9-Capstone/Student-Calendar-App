@@ -9,7 +9,8 @@ class FirebaseService {
   final FirebaseFirestore firestore;
   FirebaseService({required this.firestore});
 
-  Future<void> addUser(String name, String ccid, {String? photoURL}) async {
+  Future<void> addUser(String name, String ccid,
+      {String? photoURL, bool merge = false}) async {
     try {
       final DocumentReference documentRef =
           firestore.collection('users').doc(ccid);
@@ -26,7 +27,7 @@ class FirebaseService {
         'schedule': null,
         'hasSeenBottomPopup': false,
         'isActive': false,
-      });
+      }, SetOptions(merge: merge));
       debugPrint('User added with doc ID: $ccid');
     } catch (e) {
       debugPrint('Error adding user: $e');

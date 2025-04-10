@@ -14,7 +14,6 @@ import 'services/map_service.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'services/auth_service.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
@@ -43,9 +42,6 @@ Future<void> main() async {
       .resolvePlatformSpecificImplementation<
           IOSFlutterLocalNotificationsPlugin>()
       ?.requestPermissions(alert: true, badge: true, sound: true);
-
-  final authService = AuthService();
-  await authService.getAccessToken();
 
   runApp(const MyApp());
 }
@@ -95,13 +91,28 @@ class AuthWrapper extends StatelessWidget {
 
 Future<bool> _ensureUserExists(User user) async {
   final ccid = user.email?.split('@')[0] ?? user.uid;
-  final firestoreData = await firebaseService.fetchUserData(ccid);
-  if (firestoreData == null) {
-    await firebaseService.addUser(user.displayName ?? 'New User', ccid,
-        photoURL: user.photoURL);
+  const int maxRetries = 3;
+  int attempts = 0;
+  Map<String, dynamic>? firestoreData;
+  bool successfulFetch = false;
+
+  while (attempts < maxRetries) {
+    try {
+      firestoreData = await fetchUserData(ccid);
+      successfulFetch = true;
+      break;
+    } catch (e) {
+      attempts++;
+      await Future.delayed(Duration(milliseconds: 500 * attempts));
+    }
+  }
+
+  if (!successfulFetch || firestoreData == null) {
+    await addUser(user.displayName ?? 'New User', ccid,
+        photoURL: user.photoURL, merge: true);
   } else if (user.photoURL != null &&
       firestoreData['photoURL'] != user.photoURL) {
-    await firebaseService.updateUserPhoto(ccid, user.photoURL!);
+    await updateUserPhoto(ccid, user.photoURL!);
   }
   return true;
 }

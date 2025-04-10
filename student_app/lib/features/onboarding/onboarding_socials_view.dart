@@ -89,7 +89,7 @@ class OnboardingSocialsViewState extends State<OnboardingSocialsView> {
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+padding: const EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 10),
         child: Form(
           key: _formKey,
           child: Column(
@@ -118,7 +118,7 @@ class OnboardingSocialsViewState extends State<OnboardingSocialsView> {
                 'help you connect with others.',
                 style: TextStyle(fontSize: 16, color: Colors.black),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               TextFormField(
                 controller: _phoneController,
                 focusNode: _phoneFocusNode,
@@ -138,7 +138,7 @@ class OnboardingSocialsViewState extends State<OnboardingSocialsView> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 15),
               TextFormField(
                 controller: _instagramController,
                 keyboardType: TextInputType.text,
@@ -149,7 +149,7 @@ class OnboardingSocialsViewState extends State<OnboardingSocialsView> {
                   prefixIcon: Icon(Icons.link),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 0),
               if (_submittedPhoneNumber != null)
                 Text(
                   'Submitted: $_submittedPhoneNumber',

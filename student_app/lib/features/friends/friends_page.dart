@@ -119,7 +119,6 @@ class FriendsPageState extends State<FriendsPage> {
           .where((u) =>
               u.ccid != AppUser.instance.ccid && !friendsCcids.contains(u.ccid))
           .toList();
-      // Remove anyone from _requestedFriends if they are now friends
       _requestedFriends.removeWhere((ccid) => friendsCcids.contains(ccid));
     });
   }
@@ -199,8 +198,6 @@ class FriendsPageState extends State<FriendsPage> {
     }
   }
 
-  /// NEW: Build header with a green gradient clipart background
-  /// similar to EventsPage. It shows the title and a white notification bell icon.
   Widget _buildHeader(Size size) => Stack(
         children: [
           ClipPath(
@@ -232,7 +229,6 @@ class FriendsPageState extends State<FriendsPage> {
               ),
             ),
           ),
-          // Notification bell icon (white, without any extra circle background)
           Positioned(
             top: 50,
             right: 20,
@@ -256,7 +252,6 @@ class FriendsPageState extends State<FriendsPage> {
         ],
       );
 
-  /// NEW: Build a gradient search bar matching EventsPage styling.
   Widget _buildGradientSearchBar() => Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
@@ -292,19 +287,17 @@ class FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    // Use a Column for the fixed header and search bar,
-    // and let the friends list (or search results) expand
+   
     return Focus(
       focusNode: _focusNode,
       child: Scaffold(
         backgroundColor: Colors.white,
-        // No AppBar: the header covers that area.
         body: Column(
           children: [
             _buildHeader(size),
             const SizedBox(height: 10),
             _buildGradientSearchBar(),
-            const SizedBox(height: 30),
+            const SizedBox(height: 0),
             Expanded(
               child: isSearching ? _buildSearchResults() : _buildFriendsList(),
             ),

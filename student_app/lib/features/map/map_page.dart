@@ -268,13 +268,13 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
       final photoUrl = friend.photoURL;
       if (photoUrl != null && photoUrl.isNotEmpty) {
         try {
-          final circleBytes = await createCircleImageBytes(photoUrl, 80);
+          final circleBytes = await createCircleImageBytes(photoUrl, 40);
           final circleMemoryImage = MemoryImage(circleBytes);
           final circleIcon = BitmapDescriptor.bytes(circleBytes);
 
           final pinIcon = await getPinMarkerIcon(
             photoUrl,
-            pinWidth: 100,
+            pinWidth: 40,
             pinAssetPath: 'assets/marker_asset.png',
           );
 
@@ -300,7 +300,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
     try {
       _eventMarkerIcon =
-          await getResizedMarkerIcon('assets/event_marker.png', 80, 80);
+          await getResizedMarkerIcon('assets/event_marker.png', 40, 40);
       debugPrint('Successfully loaded event_marker.png as custom marker');
     } catch (e) {
       debugPrint('Error loading event marker icon: $e');
@@ -315,7 +315,7 @@ class MapPageState extends State<MapPage> with AutomaticKeepAliveClientMixin {
 
     try {
       _studySpotIcon =
-          await getResizedMarkerIcon('assets/study_spot.png', 80, 80);
+          await getResizedMarkerIcon('assets/study_spot.png', 40, 40);
       debugPrint('Successfully loaded study_spot_marker.png as custom marker');
     } catch (e) {
       debugPrint('Error loading study spot marker icon: $e');
