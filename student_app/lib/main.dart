@@ -98,7 +98,7 @@ Future<bool> _ensureUserExists(User user) async {
 
   while (attempts < maxRetries) {
     try {
-      firestoreData = await fetchUserData(ccid);
+      firestoreData = await firebaseService.fetchUserData(ccid);
       successfulFetch = true;
       break;
     } catch (e) {
@@ -108,11 +108,11 @@ Future<bool> _ensureUserExists(User user) async {
   }
 
   if (!successfulFetch || firestoreData == null) {
-    await addUser(user.displayName ?? 'New User', ccid,
+    await firebaseService.addUser(user.displayName ?? 'New User', ccid,
         photoURL: user.photoURL, merge: true);
   } else if (user.photoURL != null &&
       firestoreData['photoURL'] != user.photoURL) {
-    await updateUserPhoto(ccid, user.photoURL!);
+    await firebaseService.updateUserPhoto(ccid, user.photoURL!);
   }
   return true;
 }

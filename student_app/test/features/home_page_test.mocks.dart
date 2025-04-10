@@ -58,9 +58,18 @@ class MockFirebaseService extends _i1.Mock implements _i4.FirebaseService {
           as _i2.FirebaseFirestore);
 
   @override
-  _i3.Future<void> addUser(String? name, String? ccid, {String? photoURL}) =>
+  _i3.Future<void> addUser(
+    String? name,
+    String? ccid, {
+    String? photoURL,
+    bool? merge = false,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#addUser, [name, ccid], {#photoURL: photoURL}),
+            Invocation.method(
+              #addUser,
+              [name, ccid],
+              {#photoURL: photoURL, #merge: merge},
+            ),
             returnValue: _i3.Future<void>.value(),
             returnValueForMissingStub: _i3.Future<void>.value(),
           )
