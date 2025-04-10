@@ -63,6 +63,21 @@ class BottomPopupState extends State<BottomPopup> {
     });
   }
 
+  Future<void> updateUserProfile(String ccid,
+      {String? discipline, String? educationLvl, String? degree}) async {
+    await firebaseService.updateUserProfile(
+      ccid,
+      discipline: discipline,
+      educationLvl: educationLvl,
+      degree: degree,
+    );
+  }
+
+  Future<void> updateUserLocationPreference(
+      String ccid, String preference) async {
+    await firebaseService.updateUserLocationPreference(ccid, preference);
+  }
+
   Widget _buildContent() {
     developer.log('Building content for step: $_currentStep',
         name: 'BottomPopup');

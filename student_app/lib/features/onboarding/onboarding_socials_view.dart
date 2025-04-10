@@ -59,10 +59,10 @@ class SocialsViewState extends State<SocialsView> {
     }
 
     try {
-      await uploadPhoneNumber(ccid, formattedPhone);
+      await firebaseService.uploadPhoneNumber(ccid, formattedPhone);
 
       if (fullInstagramLink != null) {
-        await uploadInstagramLink(ccid, fullInstagramLink);
+        await firebaseService.uploadInstagramLink(ccid, fullInstagramLink);
       }
 
       setState(() {

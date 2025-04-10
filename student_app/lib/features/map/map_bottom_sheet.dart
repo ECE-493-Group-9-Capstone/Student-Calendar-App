@@ -44,12 +44,13 @@ class MapBottomSheetState extends State<MapBottomSheet> {
     if (widget.friends.isEmpty) {
       return;
     } else {
-      await initializeLastSeen(widget.friends, widget.lastUpdatedNotifier);
+      await firebaseService.initializeLastSeen(
+          widget.friends, widget.lastUpdatedNotifier);
       final List<String> friendIds = widget.friends
           .map<String>((friend) => friend.ccid as String)
           .toList();
-      _friendLocationSubscription =
-          subscribeToFriendLocations(friendIds, widget.lastUpdatedNotifier);
+      _friendLocationSubscription = firebaseService.subscribeToFriendLocations(
+          friendIds, widget.lastUpdatedNotifier);
     }
   }
 

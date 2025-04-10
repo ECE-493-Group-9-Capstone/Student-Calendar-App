@@ -15,7 +15,7 @@ class FriendsUserNotificationPopup extends StatelessWidget {
 
   /// Retrieves a user's profile data.
   Future<UserModel> getUserProfile(String userId) async {
-    final users = await getAllUsers();
+    final users = await firebaseService.getAllUsers();
     return users.firstWhere((u) => u.ccid == userId);
   }
 

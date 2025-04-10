@@ -9,6 +9,8 @@ class MapService {
   factory MapService() => _instance;
   MapService._internal();
 
+  final FirebaseService _firebaseService = firebaseService;
+
   StreamSubscription<Position>? _positionSubscription;
   Timer? _heartbeatTimer;
   double? _lastLatitude;
@@ -122,7 +124,8 @@ class MapService {
         _lastLongitude = pos.longitude;
         final ccid = AppUser.instance.ccid;
         if (ccid != null) {
-          await updateUserLocation(ccid, pos.latitude, pos.longitude);
+          await _firebaseService.updateUserLocation(
+              ccid, pos.latitude, pos.longitude);
           await AppUser.instance.refreshUserData();
         }
       },
@@ -141,7 +144,8 @@ class MapService {
       if (_lastLatitude != null && _lastLongitude != null) {
         final ccid = AppUser.instance.ccid;
         if (ccid != null) {
-          await updateUserLocation(ccid, _lastLatitude!, _lastLongitude!);
+          await _firebaseService.updateUserLocation(
+              ccid, _lastLatitude!, _lastLongitude!);
         }
       }
     });

@@ -89,13 +89,13 @@ class AuthWrapper extends StatelessWidget {
 
 Future<bool> _ensureUserExists(User user) async {
   final ccid = user.email?.split('@')[0] ?? user.uid;
-  final firestoreData = await fetchUserData(ccid);
+  final firestoreData = await firebaseService.fetchUserData(ccid);
   if (firestoreData == null) {
-    await addUser(user.displayName ?? 'New User', ccid,
+    await firebaseService.addUser(user.displayName ?? 'New User', ccid,
         photoURL: user.photoURL);
   } else if (user.photoURL != null &&
       firestoreData['photoURL'] != user.photoURL) {
-    await updateUserPhoto(ccid, user.photoURL!);
+    await firebaseService.updateUserPhoto(ccid, user.photoURL!);
   }
   return true;
 }
@@ -158,9 +158,10 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
       final pref = AppUser.instance.locationTracking;
       final ccid = AppUser.instance.ccid;
       if (ccid != null) {
-        updateUserActiveStatus(ccid, state == AppLifecycleState.resumed);
+        await firebaseService.updateUserActiveStatus(
+            ccid, state == AppLifecycleState.resumed);
         MapService().stopTracking();
-        final userData = await fetchUserData(ccid);
+        final userData = await firebaseService.fetchUserData(ccid);
         final hasSeen = userData?['hasSeenBottomPopup'] ?? false;
         if (hasSeen) {
           if (state == AppLifecycleState.resumed) {
@@ -181,7 +182,7 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
       return;
     }
     Future.delayed(const Duration(seconds: 2), () async {
-      final userData = await fetchUserData(ccid);
+      final userData = await firebaseService.fetchUserData(ccid);
       final bool hasSeen = userData?['hasSeenBottomPopup'] ?? false;
       if (!hasSeen) {
         final firstName = (AppUser.instance.name ?? 'Guest').split(' ').first;
@@ -193,8 +194,8 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
           backgroundColor: Colors.transparent,
           builder: (_) => BottomPopup(userName: firstName),
         );
-        await markPopupAsSeen(ccid);
-        final updatedData = await fetchUserData(ccid);
+        await firebaseService.markPopupAsSeen(ccid);
+        final updatedData = await firebaseService.fetchUserData(ccid);
         final updatedPref = updatedData?['location_tracking'];
         if (updatedPref == 'Live Tracking' ||
             updatedPref == 'Only When Using App') {

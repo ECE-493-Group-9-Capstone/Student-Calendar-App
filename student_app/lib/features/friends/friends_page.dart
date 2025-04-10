@@ -104,7 +104,7 @@ class FriendsPageState extends State<FriendsPage> {
 
   Future<void> _loadUsers() async {
     await AppUser.instance.refreshUserData();
-    final users = await getAllUsers();
+    final users = await firebaseService.getAllUsers();
     final friendsCcids = AppUser.instance.friends.map((f) => f.ccid).toSet();
     setState(() {
       allUsers = users
@@ -117,7 +117,8 @@ class FriendsPageState extends State<FriendsPage> {
   }
 
   Future<void> _loadRequestedFriends() async {
-    final requested = await getRequestedFriends(AppUser.instance.ccid!);
+    final requested =
+        await firebaseService.getRequestedFriends(AppUser.instance.ccid!);
     setState(() {
       _requestedFriends = List<String>.from(requested);
     });
