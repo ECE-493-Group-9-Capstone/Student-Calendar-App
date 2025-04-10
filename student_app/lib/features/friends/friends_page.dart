@@ -33,6 +33,9 @@ class FriendsPageState extends State<FriendsPage> {
   List<String> _requestedFriends = [];
   bool _hasLoaded = false;
 
+  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
   // Define the green gradient to reuse (same as in EventsPage)
   final LinearGradient _greenGradient = const LinearGradient(
     colors: [Color(0xFF396548), Color(0xFF6B803D), Color(0xFF909533)],
@@ -93,12 +96,17 @@ class FriendsPageState extends State<FriendsPage> {
     super.dispose();
   }
 
-  void _initializeNotifications() async {
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iOS = DarwinInitializationSettings();
-    await flutterLocalNotificationsPlugin.initialize(
-      const InitializationSettings(android: android, iOS: iOS),
-    );
+  Future<void> _initializeNotifications() async {
+    try {
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('app_icon');
+      const InitializationSettings initializationSettings =
+          InitializationSettings(android: initializationSettingsAndroid);
+
+      await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    } catch (e) {
+      debugPrint('Error initializing notifications: $e');
+    }
   }
 
   void _requestIOSPermissions() {
@@ -110,7 +118,7 @@ class FriendsPageState extends State<FriendsPage> {
 
   Future<void> _loadUsers() async {
     await AppUser.instance.refreshUserData();
-    final users = await getAllUsers();
+    final users = await firebaseService.getAllUsers();
     final friendsCcids = AppUser.instance.friends.map((f) => f.ccid).toSet();
     setState(() {
       allUsers = users
@@ -122,10 +130,15 @@ class FriendsPageState extends State<FriendsPage> {
   }
 
   Future<void> _loadRequestedFriends() async {
-    final requested = await getRequestedFriends(AppUser.instance.ccid!);
-    setState(() {
-      _requestedFriends = List<String>.from(requested);
-    });
+    try {
+      final requested = await firebaseService
+          .getRequestedFriends(AppUser.instance.ccid ?? '');
+      setState(() {
+        _requestedFriends = List<String>.from(requested);
+      });
+    } catch (e) {
+      debugPrint('Error loading requested friends: $e');
+    }
   }
 
   void _onSearch(String query) {

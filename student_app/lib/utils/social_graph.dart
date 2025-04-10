@@ -8,17 +8,28 @@ import 'user_model.dart';
 // FR39 - SocialGraph.Recommend - The system shall recommend potential friends based on the 
 // user's mutual friends and/or schedules
 class SocialGraph {
+  final FirebaseService _firebaseService;
   Map<String, UserModel> users = {}; // Stores all users
   Map<String, List<String>> connections = {}; // Adjacency list of friends
   Timer? _updateTimer;
 
-  static final SocialGraph _instance = SocialGraph._internal();
-  factory SocialGraph() => _instance;
+  static SocialGraph? _instance;
 
-  SocialGraph._internal();
+  factory SocialGraph({FirebaseService? firebaseService}) {
+    if (_instance == null) {
+      if (firebaseService == null) {
+        throw ArgumentError(
+            'firebaseService cannot be null when creating SocialGraph');
+      }
+      _instance = SocialGraph._internal(firebaseService);
+    }
+    return _instance!;
+  }
+
+  SocialGraph._internal(this._firebaseService);
 
   Future<void> buildGraph() async {
-    final List<UserModel> userList = await getAllUsers();
+    final List<UserModel> userList = await _firebaseService.getAllUsers();
     users.clear();
     connections.clear();
 
@@ -29,7 +40,7 @@ class SocialGraph {
 
     // Fetch all user connections
     for (String userId in users.keys) {
-      connections[userId] = await getUserFriends(userId);
+      connections[userId] = await _firebaseService.getUserFriends(userId);
     }
   }
 

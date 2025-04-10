@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-// FR2 - Auth.Valid
-class DisciplineView extends StatelessWidget {
+
+class OnboardingDisciplineView extends StatelessWidget {
   final String? selectedEducationLevel;
   final String? selectedDegree;
   final String? selectedMajor;
@@ -11,7 +11,7 @@ class DisciplineView extends StatelessWidget {
   final List<String> degreeOptions;
   final List<String> majorOptions;
 
-  const DisciplineView({
+  const OnboardingDisciplineView({
     super.key,
     required this.selectedEducationLevel,
     required this.selectedDegree,

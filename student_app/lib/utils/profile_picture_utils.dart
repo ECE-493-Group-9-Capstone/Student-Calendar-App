@@ -5,9 +5,11 @@ import 'dart:typed_data';
 import 'package:student_app/services/cache_service.dart'; // Contains loadCachedImageBytes and cacheImageBytes
 
 // Function to download image bytes from a URL.
-Future<Uint8List?> downloadImageBytes(String photoURL) async {
+Future<Uint8List?> downloadImageBytes(String photoURL,
+    {http.Client? client}) async {
   try {
-    final response = await http.get(Uri.parse(photoURL));
+    final httpClient = client ?? http.Client();
+    final response = await httpClient.get(Uri.parse(photoURL));
     if (response.statusCode == 200) {
       return response.bodyBytes;
     }
@@ -23,6 +25,7 @@ class CachedProfileImage extends StatefulWidget {
   final double size;
   final String? fallbackText;
   final Color? fallbackBackgroundColor;
+  final http.Client? client; // Add optional client parameter
 
   const CachedProfileImage({
     super.key,
@@ -30,6 +33,7 @@ class CachedProfileImage extends StatefulWidget {
     this.size = 64,
     this.fallbackText,
     this.fallbackBackgroundColor,
+    this.client, // Initialize client
   });
 
   @override
@@ -43,12 +47,13 @@ class CachedProfileImageState extends State<CachedProfileImage> {
   void initState() {
     super.initState();
     if (widget.photoURL != null && widget.photoURL!.isNotEmpty) {
-      _imageFuture = _getProfileImage(widget.photoURL!);
+      _imageFuture = _getProfileImage(widget.photoURL!, client: widget.client);
     }
   }
 
   // Retrieves the profile image bytes from cache or downloads and caches it.
-  Future<Uint8List?> _getProfileImage(String photoURL) async {
+  Future<Uint8List?> _getProfileImage(String photoURL,
+      {http.Client? client}) async {
     final key = 'circle_${photoURL.hashCode}_${widget.size}';
     // Try to load from cache
     Uint8List? bytes = await loadCachedImageBytes(key);
@@ -56,7 +61,7 @@ class CachedProfileImageState extends State<CachedProfileImage> {
       return bytes;
     }
     // If not in cache, download the image
-    bytes = await downloadImageBytes(photoURL);
+    bytes = await downloadImageBytes(photoURL, client: client);
     if (bytes != null) {
       await cacheImageBytes(key, bytes);
     }

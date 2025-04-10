@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:student_app/services/auth_service.dart';
 
-// FR1 - Auth.Prompt: Redirects users to Google authentication for login
-// FR2 - Auth.Valid: Displays welcome message on successful login
-// FR3 - Auth.Invalid: Displays error message on failed login
-
-class Onboarding extends StatefulWidget {
-  const Onboarding({super.key});
+class AuthLoginPage extends StatefulWidget {
+  const AuthLoginPage({super.key});
 
   @override
-  State<Onboarding> createState() => _OnboardingState();
+  State<AuthLoginPage> createState() => _AuthLoginPageState();
 }
 
-class _OnboardingState extends State<Onboarding> {
+class _AuthLoginPageState extends State<AuthLoginPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         body: Container(

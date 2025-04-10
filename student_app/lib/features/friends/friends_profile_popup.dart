@@ -25,7 +25,7 @@ class _FriendsProfilePopupState extends State<FriendsProfilePopup> {
   // Loads the current hidden state from the current user's data.
   Future<void> _loadHiddenState() async {
     final currentUserId = AppUser.instance.ccid!;
-    final myData = await fetchUserData(currentUserId);
+    final myData = await firebaseService.fetchUserData(currentUserId);
     if (myData != null) {
       final hiddenList =
           List<String>.from(myData['location_hidden_from'] ?? []);
@@ -40,7 +40,8 @@ class _FriendsProfilePopupState extends State<FriendsProfilePopup> {
     final currentUserId = AppUser.instance.ccid!;
     setState(() => isLoading = true);
     // toggleHideLocation is assumed to update the hidden status in Firestore.
-    await toggleHideLocation(currentUserId, widget.user.ccid, !isHidden);
+    await firebaseService.toggleHideLocation(
+        currentUserId, widget.user.ccid, !isHidden);
     await _loadHiddenState(); // Refresh hidden state.
     setState(() => isLoading = false);
   }

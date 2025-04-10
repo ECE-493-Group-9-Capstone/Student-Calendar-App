@@ -1,10 +1,10 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
-// FR2 - Auth.Valid
-class WelcomeView extends StatelessWidget {
+
+class OnboardingWelcomeView extends StatelessWidget {
   final String firstName;
 
-  const WelcomeView({super.key, required this.firstName});
+  const OnboardingWelcomeView({super.key, required this.firstName});
 
   @override
   Widget build(BuildContext context) => Column(
