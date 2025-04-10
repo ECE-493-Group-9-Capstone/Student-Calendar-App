@@ -23,7 +23,13 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+    return;
+  }
 
   const AndroidInitializationSettings androidInit =
       AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -78,11 +84,11 @@ class AuthWrapper extends StatelessWidget {
                   return const MainPage();
                 }
                 FirebaseAuth.instance.signOut();
-                return const Onboarding();
+                return const AuthLoginPage();
               },
             );
           }
-          return const Onboarding();
+          return const AuthLoginPage();
         },
       );
 }
@@ -192,7 +198,7 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
           isDismissible: true,
           enableDrag: true,
           backgroundColor: Colors.transparent,
-          builder: (_) => BottomPopup(userName: firstName),
+          builder: (_) => OnboardingBottomPopup(userName: firstName),
         );
         await firebaseService.markPopupAsSeen(ccid);
         final updatedData = await firebaseService.fetchUserData(ccid);

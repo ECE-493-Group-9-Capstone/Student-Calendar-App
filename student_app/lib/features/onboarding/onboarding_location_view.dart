@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:developer' as developer;
 
-class LocationView extends StatefulWidget {
+class OnboardingLocationView extends StatefulWidget {
   final Function(String)
       onPreferenceUpdated; // Callback to update user preference
   final BuildContext parentContext; // Parent context for showing dialogs
 
-  const LocationView({
+  const OnboardingLocationView({
     super.key,
     required this.onPreferenceUpdated,
     required this.parentContext,
   });
 
   @override
-  LocationViewState createState() => LocationViewState();
+  OnboardingLocationViewState createState() => OnboardingLocationViewState();
 }
 
-class LocationViewState extends State<LocationView>
+class OnboardingLocationViewState extends State<OnboardingLocationView>
     with WidgetsBindingObserver {
   String _currentPreference = 'Checking...';
 

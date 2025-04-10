@@ -40,19 +40,19 @@ class FirebaseService {
       final DocumentReference userRef2 =
           firestore.collection('users').doc(userId2);
 
-      // Add each other to their friends lists
+      // add each other to their friends lists
       await userRef1.update({
         'friends': FieldValue.arrayUnion(
-            [userId2]), // Add userId2 to userId1's friends list
+            [userId2]), // add userId2 to userId1's friends list
         'friend_requests':
-            FieldValue.arrayRemove([userId2]) // Remove from friend_requests
+            FieldValue.arrayRemove([userId2]) // remove from friend_requests
       });
 
       await userRef2.update({
         'friends': FieldValue.arrayUnion(
-            [userId1]), // Add userId1 to userId2's friends list
+            [userId1]), // add userId1 to userId2's friends list
         'requested_friends':
-            FieldValue.arrayRemove([userId1]) // Remove from requested_friends
+            FieldValue.arrayRemove([userId1]) // remove from requested_friends
       });
 
       debugPrint('Users $userId1 and $userId2 are now friends.');
@@ -68,12 +68,12 @@ class FirebaseService {
       final DocumentReference receiverRef =
           firestore.collection('users').doc(receiverId);
 
-      // Add senderId to receiver's friend_requests list
+      // add senderId to receiver's friend_requests list
       await receiverRef.update({
         'friend_requests': FieldValue.arrayUnion([senderId])
       });
 
-      // Add receiverId to sender's requested_friends list
+      // add receiverId to sender's requested_friends list
       await senderRef.update({
         'requested_friends': FieldValue.arrayUnion([receiverId])
       });
@@ -87,9 +87,9 @@ class FirebaseService {
   Future<void> deleteUser(String id) async {
     try {
       await firestore
-          .collection('users') // Specify the collection
-          .doc(id) // Specify the document ID
-          .delete(); // Delete the document
+          .collection('users') // specify the collection
+          .doc(id) // specify the document ID
+          .delete(); // delete the document
       debugPrint('User deleted successfully!');
     } catch (e) {
       debugPrint('Error deleting user: $e');
@@ -190,7 +190,7 @@ class FirebaseService {
             return [];
           }
 
-          // Fetch details for each friend request sender
+          // fetch details for each friend request sender
           final List<Map<String, dynamic>> friendRequestsDetails = [];
           for (String requesterId in friendRequestIds) {
             final DocumentSnapshot requesterDoc =
@@ -200,7 +200,7 @@ class FirebaseService {
               final Map<String, dynamic>? requesterData =
                   requesterDoc.data() as Map<String, dynamic>?;
               if (requesterData != null) {
-                requesterData['id'] = requesterId; // Include the requester's ID
+                requesterData['id'] = requesterId; // include the requester's ID
                 friendRequestsDetails.add(requesterData);
               }
             }
@@ -249,7 +249,7 @@ class FirebaseService {
 
   Future<void> declineFriendRequest(String requesterId, String userId) async {
     try {
-      // Remove from friend requests only
+      // remove from friend requests only
       await firestore.collection('users').doc(userId).update({
         'friend_requests': FieldValue.arrayRemove([requesterId]),
       });
@@ -267,7 +267,7 @@ class FirebaseService {
       final DocumentReference userRef2 =
           firestore.collection('users').doc(userId2);
 
-      // Remove each other from friends lists
+      // remove each other from friends lists
       await userRef1.update({
         'friends': FieldValue.arrayRemove([userId2]),
         'requested_friends': FieldValue.arrayRemove([userId2]),
@@ -346,13 +346,13 @@ class FirebaseService {
       final DocumentReference docref = firestore.collection('users').doc(ccid);
       final Map<String, dynamic> updates = {};
 
-      // Directly assign because trackingOption can't be null.
+      // directly assign because trackingOption can't be null
       updates['location_tracking'] = trackingOption;
 
-      // Optionally, you could remove this check as well because updates won't be empty.
+      // optionally, you could remove this check as well because updates won't be empty
       if (updates.isEmpty) {
         debugPrint(
-            'No location preference provided. Skipping Firestore update.');
+            'No location preference provided. skipping Firestore update.');
         return;
       }
 
@@ -384,7 +384,7 @@ class FirebaseService {
     try {
       final DocumentReference docRef = firestore.collection('users').doc(ccid);
       await docRef.update({
-        'photoURL': photoURL, // <-- Updates the user's profile image URL
+        'photoURL': photoURL, // updates the user's profile image URL
       });
       debugPrint('User photo updated for $ccid');
     } catch (e) {

@@ -3,15 +3,25 @@ import '../services/firebase_service.dart';
 import 'user_model.dart';
 
 class SocialGraph {
-  final FirebaseService _firebaseService = firebaseService;
+  final FirebaseService _firebaseService;
   Map<String, UserModel> users = {}; // Stores all users
   Map<String, List<String>> connections = {}; // Adjacency list of friends
   Timer? _updateTimer;
 
-  static final SocialGraph _instance = SocialGraph._internal();
-  factory SocialGraph() => _instance;
+  static SocialGraph? _instance;
 
-  SocialGraph._internal();
+  factory SocialGraph({FirebaseService? firebaseService}) {
+    if (_instance == null) {
+      if (firebaseService == null) {
+        throw ArgumentError(
+            'firebaseService cannot be null when creating SocialGraph');
+      }
+      _instance = SocialGraph._internal(firebaseService);
+    }
+    return _instance!;
+  }
+
+  SocialGraph._internal(this._firebaseService);
 
   Future<void> buildGraph() async {
     final List<UserModel> userList = await _firebaseService.getAllUsers();

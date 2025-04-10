@@ -3,15 +3,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-      'https://www.googleapis.com/auth/calendar',
-    ],
-    serverClientId:
-        '383013120334-e7qqaa8rjbs1cdp831mddske427s4a0r.apps.googleusercontent.com',
-  );
+  final FirebaseAuth _auth;
+  final GoogleSignIn _googleSignIn;
+
+  AuthService({
+    FirebaseAuth? firebaseAuth,
+    GoogleSignIn? googleSignIn,
+  })  : _auth = firebaseAuth ?? FirebaseAuth.instance,
+        _googleSignIn = googleSignIn ??
+            GoogleSignIn(
+              scopes: [
+                'email',
+                'https://www.googleapis.com/auth/calendar',
+              ],
+              serverClientId:
+                  '383013120334-e7qqaa8rjbs1cdp831mddske427s4a0r.apps.googleusercontent.com',
+            );
 
   Future<Map<String, String>?> loginWithGoogle() async {
     try {

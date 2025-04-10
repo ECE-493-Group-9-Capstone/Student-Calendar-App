@@ -8,21 +8,21 @@ import 'package:student_app/user_singleton.dart';
 import 'package:student_app/services/firebase_service.dart';
 import 'dart:developer' as developer;
 
-class BottomPopup extends StatefulWidget {
+class OnboardingBottomPopup extends StatefulWidget {
   final String userName;
-  const BottomPopup({super.key, required this.userName});
+  const OnboardingBottomPopup({super.key, required this.userName});
   String get firstName => userName.split(' ').first;
 
   @override
-  BottomPopupState createState() => BottomPopupState();
+  OnboardingBottomPopupState createState() => OnboardingBottomPopupState();
 }
 
-class BottomPopupState extends State<BottomPopup> {
+class OnboardingBottomPopupState extends State<OnboardingBottomPopup> {
   static int _savedStep = 0;
   int _currentStep = 0;
 
-  final GlobalKey<SocialsViewState> _scheduleKey =
-      GlobalKey<SocialsViewState>();
+  final GlobalKey<OnboardingSocialsViewState> _scheduleKey =
+      GlobalKey<OnboardingSocialsViewState>();
 
   String? _selectedEducationLevel;
   String? _selectedDegree;
@@ -83,9 +83,9 @@ class BottomPopupState extends State<BottomPopup> {
         name: 'BottomPopup');
     switch (_currentStep) {
       case 0:
-        return WelcomeView(firstName: widget.firstName);
+        return OnboardingWelcomeView(firstName: widget.firstName);
       case 1:
-        return DisciplineView(
+        return OnboardingDisciplineView(
           selectedEducationLevel: _selectedEducationLevel,
           selectedDegree: _selectedDegree,
           selectedMajor: _selectedMajor,
@@ -103,9 +103,9 @@ class BottomPopupState extends State<BottomPopup> {
           majorOptions: _majorOptions,
         );
       case 2:
-        return SocialsView(key: _scheduleKey);
+        return OnboardingSocialsView(key: _scheduleKey);
       case 3:
-        return LocationView(
+        return OnboardingLocationView(
           onPreferenceUpdated: _updateLocationPreference,
           parentContext: Navigator.of(context, rootNavigator: true).context,
         );
