@@ -22,7 +22,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialize local notifications
   const AndroidInitializationSettings androidInit =
       AndroidInitializationSettings('@mipmap/ic_launcher');
   const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
@@ -35,9 +34,6 @@ Future<void> main() async {
       .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
       ?.requestPermissions(alert: true, badge: true, sound: true);
 
-  // Removed the automatic call to getAccessToken()
-  // final authService = AuthService();
-  // await authService.getAccessToken();
 
   runApp(const MyApp());
 }
@@ -87,14 +83,32 @@ class AuthWrapper extends StatelessWidget {
 
 Future<bool> _ensureUserExists(User user) async {
   final ccid = user.email?.split('@')[0] ?? user.uid;
-  final firestoreData = await fetchUserData(ccid);
-  if (firestoreData == null) {
-    await addUser(user.displayName ?? 'New User', ccid, photoURL: user.photoURL);
+  const int maxRetries = 3;
+  int attempts = 0;
+  Map<String, dynamic>? firestoreData;
+  bool successfulFetch = false;
+
+  while (attempts < maxRetries) {
+    try {
+      firestoreData = await fetchUserData(ccid);
+      successfulFetch = true;
+      break;
+    } catch (e) {
+      attempts++;
+      await Future.delayed(Duration(milliseconds: 500 * attempts));
+    }
+  }
+
+  if (!successfulFetch || firestoreData == null) {
+    await addUser(user.displayName ?? 'New User', ccid,
+        photoURL: user.photoURL, merge: true);
   } else if (user.photoURL != null && firestoreData['photoURL'] != user.photoURL) {
     await updateUserPhoto(ccid, user.photoURL!);
   }
   return true;
 }
+
+
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
   @override

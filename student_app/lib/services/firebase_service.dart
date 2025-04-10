@@ -24,7 +24,7 @@ void readDocument(String id) async {
   }
 }
 
-Future<void> addUser(String name, String ccid, {String? photoURL}) async {
+Future<void> addUser(String name, String ccid, {String? photoURL, bool merge = false}) async {
   try {
     final DocumentReference documentRef = db.collection('users').doc(ccid);
     await documentRef.set({
@@ -40,12 +40,13 @@ Future<void> addUser(String name, String ccid, {String? photoURL}) async {
       'schedule': null,
       'hasSeenBottomPopup': false,
       'isActive': false,
-    });
+    }, SetOptions(merge: merge));
     debugPrint('User added with doc ID: $ccid');
   } catch (e) {
     debugPrint('Error adding user: $e');
   }
 }
+
 
 Future<void> acceptFriendRequest(String userId1, String userId2) async {
   try {
@@ -170,9 +171,7 @@ Future<List<String>> getUserFriends(String userId) async {
 
 Future<Map<String, dynamic>?> fetchUserData(String userId) async {
   try {
-    final DocumentSnapshot userDoc =
-        await db.collection('users').doc(userId).get();
-
+    final DocumentSnapshot userDoc = await db.collection('users').doc(userId).get();
     if (userDoc.exists) {
       return userDoc.data() as Map<String, dynamic>;
     } else {
@@ -180,9 +179,10 @@ Future<Map<String, dynamic>?> fetchUserData(String userId) async {
     }
   } catch (e) {
     debugPrint('Error fetching user data: $e');
-    return null;
+    throw e; 
   }
 }
+
 
 Future<List<Map<String, dynamic>>> getFriendRequests(String userId) async {
   try {
