@@ -15,12 +15,20 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+    return;
+  }
 
   const AndroidInitializationSettings androidInit =
       AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -31,9 +39,9 @@ Future<void> main() async {
   );
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+      .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>()
       ?.requestPermissions(alert: true, badge: true, sound: true);
-
 
   runApp(const MyApp());
 }
@@ -72,11 +80,11 @@ class AuthWrapper extends StatelessWidget {
                   return const MainPage();
                 }
                 FirebaseAuth.instance.signOut();
-                return const Onboarding();
+                return const AuthLoginPage();
               },
             );
           }
-          return const Onboarding();
+          return const AuthLoginPage();
         },
       );
 }
@@ -90,7 +98,7 @@ Future<bool> _ensureUserExists(User user) async {
 
   while (attempts < maxRetries) {
     try {
-      firestoreData = await fetchUserData(ccid);
+      firestoreData = await firebaseService.fetchUserData(ccid);
       successfulFetch = true;
       break;
     } catch (e) {
@@ -100,14 +108,14 @@ Future<bool> _ensureUserExists(User user) async {
   }
 
   if (!successfulFetch || firestoreData == null) {
-    await addUser(user.displayName ?? 'New User', ccid,
+    await firebaseService.addUser(user.displayName ?? 'New User', ccid,
         photoURL: user.photoURL, merge: true);
-  } else if (user.photoURL != null && firestoreData['photoURL'] != user.photoURL) {
-    await updateUserPhoto(ccid, user.photoURL!);
+  } else if (user.photoURL != null &&
+      firestoreData['photoURL'] != user.photoURL) {
+    await firebaseService.updateUserPhoto(ccid, user.photoURL!);
   }
   return true;
 }
-
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -167,9 +175,10 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
       final pref = AppUser.instance.locationTracking;
       final ccid = AppUser.instance.ccid;
       if (ccid != null) {
-        updateUserActiveStatus(ccid, state == AppLifecycleState.resumed);
+        await firebaseService.updateUserActiveStatus(
+            ccid, state == AppLifecycleState.resumed);
         MapService().stopTracking();
-        final userData = await fetchUserData(ccid);
+        final userData = await firebaseService.fetchUserData(ccid);
         final hasSeen = userData?['hasSeenBottomPopup'] ?? false;
         if (hasSeen) {
           if (state == AppLifecycleState.resumed) {
@@ -190,7 +199,7 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
       return;
     }
     Future.delayed(const Duration(seconds: 2), () async {
-      final userData = await fetchUserData(ccid);
+      final userData = await firebaseService.fetchUserData(ccid);
       final bool hasSeen = userData?['hasSeenBottomPopup'] ?? false;
       if (!hasSeen) {
         final firstName = (AppUser.instance.name ?? 'Guest').split(' ').first;
@@ -200,10 +209,10 @@ class MainPageState extends State<MainPage> with WidgetsBindingObserver {
           isDismissible: true,
           enableDrag: true,
           backgroundColor: Colors.transparent,
-          builder: (_) => BottomPopup(userName: firstName),
+          builder: (_) => OnboardingBottomPopup(userName: firstName),
         );
-        await markPopupAsSeen(ccid);
-        final updatedData = await fetchUserData(ccid);
+        await firebaseService.markPopupAsSeen(ccid);
+        final updatedData = await firebaseService.fetchUserData(ccid);
         final updatedPref = updatedData?['location_tracking'];
         if (updatedPref == 'Live Tracking' ||
             updatedPref == 'Only When Using App') {

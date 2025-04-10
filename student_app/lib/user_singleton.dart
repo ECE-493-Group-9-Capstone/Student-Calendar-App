@@ -38,7 +38,7 @@ class AppUser {
   // Factory constructor returns the same instance
   factory AppUser() => _instance;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseService _firebaseService = firebaseService;
 
   // Initialize AppUser with a Firebase User object
   Future<void> initialize(User firebaseUser) async {
@@ -62,7 +62,8 @@ class AppUser {
     }
 
     debugPrint('Fetching Firestore data for user: $_ccid');
-    final Map<String, dynamic>? userData = await fetchUserData(_ccid!);
+    final Map<String, dynamic>? userData =
+        await _firebaseService.fetchUserData(_ccid!);
     if (userData != null) {
       _name = userData['name'];
       _photoURL = userData['photoURL'];
@@ -79,9 +80,9 @@ class AppUser {
           List<String>.from(userData['friends'] ?? []);
       _friends = await _friendProcessor(processedFriends);
       friendsNotifier.value = List.from(_friends);
-      _friendRequests = await getFriendRequests(_ccid!);
+      _friendRequests = await _firebaseService.getFriendRequests(_ccid!);
       friendRequestsNotifier.value = List.from(_friendRequests);
-      _requestedFriends = await getRequestedFriends(_ccid!);
+      _requestedFriends = await _firebaseService.getRequestedFriends(_ccid!);
       debugPrint('User Data Loaded: $_name, $_discipline, Friends: $_friends');
     } else {
       debugPrint('No user data found in Firestore!');
@@ -93,7 +94,7 @@ class AppUser {
     if (_ccid == null) {
       return;
     }
-    _userSubscription = _firestore
+    _userSubscription = _firebaseService.firestore
         .collection('users')
         .doc(_ccid)
         .snapshots()
@@ -117,10 +118,11 @@ class AppUser {
           _friends = await _friendProcessor(processedFriends);
           friendsNotifier.value = List.from(_friends);
 
-          _friendRequests = await getFriendRequests(_ccid!);
+          _friendRequests = await _firebaseService.getFriendRequests(_ccid!);
           friendRequestsNotifier.value = List.from(_friendRequests);
 
-          _requestedFriends = await getRequestedFriends(_ccid!);
+          _requestedFriends =
+              await _firebaseService.getRequestedFriends(_ccid!);
         }
         debugPrint(
             'User data updated in real-time: $_name, $_discipline, Friends: $_friends');
@@ -132,7 +134,8 @@ class AppUser {
     final List<UserModel> userFriends = [];
     for (int i = 0; i < friends.length; i++) {
       debugPrint(friends[i]);
-      final Map<String, dynamic>? userData = await fetchUserData(friends[i]);
+      final Map<String, dynamic>? userData =
+          await _firebaseService.fetchUserData(friends[i]);
       if (userData != null) {
         final UserModel userModel = UserModel(
           friends[i], // ccid
@@ -207,7 +210,7 @@ class AppUser {
     if (_ccid == null) {
       return;
     }
-    await acceptFriendRequest(_ccid!, friendId);
+    await _firebaseService.acceptFriendRequest(_ccid!, friendId);
     await refreshUserData();
   }
 
@@ -215,7 +218,7 @@ class AppUser {
     if (_ccid == null) {
       return;
     }
-    await removeFriendFromUsers(_ccid!, friendId);
+    await _firebaseService.removeFriendFromUsers(_ccid!, friendId);
     await refreshUserData();
   }
 
@@ -234,7 +237,7 @@ class AppUser {
       await addFriend(receiverID);
     } else {
       debugPrint('Sending friend request to $receiverID...');
-      await sendRecieveRequest(_ccid!, receiverID);
+      await _firebaseService.sendRecieveRequest(_ccid!, receiverID);
     }
     await refreshUserData();
   }
@@ -244,7 +247,7 @@ class AppUser {
     if (_ccid == null) {
       return;
     }
-    await declineFriendRequest(requesterId, _ccid!);
+    await _firebaseService.declineFriendRequest(requesterId, _ccid!);
     await refreshUserData();
   }
 

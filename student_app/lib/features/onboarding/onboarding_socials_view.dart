@@ -3,14 +3,14 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:student_app/user_singleton.dart';
 import 'package:student_app/services/firebase_service.dart';
 
-class SocialsView extends StatefulWidget {
-  const SocialsView({super.key});
+class OnboardingSocialsView extends StatefulWidget {
+  const OnboardingSocialsView({super.key});
 
   @override
-  SocialsViewState createState() => SocialsViewState();
+  OnboardingSocialsViewState createState() => OnboardingSocialsViewState();
 }
 
-class SocialsViewState extends State<SocialsView> {
+class OnboardingSocialsViewState extends State<OnboardingSocialsView> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   final _instagramController = TextEditingController();
@@ -59,10 +59,10 @@ class SocialsViewState extends State<SocialsView> {
     }
 
     try {
-      await uploadPhoneNumber(ccid, formattedPhone);
+      await firebaseService.uploadPhoneNumber(ccid, formattedPhone);
 
       if (fullInstagramLink != null) {
-        await uploadInstagramLink(ccid, fullInstagramLink);
+        await firebaseService.uploadInstagramLink(ccid, fullInstagramLink);
       }
 
       setState(() {
